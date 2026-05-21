@@ -6,9 +6,9 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-display: 'Fredoka', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
@@ -18,7 +18,7 @@
 
 @layer components {
     .staff-card {
-        @apply rounded-2xl bg-white ring-1 ring-amber-200/60 shadow-sm shadow-amber-950/[0.04];
+        @apply rounded-lg bg-white border border-slate-200 shadow-sm;
     }
 
     .staff-page-header {
@@ -26,23 +26,23 @@
     }
 
     .staff-page-title {
-        @apply font-display text-3xl font-semibold text-amber-950 tracking-tight;
+        @apply font-sans text-3xl font-semibold text-slate-900 tracking-tight;
     }
 
     .staff-page-subtitle {
-        @apply mt-1.5 text-stone-600 text-base;
+        @apply mt-1.5 text-slate-600 text-base;
     }
 
     .staff-stat-card {
-        @apply rounded-2xl bg-white ring-1 ring-amber-200/60 shadow-sm shadow-amber-950/[0.04] p-5 sm:p-6;
+        @apply rounded-lg bg-white border border-slate-200 shadow-sm p-5 sm:p-6;
     }
 
     .staff-stat-value {
-        @apply font-display text-3xl font-semibold text-amber-950;
+        @apply font-sans text-3xl font-semibold text-slate-900;
     }
 
     .staff-stat-label {
-        @apply mt-1 text-sm text-stone-500;
+        @apply mt-1 text-sm text-slate-500;
     }
 
     .staff-btn {
@@ -50,31 +50,31 @@
     }
 
     .staff-btn-primary {
-        @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 bg-amber-800 text-amber-50 hover:bg-amber-900 hover:shadow-md hover:shadow-amber-900/20 active:scale-[0.98];
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-200 bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.98];
     }
 
     .staff-btn-secondary {
-        @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 border border-amber-200 bg-white text-amber-900 hover:bg-amber-50 hover:border-amber-300 active:scale-[0.98];
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-200 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 active:scale-[0.98];
     }
 
     .staff-btn-danger {
-        @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98];
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-200 border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98];
     }
 
     .staff-btn-success {
-        @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 bg-emerald-700 text-white hover:bg-emerald-800 active:scale-[0.98];
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-200 bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98];
     }
 
     .staff-input {
-        @apply w-full rounded-xl border border-amber-200/80 bg-[#faf6f0] px-4 py-3 text-stone-800 placeholder:text-stone-400 transition-shadow outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-200/80;
+        @apply w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 transition-shadow outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200;
     }
 
     .staff-label {
-        @apply mb-1.5 block text-sm font-semibold text-stone-700;
+        @apply mb-1.5 block text-sm font-semibold text-slate-700;
     }
 
     .staff-table-wrap {
-        @apply rounded-2xl bg-white ring-1 ring-amber-200/60 shadow-sm shadow-amber-950/[0.04] overflow-hidden;
+        @apply rounded-lg bg-white border border-slate-200 shadow-sm overflow-hidden;
     }
 
     .staff-table {
@@ -82,15 +82,15 @@
     }
 
     .staff-table thead {
-        @apply bg-gradient-to-r from-amber-100/80 via-amber-50 to-[#faf6f0] border-b border-amber-200/70;
+        @apply bg-slate-50 border-b border-slate-200;
     }
 
     .staff-table th {
-        @apply px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-amber-900/70;
+        @apply px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-600;
     }
 
     .staff-table td {
-        @apply px-5 py-4 align-middle text-stone-700 border-b border-amber-50;
+        @apply px-5 py-4 align-middle text-slate-700 border-b border-slate-100;
     }
 
     .staff-table tbody tr:last-child td {
@@ -98,7 +98,7 @@
     }
 
     .staff-table tbody tr {
-        @apply transition-colors hover:bg-amber-50/40;
+        @apply transition-colors hover:bg-slate-50;
     }
 
     .staff-badge {
@@ -106,7 +106,7 @@
     }
 
     .staff-badge-amber {
-        @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-amber-100 text-amber-900;
+        @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700;
     }
 
     .staff-badge-green {
@@ -118,7 +118,7 @@
     }
 
     .staff-link {
-        @apply font-semibold text-amber-800 hover:text-amber-950 hover:underline underline-offset-2;
+        @apply font-semibold text-slate-700 hover:text-slate-900 hover:underline underline-offset-2;
     }
 
     .staff-link-danger {
@@ -126,10 +126,145 @@
     }
 
     .staff-form-card {
-        @apply rounded-2xl bg-white ring-1 ring-amber-200/60 shadow-sm shadow-amber-950/[0.04] max-w-2xl p-6 sm:p-8;
+        @apply rounded-lg bg-white border border-slate-200 shadow-sm max-w-2xl p-6 sm:p-8;
     }
 
     .staff-order-card {
-        @apply rounded-2xl bg-white ring-1 ring-amber-200/60 shadow-sm shadow-amber-950/[0.04] p-6 mb-4;
+        @apply rounded-lg bg-white border border-slate-200 shadow-sm p-6 mb-4;
+    }
+
+    /* Kiosk custom components and layout */
+    .kiosk-btn {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        transform: translateY(0) scale(1);
+    }
+    .kiosk-btn:hover {
+        transform: translateY(-20px) scale(1.05);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        border-color: #fcd34d; /* amber-300 */
+    }
+
+    .kiosk-container {
+        display: flex;
+        min-height: 100vh;
+        width: 100%;
+        background-color: #ffffff;
+        position: relative;
+    }
+    
+    .kiosk-header {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 80px;
+        background-color: #faf6f0;
+        border-bottom: 1px solid rgba(217, 119, 6, 0.15); /* border-amber-200/60 */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        z-index: 50;
+    }
+    
+    .kiosk-sidebar-left {
+        position: fixed !important;
+        top: 80px;
+        left: 0;
+        bottom: 0;
+        width: 120px;
+        background-color: #faf6f0;
+        border-right: 1px solid rgba(217, 119, 6, 0.1); /* border-amber-200/50 */
+        overflow-y: auto;
+        z-index: 40;
+        padding: 24px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
+    }
+    
+    .kiosk-sidebar-right {
+        position: fixed !important;
+        top: 80px;
+        right: 0;
+        bottom: 0;
+        width: 380px;
+        background-color: #faf6f0;
+        border-left: 1px solid rgba(217, 119, 6, 0.15); /* border-amber-200/60 */
+        display: flex;
+        flex-direction: column;
+        z-index: 40;
+        box-shadow: -5px 0 20px rgba(0, 0, 0, 0.02);
+    }
+    
+    .kiosk-main-content {
+        margin-left: 120px;
+        margin-right: 380px;
+        padding-top: 104px; /* 80px header + 24px padding */
+        padding-bottom: 48px;
+        padding-left: 32px;
+        padding-right: 32px;
+        min-height: 100vh;
+        width: calc(100% - 500px);
+        background-color: #ffffff;
+    }
+    
+    .category-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    .category-btn:hover .category-img {
+        transform: scale(1.1);
+    }
+    
+    .category-btn {
+        transition: all 0.3s ease;
+    }
+    
+    .kiosk-modal-backdrop {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(67, 25, 1, 0.6) !important; /* bg-amber-950/60 */
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        z-index: 1000 !important;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .kiosk-modal-backdrop.show {
+        display: flex !important;
+        opacity: 1 !important;
+    }
+    
+    .kiosk-modal-content {
+        background-color: #ffffff;
+        border-radius: 2rem;
+        width: 100%;
+        max-width: 512px; /* max-w-lg */
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        transform: scale(0.95);
+        transition: transform 0.3s ease;
+        border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+    
+    .kiosk-modal-backdrop.show .kiosk-modal-content {
+        transform: scale(1) !important;
     }
 }
+

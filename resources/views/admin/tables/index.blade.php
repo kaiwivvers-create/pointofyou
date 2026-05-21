@@ -25,8 +25,8 @@
             <div class="staff-card p-6">
                 <div class="flex items-start justify-between gap-4 mb-4">
                     <div>
-                        <h2 class="font-display text-xl font-semibold text-amber-950">{{ $table->name }}</h2>
-                        <p class="text-xs text-stone-500 mt-1 font-mono">token: {{ $table->token }}</p>
+                        <h2 class="font-sans text-xl font-semibold text-slate-900">{{ $table->name }}</h2>
+                        <p class="text-xs text-slate-500 mt-1 font-mono">token: {{ $table->token }}</p>
                     </div>
                     @if (auth()->user()->isSuperAdmin())
                         <form method="POST" action="{{ route('super-admin.tables.destroy', $table) }}" onsubmit="return confirm('Delete this table?')">
@@ -36,8 +36,8 @@
                         </form>
                     @endif
                 </div>
-                <p class="text-sm font-semibold text-stone-600 mb-2">QR scan URL</p>
-                <code class="block text-xs bg-[#faf6f0] rounded-xl p-4 break-all text-amber-900 ring-1 ring-amber-100 mb-4 leading-relaxed">{{ $table->scanUrl() }}</code>
+                <p class="text-sm font-semibold text-slate-600 mb-2">QR scan URL</p>
+                <code class="block text-xs bg-slate-50 rounded-lg p-4 break-all text-slate-900 ring-1 ring-slate-200 mb-4 leading-relaxed">{{ $table->scanUrl() }}</code>
                 <a href="{{ $table->scanUrl() }}" target="_blank" class="staff-link text-sm">Preview customer menu →</a>
             </div>
         @endforeach

@@ -13,7 +13,9 @@ class AdminAuthController extends Controller
     public function create(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route(Auth::user()->role->dashboardRoute());
+            Auth::logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
         }
 
         return view('admin.login');

@@ -1,8 +1,30 @@
 @php
     $menuItem = $menuItem ?? null;
+    $isEdit = $menuItem !== null;
+    $prefix = $modalPrefix ?? 'add';
 @endphp
 
 <div class="space-y-5">
+    <div>
+        <label for="image-{{ $prefix }}" class="staff-label">Image</label>
+        <div class="mt-2">
+            <input type="file" id="image-{{ $prefix }}" name="image" accept="image/*" class="staff-input" onchange="handleImageUpload(this, '{{ $prefix }}')">
+            @if ($isEdit && $menuItem?->image)
+                <div class="mt-2">
+                    <p class="text-xs text-slate-500 mb-1">Current image:</p>
+                    <img src="{{ asset('storage/' . $menuItem->image) }}" alt="Current image" class="w-32 h-32 object-cover rounded-lg border border-slate-200">
+                </div>
+            @endif
+            <div id="imagePreview-{{ $prefix }}" class="mt-2 hidden">
+                <p class="text-xs text-slate-500 mb-1">Preview:</p>
+                <img id="previewImg-{{ $prefix }}" src="" alt="Preview" class="w-32 h-32 object-cover rounded-lg border border-slate-200">
+            </div>
+            <div id="cropButtonContainer-{{ $prefix }}" class="mt-2 hidden">
+                <button type="button" onclick="openCropModal('{{ $prefix }}')" class="staff-btn-secondary text-xs px-3 py-1.5 whitespace-nowrap">Crop Image</button>
+            </div>
+            <input type="hidden" id="croppedImageData-{{ $prefix }}" name="cropped_image">
+        </div>
+    </div>
     <div>
         <label for="name" class="staff-label">Name</label>
         <input id="name" name="name" type="text" required value="{{ old('name', $menuItem?->name) }}" class="staff-input max-w-md">
@@ -24,22 +46,18 @@
             <label for="price" class="staff-label">Price ($)</label>
             <input id="price" name="price" type="number" step="0.01" min="0" required value="{{ old('price', $menuItem?->price) }}" class="staff-input">
         </div>
-        <div>
-            <label for="emoji" class="staff-label">Emoji</label>
-            <input id="emoji" name="emoji" type="text" maxlength="10" value="{{ old('emoji', $menuItem?->emoji) }}" class="staff-input" placeholder="🥐">
-        </div>
     </div>
     <label class="flex items-center gap-2.5 cursor-pointer select-none">
         <input type="hidden" name="is_available" value="0">
-        <input type="checkbox" name="is_available" value="1" class="size-4 rounded border-amber-300 text-amber-800 focus:ring-amber-300"
+        <input type="checkbox" name="is_available" value="1" class="size-4 rounded border-slate-300 text-slate-900 focus:ring-slate-300"
             @checked(old('is_available', $menuItem?->is_available ?? true))>
-        <span class="text-sm text-stone-600">Available on menu</span>
+        <span class="text-sm text-slate-600">Available on menu</span>
     </label>
 </div>
 
-<div class="border-t border-stone-200 pt-5 mt-5">
-    <h3 class="text-sm font-medium text-stone-800 mb-2">Customizations / Add-ons</h3>
-    <p class="text-xs text-stone-500 mb-4">Add options like "No Pickles" (price: 0) or "Extra Cheese" (price: 1.50).</p>
+<div class="border-t border-slate-200 pt-5 mt-5">
+    <h3 class="text-sm font-medium text-slate-800 mb-2">Customizations / Add-ons</h3>
+    <p class="text-xs text-slate-500 mb-4">Add options like "No Pickles" (price: 0) or "Extra Cheese" (price: 1.50).</p>
     
     <div id="modifications-container" class="space-y-3">
         @if(old('modifications'))
@@ -61,32 +79,21 @@
         @endif
     </div>
     
-    <button type="button" id="add-mod-btn" class="mt-3 text-sm text-amber-700 hover:text-amber-800 font-medium">+ Add customization</button>
+    <button type="button" id="add-mod-btn" onclick="addNewModification()" class="mt-3 text-sm text-slate-700 hover:text-slate-900 font-medium">+ Add customization</button>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+function addNewModification() {
     const container = document.getElementById('modifications-container');
-    const addBtn = document.getElementById('add-mod-btn');
+    const modIndex = container.querySelectorAll('.modification-row').length;
     
-    let modIndex = container.querySelectorAll('.modification-row').length;
-    
-    addBtn.addEventListener('click', function() {
-        const div = document.createElement('div');
-        div.className = 'flex items-center gap-2 modification-row';
-        div.innerHTML = `
-            <input type="text" name="modifications[${modIndex}][name]" placeholder="Name (e.g. No Mayo)" required class="staff-input flex-1">
-            <input type="number" step="0.01" min="0" name="modifications[${modIndex}][additional_price]" value="0" placeholder="+ Price ($)" required class="staff-input w-28">
-            <button type="button" class="text-red-500 hover:text-red-700 text-sm px-2 py-1 remove-mod text-xl font-bold">&times;</button>
-        `;
-        container.appendChild(div);
-        modIndex++;
-    });
-    
-    container.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-mod')) {
-            e.target.closest('.modification-row').remove();
-        }
-    });
-});
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-2 modification-row';
+    div.innerHTML = `
+        <input type="text" name="modifications[${modIndex}][name]" placeholder="Name (e.g. No Mayo)" required class="staff-input flex-1">
+        <input type="number" step="0.01" min="0" name="modifications[${modIndex}][additional_price]" value="0" placeholder="+ Price ($)" required class="staff-input w-28">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-sm px-2 py-1 text-xl font-bold">&times;</button>
+    `;
+    container.appendChild(div);
+}
 </script>

@@ -41,6 +41,7 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
 Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [AdminAuthController::class, 'create'])->name('admin.login');
     Route::post('/admin/login', [AdminAuthController::class, 'store'])->name('admin.login.store');
+    Route::get('/login', [AdminAuthController::class, 'create']);
 });
 
 Route::middleware('auth')->group(function () {

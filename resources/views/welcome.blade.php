@@ -21,7 +21,7 @@
                 <a href="#about" class="hover:text-amber-800 transition-colors">About</a>
                 <a href="#order" class="hover:text-amber-800 transition-colors">Order</a>
             </nav>
-            <a href="#order" class="shrink-0 rounded-full bg-amber-800 px-5 py-2.5 text-sm font-semibold text-amber-50 hover:bg-amber-900 transition-colors">
+            <a href="/kiosk" class="shrink-0 rounded-full bg-amber-800 px-5 py-2.5 text-sm font-semibold text-amber-50 hover:bg-amber-900 transition-colors">
                 Order Now
             </a>
         </div>

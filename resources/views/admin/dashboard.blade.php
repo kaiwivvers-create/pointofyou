@@ -5,7 +5,7 @@
 @section('content')
     <div class="staff-page-header">
         <div>
-            <h1 class="staff-page-title">Admin dashboard</h1>
+            <h1 class="staff-page-title">Admin Dashboard</h1>
             <p class="staff-page-subtitle">Manage food, drinks, and table QR codes.</p>
         </div>
     </div>

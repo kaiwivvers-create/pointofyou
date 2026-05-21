@@ -16,7 +16,7 @@
         <label for="password" class="staff-label">
             {{ $isEdit ? 'New password' : 'Password' }}
             @if ($isEdit)
-                <span class="font-normal text-stone-500">(leave blank to keep current)</span>
+                <span class="font-normal text-slate-500">(leave blank to keep current)</span>
             @endif
         </label>
         <input id="password" name="password" type="password" @if (! $isEdit) required @endif class="staff-input" autocomplete="new-password">

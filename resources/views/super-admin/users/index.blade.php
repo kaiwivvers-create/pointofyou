@@ -27,7 +27,7 @@
                 <tbody>
                     @foreach ($users as $user)
                         <tr>
-                            <td class="font-semibold text-amber-950">{{ $user->name }}</td>
+                            <td class="font-semibold text-slate-900">{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
                             <td><span class="staff-badge-amber">{{ $user->role->label() }}</span></td>
                             <td class="text-right space-x-4">
@@ -39,7 +39,7 @@
                                         <button type="submit" class="staff-link-danger">Delete</button>
                                     </form>
                                 @else
-                                    <span class="text-xs text-stone-400">(you)</span>
+                                    <span class="text-xs text-slate-400">(you)</span>
                                 @endif
                             </td>
                         </tr>

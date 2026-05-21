@@ -5,8 +5,8 @@
 @section('content')
     <div class="staff-page-header">
         <div>
-            <h1 class="staff-page-title">Super Admin</h1>
-            <p class="staff-page-subtitle">Full access — staff, menu, tables, and payments.</p>
+            <h1 class="staff-page-title">Super Admin Dashboard</h1>
+            <p class="staff-page-subtitle">Full access to staff, menu, tables, and payments.</p>
         </div>
     </div>
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MenuItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class MenuItemController extends Controller
@@ -29,16 +30,36 @@ class MenuItemController extends Controller
             'description' => ['nullable', 'string'],
             'category' => ['required', 'string', 'max:50'],
             'price' => ['required', 'numeric', 'min:0'],
-            'emoji' => ['nullable', 'string', 'max:10'],
             'is_available' => ['boolean'],
             'modifications' => ['nullable', 'array'],
             'modifications.*.name' => ['required', 'string', 'max:255'],
             'modifications.*.additional_price' => ['required', 'numeric', 'min:0'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'cropped_image' => ['nullable', 'string'],
         ]);
 
         $validated['is_available'] = $request->boolean('is_available', true);
 
         $menuItem = MenuItem::create($validated);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $path = $image->store('menu-items', 'public');
+            $menuItem->image = $path;
+            $menuItem->save();
+        } elseif ($request->filled('cropped_image')) {
+            // Handle cropped image from base64
+            $imageData = $request->input('cropped_image');
+            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $image = str_replace('data:image/png;base64,', '', $imageData);
+            $image = base64_decode($image);
+            $fileName = 'menu-item-' . $menuItem->id . '-' . time() . '.jpg';
+            $path = 'menu-items/' . $fileName;
+            Storage::disk('public')->put($path, $image);
+            $menuItem->image = $path;
+            $menuItem->save();
+        }
 
         if (!empty($validated['modifications'])) {
             $menuItem->modifications()->createMany($validated['modifications']);
@@ -59,16 +80,44 @@ class MenuItemController extends Controller
             'description' => ['nullable', 'string'],
             'category' => ['required', 'string', 'max:50'],
             'price' => ['required', 'numeric', 'min:0'],
-            'emoji' => ['nullable', 'string', 'max:10'],
             'is_available' => ['boolean'],
             'modifications' => ['nullable', 'array'],
             'modifications.*.name' => ['required', 'string', 'max:255'],
             'modifications.*.additional_price' => ['required', 'numeric', 'min:0'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'cropped_image' => ['nullable', 'string'],
         ]);
 
         $validated['is_available'] = $request->boolean('is_available');
 
         $menu->update($validated);
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($menu->image) {
+                Storage::disk('public')->delete($menu->image);
+            }
+            $image = $request->file('image');
+            $path = $image->store('menu-items', 'public');
+            $menu->image = $path;
+            $menu->save();
+        } elseif ($request->filled('cropped_image')) {
+            // Handle cropped image from base64
+            // Delete old image if exists
+            if ($menu->image) {
+                Storage::disk('public')->delete($menu->image);
+            }
+            $imageData = $request->input('cropped_image');
+            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $image = str_replace('data:image/png;base64,', '', $imageData);
+            $image = base64_decode($image);
+            $fileName = 'menu-item-' . $menu->id . '-' . time() . '.jpg';
+            $path = 'menu-items/' . $fileName;
+            Storage::disk('public')->put($path, $image);
+            $menu->image = $path;
+            $menu->save();
+        }
 
         $menu->modifications()->delete();
         if (!empty($validated['modifications'])) {

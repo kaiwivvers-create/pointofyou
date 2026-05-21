@@ -12,7 +12,6 @@
                 @foreach ($cart as $line)
                     <li class="flex items-center justify-between gap-3 text-sm">
                         <span>
-                            @if ($line['emoji'])<span class="mr-1">{{ $line['emoji'] }}</span>@endif
                             {{ $line['name'] }} × {{ $line['quantity'] }}
                         </span>
                         <span class="font-medium">${{ number_format($line['unit_price'] * $line['quantity'], 2) }}</span>
@@ -49,7 +48,9 @@
             <div class="space-y-3">
                 @foreach ($items as $item)
                     <article class="flex items-center gap-4 rounded-2xl bg-white p-4 ring-1 ring-amber-100 shadow-sm">
-                        <span class="text-2xl shrink-0" aria-hidden="true">{{ $item->emoji ?? '🍽️' }}</span>
+                        @if ($item->image)
+                            <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->name }}" class="w-16 h-16 object-cover rounded-lg border border-amber-200 shrink-0">
+                        @endif
                         <div class="flex-1 min-w-0">
                             <h3 class="font-semibold text-amber-950">{{ $item->name }}</h3>
                             @if ($item->description)
