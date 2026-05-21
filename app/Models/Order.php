@@ -12,6 +12,7 @@ class Order extends Model
     protected $fillable = [
         'cafe_table_id',
         'status',
+        'order_type',
         'total',
         'notes',
         'paid_by',

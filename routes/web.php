@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use App\Http\Controllers\Table\TableScanController;
+use App\Http\Controllers\KioskController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,6 +23,18 @@ Route::middleware('table.session')->prefix('table')->group(function () {
     Route::patch('/cart', [TableScanController::class, 'updateCart'])->name('table.cart.update');
     Route::post('/order', [TableScanController::class, 'placeOrder'])->name('table.order');
     Route::post('/leave', [TableScanController::class, 'clearTable'])->name('table.leave');
+});
+
+// Kiosk flow (no login)
+Route::prefix('kiosk')->name('kiosk.')->group(function () {
+    Route::get('/', [KioskController::class, 'welcome'])->name('welcome');
+    Route::post('/type', [KioskController::class, 'setType'])->name('type');
+    Route::get('/menu', [KioskController::class, 'menu'])->name('menu');
+    Route::post('/cart/{menuItem}', [KioskController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/remove/{cartIndex}', [KioskController::class, 'removeFromCart'])->name('cart.remove');
+    Route::post('/checkout', [KioskController::class, 'checkout'])->name('checkout');
+    Route::post('/pay', [KioskController::class, 'pay'])->name('pay');
+    Route::get('/success', [KioskController::class, 'success'])->name('success');
 });
 
 // Staff login

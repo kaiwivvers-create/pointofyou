@@ -27,4 +27,9 @@ class MenuItem extends Model
     {
         return '$'.number_format((float) $this->price, 2);
     }
+
+    public function modifications(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MenuItemModification::class);
+    }
 }

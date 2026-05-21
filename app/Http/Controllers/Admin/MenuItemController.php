@@ -31,11 +31,18 @@ class MenuItemController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'emoji' => ['nullable', 'string', 'max:10'],
             'is_available' => ['boolean'],
+            'modifications' => ['nullable', 'array'],
+            'modifications.*.name' => ['required', 'string', 'max:255'],
+            'modifications.*.additional_price' => ['required', 'numeric', 'min:0'],
         ]);
 
         $validated['is_available'] = $request->boolean('is_available', true);
 
-        MenuItem::create($validated);
+        $menuItem = MenuItem::create($validated);
+
+        if (!empty($validated['modifications'])) {
+            $menuItem->modifications()->createMany($validated['modifications']);
+        }
 
         return redirect()->route('admin.menu.index')->with('success', 'Menu item added.');
     }
@@ -54,11 +61,19 @@ class MenuItemController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'emoji' => ['nullable', 'string', 'max:10'],
             'is_available' => ['boolean'],
+            'modifications' => ['nullable', 'array'],
+            'modifications.*.name' => ['required', 'string', 'max:255'],
+            'modifications.*.additional_price' => ['required', 'numeric', 'min:0'],
         ]);
 
         $validated['is_available'] = $request->boolean('is_available');
 
         $menu->update($validated);
+
+        $menu->modifications()->delete();
+        if (!empty($validated['modifications'])) {
+            $menu->modifications()->createMany($validated['modifications']);
+        }
 
         return redirect()->route('admin.menu.index')->with('success', 'Menu item updated.');
     }
