@@ -22,6 +22,8 @@
             <select name="role" class="staff-input">
                 <option value="">All Roles</option>
                 <option value="super_admin" {{ request('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                <option value="owner" {{ request('role') === 'owner' ? 'selected' : '' }}>Owner</option>
+                <option value="manager" {{ request('role') === 'manager' ? 'selected' : '' }}>Manager</option>
                 <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                 <option value="cashier" {{ request('role') === 'cashier' ? 'selected' : '' }}>Cashier</option>
             </select>

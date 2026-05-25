@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CafeTableController;
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
+use App\Http\Controllers\SuperAdmin\PermissionController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use App\Http\Controllers\Table\TableScanController;
 use App\Http\Controllers\KioskController;
@@ -65,9 +66,36 @@ Route::middleware('auth')->group(function () {
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
+        Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
+        Route::post('permissions', [PermissionController::class, 'update'])->name('permissions.update');
+
         Route::post('tables', [CafeTableController::class, 'store'])->name('tables.store');
         Route::post('tables/{cafeTable}/regenerate-qr', [CafeTableController::class, 'regenerateQr'])->name('tables.regenerate-qr');
         Route::delete('tables/{cafeTable}', [CafeTableController::class, 'destroy'])->name('tables.destroy');
+    });
+
+    // Owner
+    Route::middleware('role:owner')->prefix('owner')->name('owner.')->group(function () {
+        Route::get('/', function () {
+            return view('owner.dashboard', [
+                'totalRevenue' => \App\Models\Order::where('status', 'paid')->sum('total'),
+                'totalOrders' => \App\Models\Order::count(),
+                'menuCount' => \App\Models\MenuItem::count(),
+                'tableCount' => \App\Models\CafeTable::count(),
+            ]);
+        })->name('dashboard');
+    });
+
+    // Manager
+    Route::middleware('role:manager')->prefix('manager')->name('manager.')->group(function () {
+        Route::get('/', function () {
+            return view('manager.dashboard', [
+                'todayRevenue' => \App\Models\Order::where('status', 'paid')->whereDate('created_at', today())->sum('total'),
+                'todayOrders' => \App\Models\Order::whereDate('created_at', today())->count(),
+                'pendingOrders' => \App\Models\Order::where('status', 'pending')->count(),
+                'menuCount' => \App\Models\MenuItem::count(),
+            ]);
+        })->name('dashboard');
     });
 
     // Admin dashboard + menu

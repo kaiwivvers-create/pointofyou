@@ -27,7 +27,11 @@ class UserController extends Controller
 
         // Filter by role
         if ($request->filled('role')) {
-            $query->where('role', UserRole::from($request->role));
+            try {
+                $query->where('role', UserRole::from($request->role));
+            } catch (\ValueError $e) {
+                // Invalid role, ignore filter
+            }
         }
 
         $users = $query->orderBy('name')->paginate(15);
@@ -38,7 +42,7 @@ class UserController extends Controller
     public function create(): View
     {
         return view('super-admin.users.create', [
-            'roles' => [UserRole::SuperAdmin, UserRole::Admin, UserRole::Cashier],
+            'roles' => [UserRole::SuperAdmin, UserRole::Owner, UserRole::Manager, UserRole::Admin, UserRole::Cashier],
         ]);
     }
 

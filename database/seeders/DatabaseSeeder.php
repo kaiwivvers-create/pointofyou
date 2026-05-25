@@ -39,6 +39,25 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        User::firstOrCreate(
+            ['email' => 'manager@example.com'],
+            [
+                'name' => 'Kai',
+                'password' => bcrypt('250510'),
+                'role' => UserRole::Manager,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'owner@example.com'],
+            [
+                'name' => 'Kai',
+                'password' => bcrypt('250510'),
+                'role' => UserRole::Owner,
+            ]
+        );
+
+
         $tables = [
             ['name' => 'Table 1', 'token' => 'table-1'],
             ['name' => 'Table 2', 'token' => 'table-2'],

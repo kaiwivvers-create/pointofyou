@@ -55,6 +55,16 @@ class User extends Authenticatable
         return $this->role === UserRole::SuperAdmin;
     }
 
+    public function isOwner(): bool
+    {
+        return $this->role === UserRole::Owner;
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === UserRole::Manager;
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
