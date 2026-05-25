@@ -11,9 +11,30 @@ use Illuminate\View\View;
 
 class MenuItemController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $menuItems = MenuItem::query()->orderBy('category')->orderBy('name')->get();
+        $query = MenuItem::query();
+
+        // Search by name
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by category
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            if ($request->status === 'available') {
+                $query->where('is_available', true);
+            } elseif ($request->status === 'hidden') {
+                $query->where('is_available', false);
+            }
+        }
+
+        $menuItems = $query->orderBy('category')->orderBy('name')->paginate(15);
 
         return view('admin.menu.index', compact('menuItems'));
     }
@@ -42,21 +63,51 @@ class MenuItemController extends Controller
 
         $menuItem = MenuItem::create($validated);
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $path = $image->store('menu-items', 'public');
-            $menuItem->image = $path;
-            $menuItem->save();
-        } elseif ($request->filled('cropped_image')) {
+        // Handle image upload - prioritize cropped image if present
+        if ($request->has('cropped_image') && strlen($request->input('cropped_image')) > 100) {
             // Handle cropped image from base64
             $imageData = $request->input('cropped_image');
-            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
+            \Log::info('Cropped image data length: ' . strlen($imageData));
+            \Log::info('Cropped image starts with: ' . substr($imageData, 0, 50));
+            
             $image = str_replace('data:image/png;base64,', '', $imageData);
+            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $image = str_replace('data:image/webp;base64,', '', $imageData);
             $image = base64_decode($image);
+            
+            \Log::info('Decoded image size: ' . strlen($image) . ' bytes');
+            
+            if (strlen($image) > 0) {
+                $fileName = 'menu-item-' . $menuItem->id . '-' . time() . '.jpg';
+                $path = 'menu-items/' . $fileName;
+                Storage::disk('public')->put($path, $image);
+                $menuItem->image = $path;
+                $menuItem->save();
+                \Log::info('Image saved to: ' . $path);
+            } else {
+                \Log::error('Decoded image is empty');
+            }
+        } elseif ($request->hasFile('image')) {
+            // Handle cropped image from base64
+            $imageData = $request->input('cropped_image');
+            \Log::info('Cropped image data length: ' . strlen($imageData));
+            \Log::info('Cropped image starts with: ' . substr($imageData, 0, 50));
+            
+            $image = str_replace('data:image/png;base64,', '', $imageData);
+            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $image = str_replace('data:image/webp;base64,', '', $imageData);
+            $image = base64_decode($image);
+            
+            \Log::info('Decoded image size: ' . strlen($image) . ' bytes');
+            
             $fileName = 'menu-item-' . $menuItem->id . '-' . time() . '.jpg';
             $path = 'menu-items/' . $fileName;
             Storage::disk('public')->put($path, $image);
+            $menuItem->image = $path;
+            $menuItem->save();
+        } elseif ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $path = $image->store('menu-items', 'public');
             $menuItem->image = $path;
             $menuItem->save();
         }
@@ -92,29 +143,40 @@ class MenuItemController extends Controller
 
         $menu->update($validated);
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            // Delete old image if exists
-            if ($menu->image) {
-                Storage::disk('public')->delete($menu->image);
-            }
-            $image = $request->file('image');
-            $path = $image->store('menu-items', 'public');
-            $menu->image = $path;
-            $menu->save();
-        } elseif ($request->filled('cropped_image')) {
+        // Handle image upload - prioritize cropped image if present
+        if ($request->has('cropped_image') && strlen($request->input('cropped_image')) > 100) {
             // Handle cropped image from base64
             // Delete old image if exists
             if ($menu->image) {
                 Storage::disk('public')->delete($menu->image);
             }
             $imageData = $request->input('cropped_image');
-            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
+            \Log::info('Update - Cropped image data length: ' . strlen($imageData));
+            
             $image = str_replace('data:image/png;base64,', '', $imageData);
+            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $image = str_replace('data:image/webp;base64,', '', $imageData);
             $image = base64_decode($image);
-            $fileName = 'menu-item-' . $menu->id . '-' . time() . '.jpg';
-            $path = 'menu-items/' . $fileName;
-            Storage::disk('public')->put($path, $image);
+            
+            \Log::info('Update - Decoded image size: ' . strlen($image) . ' bytes');
+            
+            if (strlen($image) > 0) {
+                $fileName = 'menu-item-' . $menu->id . '-' . time() . '.png';
+                $path = 'menu-items/' . $fileName;
+                Storage::disk('public')->put($path, $image);
+                $menu->image = $path;
+                $menu->save();
+                \Log::info('Update - Image saved to: ' . $path);
+            } else {
+                \Log::error('Update - Decoded image is empty');
+            }
+        } elseif ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($menu->image) {
+                Storage::disk('public')->delete($menu->image);
+            }
+            $image = $request->file('image');
+            $path = $image->store('menu-items', 'public');
             $menu->image = $path;
             $menu->save();
         }

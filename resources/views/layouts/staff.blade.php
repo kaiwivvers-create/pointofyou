@@ -13,30 +13,30 @@
 <body class="font-sans antialiased text-slate-900 bg-slate-50 min-h-screen">
     <div class="flex min-h-screen">
         {{-- Desktop sidebar --}}
-        <aside class="hidden lg:flex w-72 shrink-0 flex-col border-r border-slate-700 text-white" style="background-color: #1e293b;">
+        <aside class="hidden lg:flex w-72 shrink-0 flex-col border-r border-amber-200 fixed top-0 left-0 h-screen" style="background-color: #faf6f0;">
             <div class="p-6 pb-4">
-                <a href="{{ url('/') }}" class="flex items-center gap-3 rounded-lg p-2 -m-2 transition-colors hover:bg-slate-800">
-                    <div class="flex size-10 items-center justify-center rounded-lg bg-slate-800 text-xl font-semibold text-amber-500">GC</div>
+                <a href="{{ url('/') }}" class="flex items-center gap-3 rounded-lg p-2 -m-2 transition-colors hover:bg-amber-100">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-amber-200 text-xl font-semibold text-amber-900">GC</div>
                     <div>
-                        <span class="font-sans text-lg font-semibold text-white leading-tight block">Golden Crumb</span>
-                        <span class="text-xs text-slate-400">Staff portal</span>
+                        <span class="font-sans text-lg font-semibold text-amber-950 leading-tight block">Golden Crumb</span>
+                        <span class="text-xs text-amber-700">Staff portal</span>
                     </div>
                 </a>
             </div>
 
-            <div class="mx-6 mb-5 rounded-lg bg-slate-800 px-4 py-3 border border-slate-700">
-                <p class="text-sm font-semibold text-white truncate">{{ Auth::user()->name }}</p>
-                <p class="text-xs text-slate-400 mt-0.5">{{ Auth::user()->role->label() }}</p>
+            <div class="mx-6 mb-5 rounded-lg bg-white px-4 py-3 border border-amber-200 shadow-sm">
+                <p class="text-sm font-semibold text-amber-950 truncate">{{ Auth::user()->name }}</p>
+                <p class="text-xs text-amber-700 mt-0.5">{{ Auth::user()->role->label() }}</p>
             </div>
 
             <div class="flex-1 px-4 pb-4 min-h-0">
                 @include('partials.staff-sidebar')
             </div>
 
-            <div class="border-t border-slate-700 p-4 mx-2 mb-2">
+            <div class="border-t border-amber-200 p-4 mx-2 mb-2">
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
-                    <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white">
+                    <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 hover:text-amber-950">
                         <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
@@ -46,7 +46,7 @@
             </div>
         </aside>
 
-        <div class="flex-1 flex flex-col min-w-0">
+        <div class="flex-1 flex flex-col min-w-0 lg:ml-72">
             {{-- Mobile header + nav --}}
             <header class="lg:hidden border-b border-slate-200 bg-white sticky top-0 z-30">
                 <div class="px-4 py-3 flex items-center justify-between gap-3">
@@ -64,7 +64,7 @@
                 </div>
             </header>
 
-            <main class="flex-1 p-4 sm:p-8 lg:p-10 max-w-7xl w-full">
+            <main class="flex-1 p-4 sm:p-8 lg:p-10 w-full">
                 @yield('content')
             </main>
         </div>

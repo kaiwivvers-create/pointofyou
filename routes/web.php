@@ -47,21 +47,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'destroy'])->name('admin.logout');
 
-    // Admin dashboard + menu
-    Route::middleware('role:admin,super_admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/', function () {
-            return view('admin.dashboard', [
-                'menuCount' => \App\Models\MenuItem::count(),
-                'tableCount' => \App\Models\CafeTable::count(),
-                'pendingOrders' => \App\Models\Order::where('status', 'pending')->count(),
-            ]);
-        })->name('dashboard');
-
-        Route::resource('menu', MenuItemController::class)->except(['show']);
-        Route::get('tables', [CafeTableController::class, 'index'])->name('tables.index');
-    });
-
-    // Super Admin
+    // Super Admin (must be first to avoid conflicts)
     Route::middleware('role:super_admin')->prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('/', function () {
             return view('super-admin.dashboard', [
@@ -80,11 +66,26 @@ Route::middleware('auth')->group(function () {
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::post('tables', [CafeTableController::class, 'store'])->name('tables.store');
+        Route::post('tables/{cafeTable}/regenerate-qr', [CafeTableController::class, 'regenerateQr'])->name('tables.regenerate-qr');
         Route::delete('tables/{cafeTable}', [CafeTableController::class, 'destroy'])->name('tables.destroy');
     });
 
+    // Admin dashboard + menu
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', function () {
+            return view('admin.dashboard', [
+                'menuCount' => \App\Models\MenuItem::count(),
+                'tableCount' => \App\Models\CafeTable::count(),
+                'pendingOrders' => \App\Models\Order::where('status', 'pending')->count(),
+            ]);
+        })->name('dashboard');
+
+        Route::resource('menu', MenuItemController::class)->except(['show']);
+        Route::get('tables', [CafeTableController::class, 'index'])->name('tables.index');
+    });
+
     // Cashier
-    Route::middleware('role:cashier,super_admin')->prefix('cashier')->name('cashier.')->group(function () {
+    Route::middleware('role:cashier')->prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/', [CashierOrderController::class, 'index'])->name('dashboard');
         Route::post('orders/{order}/pay', [CashierOrderController::class, 'markPaid'])->name('orders.pay');
     });

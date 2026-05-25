@@ -5,7 +5,7 @@
 <nav class="flex flex-1 flex-col gap-6 overflow-y-auto text-sm">
     @if ($user->isSuperAdmin())
         <div>
-            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Overview</p>
+            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">Overview</p>
             <div class="flex flex-col gap-0.5">
                 @include('partials.staff-nav-link', [
                     'href' => route('super-admin.dashboard'),
@@ -17,7 +17,7 @@
         </div>
 
         <div>
-            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Team</p>
+            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">Team</p>
             <div class="flex flex-col gap-0.5">
                 @include('partials.staff-nav-link', [
                     'href' => route('super-admin.users.index'),
@@ -29,7 +29,7 @@
         </div>
 
         <div>
-            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Bakery</p>
+            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">Bakery</p>
             <div class="flex flex-col gap-0.5">
                 @include('partials.staff-nav-link', [
                     'href' => route('admin.menu.index'),
@@ -47,7 +47,7 @@
         </div>
 
         <div>
-            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Operations</p>
+            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">Operations</p>
             <div class="flex flex-col gap-0.5">
                 @include('partials.staff-nav-link', [
                     'href' => route('cashier.dashboard'),
@@ -59,7 +59,7 @@
         </div>
     @elseif ($user->isAdmin())
         <div>
-            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Overview</p>
+            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">Overview</p>
             <div class="flex flex-col gap-0.5">
                 @include('partials.staff-nav-link', [
                     'href' => route('admin.dashboard'),
@@ -71,7 +71,7 @@
         </div>
 
         <div>
-            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Bakery</p>
+            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">Bakery</p>
             <div class="flex flex-col gap-0.5">
                 @include('partials.staff-nav-link', [
                     'href' => route('admin.menu.index'),
@@ -89,7 +89,7 @@
         </div>
     @elseif ($user->isCashier())
         <div>
-            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Operations</p>
+            <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-600">Operations</p>
             <div class="flex flex-col gap-0.5">
                 @include('partials.staff-nav-link', [
                     'href' => route('cashier.dashboard'),

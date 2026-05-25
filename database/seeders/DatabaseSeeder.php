@@ -12,26 +12,32 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Super Admin',
-            'email' => 'super@goldencrumb.com',
-            'password' => 'password',
-            'role' => UserRole::SuperAdmin,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'superadmin@example.com'],
+            [
+                'name' => 'Kai',
+                'password' => bcrypt('250510'),
+                'role' => UserRole::SuperAdmin,
+            ]
+        );
 
-        User::factory()->create([
-            'name' => 'Bakery Admin',
-            'email' => 'admin@goldencrumb.com',
-            'password' => 'password',
-            'role' => UserRole::Admin,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Chips',
+                'password' => bcrypt('250510'),
+                'role' => UserRole::Admin,
+            ]
+        );
 
-        User::factory()->create([
-            'name' => 'Front Counter',
-            'email' => 'cashier@goldencrumb.com',
-            'password' => 'password',
-            'role' => UserRole::Cashier,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'cashier@example.com'],
+            [
+                'name' => 'Van',
+                'password' => bcrypt('250510'),
+                'role' => UserRole::Cashier,
+            ]
+        );
 
         $tables = [
             ['name' => 'Table 1', 'token' => 'table-1'],
@@ -41,7 +47,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($tables as $table) {
-            CafeTable::create($table);
+            CafeTable::firstOrCreate(['token' => $table['token']], $table);
         }
 
         $menu = [
@@ -56,7 +62,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($menu as $item) {
-            MenuItem::create($item);
+            MenuItem::firstOrCreate(['name' => $item['name']], $item);
         }
     }
 }

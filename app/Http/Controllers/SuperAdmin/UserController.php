@@ -13,9 +13,24 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $users = User::query()->orderBy('name')->get();
+        $query = User::query();
+
+        // Search by name or email
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('email', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // Filter by role
+        if ($request->filled('role')) {
+            $query->where('role', UserRole::from($request->role));
+        }
+
+        $users = $query->orderBy('name')->paginate(15);
 
         return view('super-admin.users.index', compact('users'));
     }

@@ -39,4 +39,9 @@ class CafeTable extends Model
     {
         return route('table.scan', $this->token);
     }
+
+    public function qrCode(): string
+    {
+        return \SimpleSoftwareIO\QrCode\Facades\QrCode::size(300)->generate($this->scanUrl());
+    }
 }

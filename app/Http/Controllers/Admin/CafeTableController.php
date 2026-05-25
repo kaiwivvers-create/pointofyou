@@ -34,4 +34,12 @@ class CafeTableController extends Controller
 
         return back()->with('success', 'Table removed.');
     }
+
+    public function regenerateQr(CafeTable $cafeTable): RedirectResponse
+    {
+        $cafeTable->token = \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(12));
+        $cafeTable->save();
+
+        return back()->with('success', 'QR code regenerated.');
+    }
 }

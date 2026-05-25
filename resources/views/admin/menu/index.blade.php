@@ -13,11 +13,39 @@
 
     <x-flash />
 
+    <!-- Search and Filter -->
+    <form method="GET" action="{{ route('admin.menu.index') }}" class="staff-card p-4 mb-6 flex flex-col sm:flex-row gap-4">
+        <div class="flex-1">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search menu items..." class="staff-input">
+        </div>
+        <div class="sm:w-48">
+            <select name="category" class="staff-input">
+                <option value="">All Categories</option>
+                <option value="food" {{ request('category') === 'food' ? 'selected' : '' }}>Food</option>
+                <option value="drinks" {{ request('category') === 'drinks' ? 'selected' : '' }}>Drinks</option>
+            </select>
+        </div>
+        <div class="sm:w-48">
+            <select name="status" class="staff-input">
+                <option value="">All Status</option>
+                <option value="available" {{ request('status') === 'available' ? 'selected' : '' }}>Available</option>
+                <option value="hidden" {{ request('status') === 'hidden' ? 'selected' : '' }}>Hidden</option>
+            </select>
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="staff-btn-primary">Filter</button>
+            @if (request('search') || request('category') || request('status'))
+                <a href="{{ route('admin.menu.index') }}" class="staff-btn-secondary">Clear</a>
+            @endif
+        </div>
+    </form>
+
     <div class="staff-table-wrap">
         <div class="overflow-x-auto">
             <table class="staff-table">
                 <thead>
                     <tr>
+                        <th>Image</th>
                         <th>Item</th>
                         <th>Category</th>
                         <th>Price</th>
@@ -28,12 +56,14 @@
                 <tbody>
                     @forelse ($menuItems as $item)
                         <tr>
-                            <td class="flex items-center gap-3">
+                            <td>
                                 @if ($item->image)
-                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->name }}" class="w-12 h-12 object-cover rounded-lg border border-slate-200">
+                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->name }}" class="w-16 h-16 object-cover rounded-lg border border-slate-200">
+                                @else
+                                    <div class="w-16 h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 text-xs">No image</div>
                                 @endif
-                                <span class="font-semibold text-slate-900">{{ $item->name }}</span>
                             </td>
+                            <td class="font-semibold text-slate-900">{{ $item->name }}</td>
                             <td><span class="capitalize">{{ $item->category }}</span></td>
                             <td class="font-semibold text-slate-900">{{ $item->formattedPrice() }}</td>
                             <td>
@@ -54,13 +84,19 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-16 text-center text-slate-500">No menu items yet. Add your first item!</td>
+                            <td colspan="6" class="py-16 text-center text-slate-500">No menu items yet. Add your first item!</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
+
+    @if ($menuItems->hasPages())
+        <div class="mt-6 flex justify-center">
+            {{ $menuItems->appends(request()->only(['search', 'category', 'status']))->links() }}
+        </div>
+    @endif
 
     <!-- Add Modal -->
     <div id="addModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[9999] transition-opacity duration-200">
@@ -99,14 +135,14 @@
     </div>
 
     <!-- Crop Modal -->
-    <div id="cropModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[10000] transition-opacity duration-200">
-        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-200 scale-95 opacity-0" id="cropModalContent">
+    <div id="cropModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[10000] transition-opacity duration-200 overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 my-8 transform transition-all duration-200 scale-95 opacity-0" id="cropModalContent">
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-xl font-semibold text-slate-900">Crop Image</h2>
             </div>
             <div class="p-6">
-                <div class="mb-4">
-                    <img id="cropImage" src="" alt="Crop this image" style="max-height: 400px; max-width: 100%;">
+                <div class="mb-4" style="max-height: 60vh; overflow: hidden;">
+                    <img id="cropImage" src="" alt="Crop this image" style="max-width: 100%;">
                 </div>
                 <div class="flex gap-3 justify-end mt-6">
                     <button type="button" onclick="closeCropModal()" class="staff-btn-secondary">Cancel</button>
@@ -215,30 +251,49 @@
         }
 
         function openCropModal(prefix) {
+            const fileInput = document.getElementById('image-' + prefix);
             const previewImg = document.getElementById('previewImg-' + prefix);
             const cropModal = document.getElementById('cropModal');
             const cropContent = document.getElementById('cropModalContent');
             const cropImage = document.getElementById('cropImage');
             
-            cropImage.src = previewImg.src;
-            cropModal.dataset.prefix = prefix; // Store which modal opened the crop modal
-            cropModal.classList.remove('hidden');
-            cropModal.classList.add('flex');
-            
-            setTimeout(() => {
-                cropContent.classList.remove('scale-95', 'opacity-0');
-                cropContent.classList.add('scale-100', 'opacity-100');
-                
-                // Initialize cropper
-                if (cropper) {
-                    cropper.destroy();
-                }
-                cropper = new Cropper(cropImage, {
-                    aspectRatio: 1,
-                    viewMode: 1,
-                    autoCropArea: 0.8,
-                });
-            }, 10);
+            // Use the original file instead of the preview data URL
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    cropImage.src = e.target.result;
+                    cropModal.dataset.prefix = prefix; // Store which modal opened the crop modal
+                    cropModal.classList.remove('hidden');
+                    cropModal.classList.add('flex');
+                    
+                    // Wait for image to load before initializing cropper
+                    cropImage.onload = function() {
+                        setTimeout(() => {
+                            cropContent.classList.remove('scale-95', 'opacity-0');
+                            cropContent.classList.add('scale-100', 'opacity-100');
+                            
+                            // Initialize cropper
+                            if (cropper) {
+                                cropper.destroy();
+                            }
+                            cropper = new Cropper(cropImage, {
+                                aspectRatio: 1,
+                                viewMode: 1,
+                                autoCropArea: 0.8,
+                                movable: true,
+                                zoomable: true,
+                                scalable: true,
+                                rotatable: true,
+                                responsive: true,
+                                restore: false,
+                                checkCrossOrigin: false,
+                                dragMode: 'move',
+                            });
+                        }, 100);
+                    };
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            }
         }
 
         function closeCropModal() {
@@ -260,18 +315,20 @@
 
         function applyCrop() {
             if (cropper) {
-                const canvas = cropper.getCroppedCanvas({
-                    width: 400,
-                    height: 400,
-                });
-                const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                const cropBoxData = cropper.getData();
+                console.log('Crop box data:', cropBoxData);
                 
-                // Get the prefix from the crop modal
+                // Get the original image before cropping
                 const prefix = document.getElementById('cropModal').dataset.prefix || 'add';
+                const previewImg = document.getElementById('previewImg-' + prefix);
+                const originalSrc = previewImg.src;
                 
-                // Update preview with cropped image
-                document.getElementById('previewImg-' + prefix).src = croppedDataUrl;
-                document.getElementById('croppedImageData-' + prefix).value = croppedDataUrl;
+                // For now, just use the original image without cropping to test
+                console.log('Using original image without cropping');
+                const hiddenInput = document.getElementById('croppedImageData-' + prefix);
+                hiddenInput.value = originalSrc;
+                
+                console.log('Using original src, length:', originalSrc.length);
                 
                 closeCropModal();
             }

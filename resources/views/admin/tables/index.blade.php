@@ -36,6 +36,16 @@
                         </form>
                     @endif
                 </div>
+                <p class="text-sm font-semibold text-slate-600 mb-2">QR Code</p>
+                <div class="bg-white rounded-lg p-4 flex justify-center mb-4 ring-1 ring-slate-200">
+                    {!! $table->qrCode() !!}
+                </div>
+                @if (auth()->user()->isSuperAdmin())
+                    <form method="POST" action="{{ route('super-admin.tables.regenerate-qr', $table) }}" class="mb-4">
+                        @csrf
+                        <button type="submit" class="w-full text-xs bg-slate-100 text-slate-700 py-2 rounded-lg hover:bg-slate-200 transition-colors">Regenerate QR Code</button>
+                    </form>
+                @endif
                 <p class="text-sm font-semibold text-slate-600 mb-2">QR scan URL</p>
                 <code class="block text-xs bg-slate-50 rounded-lg p-4 break-all text-slate-900 ring-1 ring-slate-200 mb-4 leading-relaxed">{{ $table->scanUrl() }}</code>
                 <a href="{{ $table->scanUrl() }}" target="_blank" class="staff-link text-sm">Preview customer menu →</a>

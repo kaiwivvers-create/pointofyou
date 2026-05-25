@@ -266,5 +266,115 @@
     .kiosk-modal-backdrop.show .kiosk-modal-content {
         transform: scale(1) !important;
     }
+
+    /* Table menu layout - similar to kiosk */
+    .table-container {
+        display: flex;
+        min-height: 100vh;
+        width: 100%;
+        background-color: #ffffff;
+        position: relative;
+    }
+
+    .table-header {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 70px;
+        background-color: #faf6f0;
+        border-bottom: 1px solid rgba(217, 119, 6, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        z-index: 50;
+    }
+
+    .table-sidebar-left {
+        position: fixed !important;
+        top: 70px;
+        left: 0;
+        bottom: 0;
+        width: 100px;
+        background-color: #faf6f0;
+        border-right: 1px solid rgba(217, 119, 6, 0.1);
+        overflow-y: auto;
+        z-index: 40;
+        padding: 16px 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .table-sidebar-right {
+        position: fixed !important;
+        top: 70px;
+        right: 0;
+        bottom: 0;
+        width: 350px;
+        background-color: #faf6f0;
+        border-left: 1px solid rgba(217, 119, 6, 0.15);
+        display: flex;
+        flex-direction: column;
+        z-index: 40;
+    }
+
+    .table-main-content {
+        margin-left: 100px;
+        margin-right: 350px;
+        padding-top: 94px;
+        padding-bottom: 48px;
+        padding-left: 32px;
+        padding-right: 32px;
+        min-height: 100vh;
+        width: calc(100% - 450px);
+        background-color: #ffffff;
+    }
+
+    @media (max-width: 1024px) {
+        .table-sidebar-left {
+            position: fixed !important;
+            top: 70px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: auto;
+            flex-direction: row;
+            overflow-x: auto;
+            border-right: none;
+            border-bottom: 1px solid rgba(217, 119, 6, 0.1);
+            padding: 12px;
+            gap: 8px;
+            z-index: 45;
+        }
+
+        .table-sidebar-right {
+            position: fixed !important;
+            top: auto;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: auto;
+            max-height: 50vh;
+            border-left: none;
+            border-top: 1px solid rgba(217, 119, 6, 0.15);
+            z-index: 45;
+        }
+
+        .table-main-content {
+            margin-left: 0;
+            margin-right: 0;
+            padding-top: 140px;
+            padding-bottom: 350px;
+            padding-left: 16px;
+            padding-right: 16px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+    }
 }
 
