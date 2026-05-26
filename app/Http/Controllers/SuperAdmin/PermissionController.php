@@ -46,6 +46,12 @@ class PermissionController extends Controller
     public function update(Request $request): \Illuminate\Http\RedirectResponse
     {
         $role = $request->input('role');
+        
+        // Don't allow changing Super Admin permissions
+        if ($role === 'super_admin') {
+            return back()->with('error', 'Cannot change Super Admin permissions.');
+        }
+        
         $permissions = $request->input('permissions', []);
         
         foreach ($permissions as $permissionName => $data) {

@@ -2,6 +2,24 @@
 
 @section('title', 'Tables & QR')
 
+@php
+    $user = auth()->user();
+    $userPermissions = [];
+    if ($user) {
+        $userPermissions = \App\Models\Permission::where('role', $user->role->value)
+            ->get()
+            ->keyBy('permission');
+    }
+    
+    $can = function($permission, $action = 'view') use ($user, $userPermissions) {
+        if (!$user) return false;
+        if ($user->isSuperAdmin()) return true;
+        $perm = $userPermissions->get($permission);
+        if (!$perm) return false;
+        return $action === 'edit' ? $perm->can_edit : $perm->can_view;
+    };
+@endphp
+
 @section('content')
     <div class="staff-page-header">
         <div>
@@ -12,7 +30,7 @@
 
     <x-flash />
 
-    @if (auth()->user()->isSuperAdmin())
+    @if ($can('tables', 'edit'))
         <form method="POST" action="{{ route('super-admin.tables.store') }}" class="staff-card p-5 mb-8 flex flex-col sm:flex-row gap-3 max-w-lg">
             @csrf
             <input type="text" name="name" required placeholder="Table name (e.g. Patio 4)" class="staff-input flex-1">
@@ -28,7 +46,7 @@
                         <h2 class="font-sans text-xl font-semibold text-slate-900">{{ $table->name }}</h2>
                         <p class="text-xs text-slate-500 mt-1 font-mono">token: {{ $table->token }}</p>
                     </div>
-                    @if (auth()->user()->isSuperAdmin())
+                    @if ($can('tables', 'edit'))
                         <form method="POST" action="{{ route('super-admin.tables.destroy', $table) }}" onsubmit="return confirm('Delete this table?')">
                             @csrf
                             @method('DELETE')
@@ -40,7 +58,7 @@
                 <div class="bg-white rounded-lg p-4 flex justify-center mb-4 ring-1 ring-slate-200">
                     {!! $table->qrCode() !!}
                 </div>
-                @if (auth()->user()->isSuperAdmin())
+                @if ($can('tables', 'edit'))
                     <form method="POST" action="{{ route('super-admin.tables.regenerate-qr', $table) }}" class="mb-4">
                         @csrf
                         <button type="submit" class="w-full text-xs bg-slate-100 text-slate-700 py-2 rounded-lg hover:bg-slate-200 transition-colors">Regenerate QR Code</button>

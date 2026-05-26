@@ -2,13 +2,33 @@
 
 @section('title', 'Menu')
 
+@php
+    $user = auth()->user();
+    $userPermissions = [];
+    if ($user) {
+        $userPermissions = \App\Models\Permission::where('role', $user->role->value)
+            ->get()
+            ->keyBy('permission');
+    }
+    
+    $can = function($permission, $action = 'view') use ($user, $userPermissions) {
+        if (!$user) return false;
+        if ($user->isSuperAdmin()) return true;
+        $perm = $userPermissions->get($permission);
+        if (!$perm) return false;
+        return $action === 'edit' ? $perm->can_edit : $perm->can_view;
+    };
+@endphp
+
 @section('content')
     <div class="staff-page-header">
         <div>
             <h1 class="staff-page-title">Menu</h1>
             <p class="staff-page-subtitle">Add and edit food & drinks for table ordering.</p>
         </div>
-        <button onclick="openAddModal()" class="staff-btn-primary">Add item</button>
+        @if ($can('menu', 'edit'))
+            <button onclick="openAddModal()" class="staff-btn-primary">Add item</button>
+        @endif
     </div>
 
     <x-flash />
@@ -74,12 +94,14 @@
                                 @endif
                             </td>
                             <td class="text-right space-x-4">
-                                <button onclick="openEditModal({{ $item->toJson() }})" class="staff-link">Edit</button>
-                                <form method="POST" action="{{ route('admin.menu.destroy', $item) }}" class="inline" onsubmit="return confirm('Remove this item?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="staff-link-danger">Delete</button>
-                                </form>
+                                @if ($can('menu', 'edit'))
+                                    <button onclick="openEditModal({{ $item->toJson() }})" class="staff-link">Edit</button>
+                                    <form method="POST" action="{{ route('admin.menu.destroy', $item) }}" class="inline" onsubmit="return confirm('Remove this item?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="staff-link-danger">Delete</button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -99,7 +121,7 @@
     @endif
 
     <!-- Add Modal -->
-    <div id="addModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[9999] transition-opacity duration-200">
+    <div id="addModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-200 scale-95 opacity-0" id="addModalContent">
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-xl font-semibold text-slate-900">Add menu item</h2>
@@ -117,7 +139,7 @@
     </div>
 
     <!-- Edit Modal -->
-    <div id="editModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[9999] transition-opacity duration-200">
+    <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-200 scale-95 opacity-0" id="editModalContent">
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-xl font-semibold text-slate-900">Edit menu item</h2>
@@ -135,7 +157,7 @@
     </div>
 
     <!-- Crop Modal -->
-    <div id="cropModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[10000] transition-opacity duration-200 overflow-y-auto">
+    <div id="cropModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center z-[10000] transition-opacity duration-200 overflow-y-auto">
         <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 my-8 transform transition-all duration-200 scale-95 opacity-0" id="cropModalContent">
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-xl font-semibold text-slate-900">Crop Image</h2>
@@ -315,21 +337,28 @@
 
         function applyCrop() {
             if (cropper) {
-                const cropBoxData = cropper.getData();
-                console.log('Crop box data:', cropBoxData);
-                
-                // Get the original image before cropping
                 const prefix = document.getElementById('cropModal').dataset.prefix || 'add';
                 const previewImg = document.getElementById('previewImg-' + prefix);
-                const originalSrc = previewImg.src;
-                
-                // For now, just use the original image without cropping to test
-                console.log('Using original image without cropping');
                 const hiddenInput = document.getElementById('croppedImageData-' + prefix);
-                hiddenInput.value = originalSrc;
-                
-                console.log('Using original src, length:', originalSrc.length);
-                
+
+                // Get the cropped canvas
+                const canvas = cropper.getCroppedCanvas({
+                    maxWidth: 4096,
+                    maxHeight: 4096,
+                });
+
+                if (canvas) {
+                    // Convert canvas to data URL
+                    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    previewImg.src = croppedDataUrl;
+                    hiddenInput.value = croppedDataUrl;
+                    console.log('Image cropped successfully');
+                } else {
+                    console.error('Failed to crop image');
+                    // Fallback to original if cropping fails
+                    hiddenInput.value = previewImg.src;
+                }
+
                 closeCropModal();
             }
         }

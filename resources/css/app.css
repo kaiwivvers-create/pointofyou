@@ -169,7 +169,7 @@
     
     .kiosk-sidebar-left {
         position: fixed !important;
-        top: 80px;
+        top: 128px;
         left: 0;
         bottom: 0;
         width: 120px;
@@ -187,7 +187,7 @@
     
     .kiosk-sidebar-right {
         position: fixed !important;
-        top: 80px;
+        top: 128px;
         right: 0;
         bottom: 0;
         width: 380px;
@@ -293,7 +293,7 @@
 
     .table-sidebar-left {
         position: fixed !important;
-        top: 70px;
+        top: 118px;
         left: 0;
         bottom: 0;
         width: 100px;
@@ -310,7 +310,7 @@
 
     .table-sidebar-right {
         position: fixed !important;
-        top: 70px;
+        top: 118px;
         right: 0;
         bottom: 0;
         width: 350px;
@@ -319,6 +319,36 @@
         display: flex;
         flex-direction: column;
         z-index: 40;
+    }
+
+    /* Promo Banner */
+    .promo-banner {
+        position: fixed;
+        top: 128px;
+        left: 0;
+        right: 0;
+        z-index: 45;
+        animation: none;
+    }
+
+    .promo-content {
+        display: flex;
+        animation: scroll-left 20s linear infinite;
+        user-select: none;
+    }
+
+    @keyframes scroll-left {
+        0% {
+            transform: translateX(0);
+        }
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
+    .promo-content.dragging {
+        animation: none;
+        cursor: grabbing;
     }
 
     .table-main-content {
@@ -336,7 +366,7 @@
     @media (max-width: 1024px) {
         .table-sidebar-left {
             position: fixed !important;
-            top: 70px;
+            top: 118px;
             left: 0;
             right: 0;
             width: 100%;

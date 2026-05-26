@@ -36,7 +36,10 @@ class UserController extends Controller
 
         $users = $query->orderBy('name')->paginate(15);
 
-        return view('super-admin.users.index', compact('users'));
+        return view('super-admin.users.index', [
+            'users' => $users,
+            'roles' => [UserRole::SuperAdmin, UserRole::Owner, UserRole::Manager, UserRole::Admin, UserRole::Cashier],
+        ]);
     }
 
     public function create(): View

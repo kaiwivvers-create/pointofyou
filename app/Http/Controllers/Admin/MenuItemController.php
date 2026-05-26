@@ -69,14 +69,14 @@ class MenuItemController extends Controller
             $imageData = $request->input('cropped_image');
             \Log::info('Cropped image data length: ' . strlen($imageData));
             \Log::info('Cropped image starts with: ' . substr($imageData, 0, 50));
-            
+
             $image = str_replace('data:image/png;base64,', '', $imageData);
-            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
-            $image = str_replace('data:image/webp;base64,', '', $imageData);
+            $image = str_replace('data:image/jpeg;base64,', '', $image);
+            $image = str_replace('data:image/webp;base64,', '', $image);
             $image = base64_decode($image);
-            
+
             \Log::info('Decoded image size: ' . strlen($image) . ' bytes');
-            
+
             if (strlen($image) > 0) {
                 $fileName = 'menu-item-' . $menuItem->id . '-' . time() . '.jpg';
                 $path = 'menu-items/' . $fileName;
@@ -87,24 +87,6 @@ class MenuItemController extends Controller
             } else {
                 \Log::error('Decoded image is empty');
             }
-        } elseif ($request->hasFile('image')) {
-            // Handle cropped image from base64
-            $imageData = $request->input('cropped_image');
-            \Log::info('Cropped image data length: ' . strlen($imageData));
-            \Log::info('Cropped image starts with: ' . substr($imageData, 0, 50));
-            
-            $image = str_replace('data:image/png;base64,', '', $imageData);
-            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
-            $image = str_replace('data:image/webp;base64,', '', $imageData);
-            $image = base64_decode($image);
-            
-            \Log::info('Decoded image size: ' . strlen($image) . ' bytes');
-            
-            $fileName = 'menu-item-' . $menuItem->id . '-' . time() . '.jpg';
-            $path = 'menu-items/' . $fileName;
-            Storage::disk('public')->put($path, $image);
-            $menuItem->image = $path;
-            $menuItem->save();
         } elseif ($request->hasFile('image')) {
             $image = $request->file('image');
             $path = $image->store('menu-items', 'public');
@@ -152,16 +134,16 @@ class MenuItemController extends Controller
             }
             $imageData = $request->input('cropped_image');
             \Log::info('Update - Cropped image data length: ' . strlen($imageData));
-            
+
             $image = str_replace('data:image/png;base64,', '', $imageData);
-            $image = str_replace('data:image/jpeg;base64,', '', $imageData);
-            $image = str_replace('data:image/webp;base64,', '', $imageData);
+            $image = str_replace('data:image/jpeg;base64,', '', $image);
+            $image = str_replace('data:image/webp;base64,', '', $image);
             $image = base64_decode($image);
-            
+
             \Log::info('Update - Decoded image size: ' . strlen($image) . ' bytes');
-            
+
             if (strlen($image) > 0) {
-                $fileName = 'menu-item-' . $menu->id . '-' . time() . '.png';
+                $fileName = 'menu-item-' . $menu->id . '-' . time() . '.jpg';
                 $path = 'menu-items/' . $fileName;
                 Storage::disk('public')->put($path, $image);
                 $menu->image = $path;

@@ -17,19 +17,15 @@ class TableCart
     public static function add(Request $request, MenuItem $menuItem, int $quantity = 1): void
     {
         $cart = self::items($request);
-        $id = (string) $menuItem->id;
 
-        if (isset($cart[$id])) {
-            $cart[$id]['quantity'] += $quantity;
-        } else {
-            $cart[$id] = [
-                'menu_item_id' => $menuItem->id,
-                'name' => $menuItem->name,
-                'emoji' => $menuItem->emoji,
-                'unit_price' => (float) $menuItem->price,
-                'quantity' => $quantity,
-            ];
-        }
+        // Add as individual item instead of grouping
+        $cart[] = [
+            'menu_item_id' => $menuItem->id,
+            'name' => $menuItem->name,
+            'emoji' => $menuItem->emoji,
+            'unit_price' => (float) $menuItem->price,
+            'quantity' => $quantity,
+        ];
 
         $request->session()->put(self::SESSION_KEY, $cart);
     }
@@ -43,6 +39,34 @@ class TableCart
             unset($cart[$id]);
         } elseif (isset($cart[$id])) {
             $cart[$id]['quantity'] = $quantity;
+        }
+
+        $request->session()->put(self::SESSION_KEY, $cart);
+    }
+
+    public static function updateItemByIndex(Request $request, int $index, int $quantity): void
+    {
+        $cart = self::items($request);
+
+        if (isset($cart[$index])) {
+            if ($quantity <= 0) {
+                unset($cart[$index]);
+                $cart = array_values($cart); // re-index
+            } else {
+                $cart[$index]['quantity'] = $quantity;
+            }
+        }
+
+        $request->session()->put(self::SESSION_KEY, $cart);
+    }
+
+    public static function removeByIndex(Request $request, int $index): void
+    {
+        $cart = self::items($request);
+
+        if (isset($cart[$index])) {
+            unset($cart[$index]);
+            $cart = array_values($cart); // re-index
         }
 
         $request->session()->put(self::SESSION_KEY, $cart);

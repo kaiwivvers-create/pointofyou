@@ -84,6 +84,27 @@ class TableScanController extends Controller
         return back();
     }
 
+    public function updateCartItem(Request $request, int $index): RedirectResponse
+    {
+        $validated = $request->validate([
+            'quantity' => ['required', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        TableCart::updateItemByIndex(
+            $request,
+            $index,
+            (int) $validated['quantity']
+        );
+
+        return back();
+    }
+
+    public function removeCartItem(Request $request, int $index): RedirectResponse
+    {
+        TableCart::removeByIndex($request, $index);
+        return back();
+    }
+
     public function placeOrder(Request $request): RedirectResponse
     {
         $cart = TableCart::items($request);

@@ -90,6 +90,22 @@ class KioskController extends Controller
         return redirect()->back();
     }
 
+    public function updateCartItem(Request $request, $cartIndex)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1|max:20',
+        ]);
+
+        $cart = Session::get('kiosk_cart', []);
+        if (isset($cart[$cartIndex])) {
+            $cart[$cartIndex]['quantity'] = $request->integer('quantity');
+            $cart[$cartIndex]['line_total'] = $cart[$cartIndex]['unit_price'] * $request->integer('quantity');
+            Session::put('kiosk_cart', $cart);
+        }
+
+        return redirect()->back();
+    }
+
     public function checkout()
     {
         if (empty(Session::get('kiosk_cart'))) {

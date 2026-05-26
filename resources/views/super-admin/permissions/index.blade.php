@@ -20,6 +20,9 @@
                     <option value="{{ $key }}" {{ $selectedRole === $key ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
+            @if ($selectedRole === 'super_admin')
+                <span class="text-sm text-amber-600 font-medium">Super Admin has all permissions (cannot be changed)</span>
+            @endif
         </form>
     </div>
 
@@ -45,15 +48,15 @@
                                     <input type="checkbox" 
                                            name="permissions[{{ $key }}][can_view]" 
                                            value="1"
-                                           {{ $permissions->get($key)?->can_view ? 'checked' : '' }}
-                                           class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
+                                           {{ $selectedRole === 'super_admin' ? 'checked disabled' : ($permissions->get($key)?->can_view ? 'checked' : '') }}
+                                           class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300 {{ $selectedRole === 'super_admin' ? 'opacity-50 cursor-not-allowed' : '' }}">
                                 </td>
                                 <td class="text-center">
                                     <input type="checkbox" 
                                            name="permissions[{{ $key }}][can_edit]" 
                                            value="1"
-                                           {{ $permissions->get($key)?->can_edit ? 'checked' : '' }}
-                                           class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
+                                           {{ $selectedRole === 'super_admin' ? 'checked disabled' : ($permissions->get($key)?->can_edit ? 'checked' : '') }}
+                                           class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300 {{ $selectedRole === 'super_admin' ? 'opacity-50 cursor-not-allowed' : '' }}">
                                 </td>
                             </tr>
                         @endforeach
@@ -62,8 +65,10 @@
             </div>
         </div>
 
-        <div class="mt-6 flex justify-end">
-            <button type="submit" class="staff-btn-primary">Save Permissions</button>
-        </div>
+        @if ($selectedRole !== 'super_admin')
+            <div class="mt-6 flex justify-end">
+                <button type="submit" class="staff-btn-primary">Save Permissions</button>
+            </div>
+        @endif
     </form>
 @endsection

@@ -2,6 +2,24 @@
 
 @section('title', 'Cashier')
 
+@php
+    $user = auth()->user();
+    $userPermissions = [];
+    if ($user) {
+        $userPermissions = \App\Models\Permission::where('role', $user->role->value)
+            ->get()
+            ->keyBy('permission');
+    }
+    
+    $can = function($permission, $action = 'view') use ($user, $userPermissions) {
+        if (!$user) return false;
+        if ($user->isSuperAdmin()) return true;
+        $perm = $userPermissions->get($permission);
+        if (!$perm) return false;
+        return $action === 'edit' ? $perm->can_edit : $perm->can_view;
+    };
+@endphp
+
 @section('content')
     <div class="staff-page-header">
         <div>
@@ -32,10 +50,12 @@
                     </li>
                 @endforeach
             </ul>
-            <form method="POST" action="{{ route('cashier.orders.pay', $order) }}">
-                @csrf
-                <button type="submit" class="staff-btn-success w-full sm:w-auto">Mark as paid</button>
-            </form>
+            @if ($can('orders', 'edit'))
+                <form method="POST" action="{{ route('cashier.orders.pay', $order) }}">
+                    @csrf
+                    <button type="submit" class="staff-btn-success w-full sm:w-auto">Mark as paid</button>
+                </form>
+            @endif
         </div>
     @empty
         <div class="staff-card p-12 text-center mb-10">
