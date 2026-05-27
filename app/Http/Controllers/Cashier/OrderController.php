@@ -13,20 +13,14 @@ class OrderController extends Controller
 {
     public function index(): View
     {
-        $pendingOrders = Order::query()
+        $activeOrders = Order::query()
             ->with(['cafeTable', 'items'])
             ->where('status', OrderStatus::Pending)
+            ->orWhere('is_closed', false)
             ->latest()
             ->get();
 
-        $recentPaid = Order::query()
-            ->with(['cafeTable'])
-            ->where('status', OrderStatus::Paid)
-            ->latest()
-            ->limit(10)
-            ->get();
-
-        return view('cashier.orders.index', compact('pendingOrders', 'recentPaid'));
+        return view('cashier.orders.index', compact('activeOrders'));
     }
 
     public function markPaid(Request $request, Order $order): RedirectResponse
@@ -42,5 +36,18 @@ class OrderController extends Controller
         ]);
 
         return back()->with('success', "Order #{$order->id} marked as paid.");
+    }
+
+    public function markClosed(Request $request, Order $order): RedirectResponse
+    {
+        if ($order->is_closed) {
+            return back()->with('error', 'This order is already marked as picked up.');
+        }
+
+        $order->update([
+            'is_closed' => true,
+        ]);
+
+        return back()->with('success', "Order #{$order->id} marked as picked up/closed.");
     }
 }

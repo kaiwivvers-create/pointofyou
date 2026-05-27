@@ -159,7 +159,7 @@
         right: 0;
         height: 80px;
         background-color: #faf6f0;
-        border-bottom: 1px solid rgba(217, 119, 6, 0.15); /* border-amber-200/60 */
+
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -169,7 +169,7 @@
     
     .kiosk-sidebar-left {
         position: fixed !important;
-        top: 128px;
+        top: 80px;
         left: 0;
         bottom: 0;
         width: 120px;
@@ -177,7 +177,7 @@
         border-right: 1px solid rgba(217, 119, 6, 0.1); /* border-amber-200/50 */
         overflow-y: auto;
         z-index: 40;
-        padding: 24px 0;
+        padding: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -187,7 +187,7 @@
     
     .kiosk-sidebar-right {
         position: fixed !important;
-        top: 128px;
+        top: 80px;
         right: 0;
         bottom: 0;
         width: 380px;
@@ -202,7 +202,8 @@
     .kiosk-main-content {
         margin-left: 120px;
         margin-right: 380px;
-        padding-top: 104px; /* 80px header + 24px padding */
+        margin-top: 0;
+        padding-top: 100px;
         padding-bottom: 48px;
         padding-left: 32px;
         padding-right: 32px;
@@ -235,16 +236,19 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         z-index: 1000 !important;
-        display: none;
+        display: flex;
+        visibility: hidden;
+        pointer-events: none;
         align-items: center;
         justify-content: center;
         padding: 16px;
         opacity: 0;
-        transition: opacity 0.3s ease;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
     }
     
     .kiosk-modal-backdrop.show {
-        display: flex !important;
+        visibility: visible;
+        pointer-events: auto;
         opacity: 1 !important;
     }
     
@@ -293,7 +297,7 @@
 
     .table-sidebar-left {
         position: fixed !important;
-        top: 118px;
+        top: 70px;
         left: 0;
         bottom: 0;
         width: 100px;
@@ -301,7 +305,7 @@
         border-right: 1px solid rgba(217, 119, 6, 0.1);
         overflow-y: auto;
         z-index: 40;
-        padding: 16px 8px;
+        padding: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -310,7 +314,7 @@
 
     .table-sidebar-right {
         position: fixed !important;
-        top: 118px;
+        top: 70px;
         right: 0;
         bottom: 0;
         width: 350px;
@@ -318,43 +322,17 @@
         border-left: 1px solid rgba(217, 119, 6, 0.15);
         display: flex;
         flex-direction: column;
+        overflow: hidden;
         z-index: 40;
     }
 
-    /* Promo Banner */
-    .promo-banner {
-        position: fixed;
-        top: 128px;
-        left: 0;
-        right: 0;
-        z-index: 45;
-        animation: none;
-    }
-
-    .promo-content {
-        display: flex;
-        animation: scroll-left 20s linear infinite;
-        user-select: none;
-    }
-
-    @keyframes scroll-left {
-        0% {
-            transform: translateX(0);
-        }
-        100% {
-            transform: translateX(-50%);
-        }
-    }
-
-    .promo-content.dragging {
-        animation: none;
-        cursor: grabbing;
-    }
+    /* Promo Banner - removed old CSS, now handled inline */
 
     .table-main-content {
         margin-left: 100px;
         margin-right: 350px;
-        padding-top: 94px;
+        margin-top: 0;
+        padding-top: 100px;
         padding-bottom: 48px;
         padding-left: 32px;
         padding-right: 32px;
@@ -397,7 +375,7 @@
         .table-main-content {
             margin-left: 0;
             margin-right: 0;
-            padding-top: 140px;
+            padding-top: 70px;
             padding-bottom: 350px;
             padding-left: 16px;
             padding-right: 16px;
@@ -408,3 +386,26 @@
     }
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--accent-color, #fbbf24);
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--primary-color, #78350f);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-color, #fbbf24) transparent;
+}

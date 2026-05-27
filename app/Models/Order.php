@@ -15,6 +15,7 @@ class Order extends Model
         'order_type',
         'total',
         'notes',
+        'is_closed',
         'paid_by',
         'paid_at',
     ];
@@ -24,6 +25,7 @@ class Order extends Model
         return [
             'status' => OrderStatus::class,
             'total' => 'decimal:2',
+            'is_closed' => 'boolean',
             'paid_at' => 'datetime',
         ];
     }
@@ -46,5 +48,19 @@ class Order extends Model
     public function isPending(): bool
     {
         return $this->status === OrderStatus::Pending;
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->is_closed;
+    }
+
+    public function isFullyReady(): bool
+    {
+        // If there are no items, it's not ready. Otherwise, it's ready if ALL items are ready.
+        if ($this->items->isEmpty()) {
+            return false;
+        }
+        return $this->items->every(fn($item) => $item->is_ready);
     }
 }

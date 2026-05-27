@@ -1,12 +1,18 @@
 <?php
 
 use App\Http\Controllers\Admin\CafeTableController;
+use App\Http\Controllers\Admin\MenuCategoryController;
 use App\Http\Controllers\Admin\MenuItemController;
+use App\Http\Controllers\Admin\CurrentOrdersController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
+use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\OperationalExpenseController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\SuperAdmin\BrandSettingsController;
 use App\Http\Controllers\SuperAdmin\PermissionController;
+use App\Http\Controllers\SuperAdmin\RoleController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use App\Http\Controllers\Table\TableScanController;
 use App\Http\Controllers\KioskController;
@@ -51,8 +57,8 @@ Route::get('/login', [AdminAuthController::class, 'create']);
 Route::middleware('auth')->group(function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'destroy'])->name('admin.logout');
 
-    // Super Admin (must be first to avoid conflicts)
-    Route::middleware('role:super_admin')->prefix('super-admin')->name('super-admin.')->group(function () {
+    // Super Admin / Management
+    Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('/', function () {
             return view('super-admin.dashboard', [
                 'staffCount' => \App\Models\User::count(),
@@ -60,24 +66,41 @@ Route::middleware('auth')->group(function () {
                 'tableCount' => \App\Models\CafeTable::count(),
                 'pendingOrders' => \App\Models\Order::where('status', 'pending')->count(),
             ]);
-        })->name('dashboard');
+        })->name('dashboard')->middleware('permission:dashboard');
 
-        Route::get('users', [UserController::class, 'index'])->name('users.index');
-        Route::get('users/create', [UserController::class, 'create'])->name('users.create');
-        Route::post('users', [UserController::class, 'store'])->name('users.store');
-        Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-        Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
-        Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::middleware('permission:users')->group(function () {
+            Route::get('users', [UserController::class, 'index'])->name('users.index');
+            Route::get('users/create', [UserController::class, 'create'])->name('users.create');
+            Route::post('users', [UserController::class, 'store'])->name('users.store');
+            Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+            Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        });
 
-        Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
-        Route::post('permissions', [PermissionController::class, 'update'])->name('permissions.update');
+        Route::middleware('permission:permissions')->group(function () {
+            Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
+            Route::post('permissions', [PermissionController::class, 'update'])->name('permissions.update');
+        });
 
-        Route::get('brand-settings', [BrandSettingsController::class, 'index'])->name('brand-settings.index');
-        Route::post('brand-settings', [BrandSettingsController::class, 'update'])->name('brand-settings.update');
+        Route::middleware('permission:roles')->group(function () {
+            Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+            Route::get('roles/create', [RoleController::class, 'create'])->name('roles.create');
+            Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
+            Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
+            Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+            Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+        });
 
-        Route::post('tables', [CafeTableController::class, 'store'])->name('tables.store');
-        Route::post('tables/{cafeTable}/regenerate-qr', [CafeTableController::class, 'regenerateQr'])->name('tables.regenerate-qr');
-        Route::delete('tables/{cafeTable}', [CafeTableController::class, 'destroy'])->name('tables.destroy');
+        Route::middleware('permission:brand_settings')->group(function () {
+            Route::get('brand-settings', [BrandSettingsController::class, 'index'])->name('brand-settings.index');
+            Route::post('brand-settings', [BrandSettingsController::class, 'update'])->name('brand-settings.update');
+        });
+
+        Route::middleware('permission:tables')->group(function () {
+            Route::post('tables', [CafeTableController::class, 'store'])->name('tables.store');
+            Route::post('tables/{cafeTable}/regenerate-qr', [CafeTableController::class, 'regenerateQr'])->name('tables.regenerate-qr');
+            Route::delete('tables/{cafeTable}', [CafeTableController::class, 'destroy'])->name('tables.destroy');
+        });
     });
 
     // Owner
@@ -169,13 +192,28 @@ Route::middleware('auth')->group(function () {
         })->name('dashboard')->middleware('permission:dashboard');
 
         Route::resource('menu', MenuItemController::class)->except(['show'])->middleware('permission:menu');
+        Route::resource('promos', PromoController::class)->except(['show'])->middleware('permission:promos');
         Route::get('tables', [CafeTableController::class, 'index'])->name('tables.index')->middleware('permission:tables');
+
+        // Menu Category Manager
+        Route::middleware('permission:categories')->group(function () {
+            Route::get('menu-categories', [MenuCategoryController::class, 'index'])->name('menu-categories.index');
+            Route::post('menu-categories', [MenuCategoryController::class, 'store'])->name('menu-categories.store');
+            Route::post('menu-categories/reorder', [MenuCategoryController::class, 'reorder'])->name('menu-categories.reorder');
+            Route::patch('menu-categories/{category}/toggle', [MenuCategoryController::class, 'toggleVisibility'])->name('menu-categories.toggle');
+            Route::delete('menu-categories/{category}', [MenuCategoryController::class, 'destroy'])->name('menu-categories.destroy');
+        });
+
+        // Kitchen Dashboard
+        Route::get('current-orders', [CurrentOrdersController::class, 'index'])->name('current-orders.index')->middleware('permission:kitchen');
+        Route::patch('current-orders/items/{orderItem}/toggle-ready', [CurrentOrdersController::class, 'toggleReady'])->name('current-orders.toggle-ready')->middleware('permission:kitchen');
     });
 
     // Cashier
     Route::prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/', [CashierOrderController::class, 'index'])->name('dashboard')->middleware('permission:orders');
         Route::post('orders/{order}/pay', [CashierOrderController::class, 'markPaid'])->name('orders.pay')->middleware('permission:orders');
+        Route::post('orders/{order}/close', [CashierOrderController::class, 'markClosed'])->name('orders.close')->middleware('permission:orders');
     });
 
     // Reports
@@ -184,5 +222,34 @@ Route::middleware('auth')->group(function () {
         Route::get('export/csv', [ReportsController::class, 'exportCsv'])->name('export.csv')->middleware('permission:reports');
         Route::get('export/pdf', [ReportsController::class, 'exportPdf'])->name('export.pdf')->middleware('permission:reports');
         Route::get('print', [ReportsController::class, 'printView'])->name('print')->middleware('permission:reports');
+    });
+
+    // ERP Modules
+    Route::middleware('permission:inventory')->prefix('inventory')->name('inventory.')->group(function () {
+        Route::get('/', [InventoryController::class, 'index'])->name('index');
+        Route::get('/categories', [InventoryController::class, 'categories'])->name('categories');
+        Route::get('/stock-movements', [InventoryController::class, 'stockMovements'])->name('stock-movements');
+        Route::post('/products', [InventoryController::class, 'storeProduct'])->name('products.store');
+        Route::post('/categories', [InventoryController::class, 'storeCategory'])->name('categories.store');
+        Route::post('/stock-movements', [InventoryController::class, 'storeStockMovement'])->name('stock-movements.store');
+    });
+
+    Route::middleware('permission:payroll')->prefix('payroll')->name('payroll.')->group(function () {
+        Route::get('/', [PayrollController::class, 'index'])->name('index');
+        Route::get('/employees', [PayrollController::class, 'employees'])->name('employees');
+        Route::get('/salaries', [PayrollController::class, 'salaries'])->name('salaries');
+        Route::get('/attendance', [PayrollController::class, 'attendance'])->name('attendance');
+        Route::post('/employees', [PayrollController::class, 'storeEmployee'])->name('employees.store');
+        Route::post('/salaries', [PayrollController::class, 'storeSalary'])->name('salaries.store');
+        Route::post('/attendance', [PayrollController::class, 'storeAttendance'])->name('attendance.store');
+    });
+
+    Route::middleware('permission:expenses')->prefix('expenses')->name('expenses.')->group(function () {
+        Route::get('/', [OperationalExpenseController::class, 'index'])->name('index');
+        Route::get('/categories', [OperationalExpenseController::class, 'categories'])->name('categories');
+        Route::post('/', [OperationalExpenseController::class, 'storeExpense'])->name('store');
+        Route::post('/categories', [OperationalExpenseController::class, 'storeCategory'])->name('categories.store');
+        Route::post('/{id}/approve', [OperationalExpenseController::class, 'approveExpense'])->name('approve');
+        Route::post('/{id}/reject', [OperationalExpenseController::class, 'rejectExpense'])->name('reject');
     });
 });

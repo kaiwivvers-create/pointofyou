@@ -15,6 +15,8 @@ class OrderItem extends Model
         'unit_price',
         'line_total',
         'modifications',
+        'notes',
+        'is_ready',
     ];
 
     protected function casts(): array
@@ -23,6 +25,7 @@ class OrderItem extends Model
             'unit_price' => 'decimal:2',
             'line_total' => 'decimal:2',
             'modifications' => 'array',
+            'is_ready' => 'boolean',
         ];
     }
 

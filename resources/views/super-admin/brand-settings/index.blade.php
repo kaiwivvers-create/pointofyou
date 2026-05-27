@@ -50,6 +50,11 @@
                     </div>
                 </div>
 
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Landing Page Badge</label>
+                    <input type="text" name="landing_badge" id="landing_badge" value="{{ $settings->landing_badge ?? 'Artisan bakery since 2026' }}" class="staff-input" placeholder="e.g., Artisan bakery since 2026" oninput="updatePreview()">
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Landing Page Kicker</label>
                     <input type="text" name="landing_kicker" id="landing_kicker" value="{{ $settings->landing_kicker }}" class="staff-input" placeholder="e.g., Freshly baked goodness, every day." oninput="updatePreview()">
@@ -108,12 +113,19 @@
             <div class="staff-card p-6 mb-6">
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Color Scheme</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Primary Color</label>
                         <div class="flex gap-2">
                             <input type="color" name="primary_color" id="primary_color" value="{{ $settings->primary_color }}" class="h-10 w-16 rounded cursor-pointer" oninput="updatePreview()">
                             <input type="text" name="primary_color" id="primary_color_text" value="{{ $settings->primary_color }}" class="staff-input flex-1" required maxlength="7" oninput="updatePreview()">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Primary Font Color</label>
+                        <div class="flex gap-2">
+                            <input type="color" name="primary_font_color" id="primary_font_color" value="{{ $settings->primary_font_color }}" class="h-10 w-16 rounded cursor-pointer" oninput="updatePreview()">
+                            <input type="text" name="primary_font_color" id="primary_font_color_text" value="{{ $settings->primary_font_color }}" class="staff-input flex-1" required maxlength="7" oninput="updatePreview()">
                         </div>
                     </div>
                     <div>
@@ -158,7 +170,7 @@
                     
                     <!-- Hero Preview -->
                     <div class="rounded-lg p-6 mb-6 text-white" style="background-color: {{ $settings->primary_color }};">
-                        <p class="text-sm opacity-90 mb-2">Artisan bakery since 2018 ✨</p>
+                        <p id="preview-badge" class="text-sm opacity-90 mb-2">{{ $settings->landing_badge ?? 'Artisan bakery since 2026' }}</p>
                         <h3 id="preview-kicker" class="text-2xl font-semibold leading-tight">{{ $settings->landing_kicker ?? 'Baked with love, served with warmth' }}</h3>
                     </div>
                     
@@ -189,6 +201,10 @@
                             <div class="text-center">
                                 <div class="w-12 h-12 rounded-lg mb-1" style="background-color: {{ $settings->primary_color }};"></div>
                                 <p class="text-xs text-slate-600">Primary</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-12 h-12 rounded-lg mb-1" style="background-color: {{ $settings->primary_font_color }};"></div>
+                                <p class="text-xs text-slate-600">Font</p>
                             </div>
                             <div class="text-center">
                                 <div class="w-12 h-12 rounded-lg mb-1" style="background-color: {{ $settings->secondary_color }};"></div>
@@ -231,6 +247,7 @@
         function updatePreview() {
             const appName = document.getElementById('app_name').value;
             const logoFallback = document.getElementById('logo_fallback').value;
+            const landingBadge = document.getElementById('landing_badge').value;
             const landingKicker = document.getElementById('landing_kicker').value;
             const address = document.getElementById('address').value;
             const hours = document.getElementById('hours').value;
@@ -238,17 +255,20 @@
             const facebook = document.getElementById('facebook').value;
             const phone = document.getElementById('phone').value;
             const primaryColor = document.getElementById('primary_color').value;
+            const primaryFontColor = document.getElementById('primary_font_color').value;
             const secondaryColor = document.getElementById('secondary_color').value;
             const accentColor = document.getElementById('accent_color').value;
 
             // Sync color inputs
             document.getElementById('primary_color_text').value = primaryColor;
+            document.getElementById('primary_font_color_text').value = primaryFontColor;
             document.getElementById('secondary_color_text').value = secondaryColor;
             document.getElementById('accent_color_text').value = accentColor;
 
             // Update preview
             document.getElementById('preview-app-name').textContent = appName;
             document.getElementById('preview-app-name').style.color = primaryColor;
+            document.getElementById('preview-badge').textContent = landingBadge || 'Artisan bakery since 2026';
             document.getElementById('preview-kicker').textContent = landingKicker || 'Baked with love, served with warmth';
             document.getElementById('preview-address').textContent = address || '123 Baker Street';
             document.getElementById('preview-hours').textContent = hours || "Mon – Fri: 6am – 3pm\nSat – Sun: 7am – 4pm";
@@ -270,8 +290,9 @@
             // Update color swatches
             const colorSwatches = document.querySelectorAll('#preview-container .w-12');
             colorSwatches[0].style.backgroundColor = primaryColor;
-            colorSwatches[1].style.backgroundColor = secondaryColor;
-            colorSwatches[2].style.backgroundColor = accentColor;
+            colorSwatches[1].style.backgroundColor = primaryFontColor;
+            colorSwatches[2].style.backgroundColor = secondaryColor;
+            colorSwatches[3].style.backgroundColor = accentColor;
         }
 
         function openCropModal(event) {
@@ -361,6 +382,10 @@
         // Sync color text inputs to color pickers
         document.getElementById('primary_color_text').addEventListener('input', function() {
             document.getElementById('primary_color').value = this.value;
+            updatePreview();
+        });
+        document.getElementById('primary_font_color_text').addEventListener('input', function() {
+            document.getElementById('primary_font_color').value = this.value;
             updatePreview();
         });
         document.getElementById('secondary_color_text').addEventListener('input', function() {

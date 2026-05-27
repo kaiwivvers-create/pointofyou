@@ -13,11 +13,22 @@
     <link href="https://fonts.bunny.net/css?family=fredoka:400,500,600,700|nunito:400,500,600,700" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        body {
+        :root {
+            --primary-color: {{ $brandSettings->primary_color }};
+            --primary-font-color: {{ $brandSettings->primary_font_color }};
+            --secondary-color: {{ $brandSettings->secondary_color }};
+            --accent-color: {{ $brandSettings->accent_color }};
+        }
+        .text-primary-font {
+            color: var(--primary-font-color) !important;
+        }
+        html, body {
             font-family: 'Nunito', sans-serif;
             background-color: #faf6f0;
             color: #292524;
             -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
         }
         
         h1, h2, h3, h4, h5, h6, .font-display {

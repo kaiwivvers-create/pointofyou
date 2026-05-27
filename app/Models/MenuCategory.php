@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+
+class MenuCategory extends Model
+{
+    protected $fillable = [
+        'name',
+        'label',
+        'sort_order',
+        'is_visible',
+    ];
+
+    protected $casts = [
+        'is_visible' => 'boolean',
+        'sort_order' => 'integer',
+    ];
+
+    /**
+     * Scope: only visible categories, ordered by sort_order.
+     */
+    public function scopeVisible(Builder $query): Builder
+    {
+        return $query->where('is_visible', true)->orderBy('sort_order');
+    }
+
+    /**
+     * All categories ordered by sort_order.
+     */
+    public static function getOrdered()
+    {
+        return static::orderBy('sort_order')->get();
+    }
+
+    /**
+     * Default icon URLs keyed by category name.
+     */
+    public static function defaultIcon(string $name): string
+    {
+        return match ($name) {
+            'promo'  => 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&auto=format&fit=crop&q=80',
+            'food'   => 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=120&auto=format&fit=crop&q=80',
+            'drinks' => 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=120&auto=format&fit=crop&q=80',
+            'pastry' => 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=120&auto=format&fit=crop&q=80',
+            default  => 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&auto=format&fit=crop&q=80',
+        };
+    }
+}

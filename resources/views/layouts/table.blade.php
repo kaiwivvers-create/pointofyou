@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Menu') — Golden Crumb</title>
+    <title>@yield('title', 'Menu') — {{ $brandSettings->app_name }}</title>
     @php
         $brandSettings = \App\Models\BrandSettings::getSettings();
         $favicon = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : asset('favicon.ico');
@@ -13,11 +13,22 @@
     <link href="https://fonts.bunny.net/css?family=fredoka:400,500,600,700|nunito:400,500,600,700" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        body {
+        :root {
+            --primary-color: {{ $brandSettings->primary_color }};
+            --primary-font-color: {{ $brandSettings->primary_font_color }};
+            --secondary-color: {{ $brandSettings->secondary_color }};
+            --accent-color: {{ $brandSettings->accent_color }};
+        }
+        .text-primary-font {
+            color: var(--primary-font-color) !important;
+        }
+        html, body {
             font-family: 'Nunito', sans-serif;
             background-color: #faf6f0;
             color: #292524;
             -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
         }
 
         h1, h2, h3, h4, h5, h6, .font-display {
@@ -40,7 +51,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-[#faf6f0] selection:bg-amber-500 selection:text-white">
+<body class="min-h-screen bg-[#faf6f0] selection:bg-amber-500 selection:text-white flex flex-col">
     @yield('content')
 </body>
 </html>

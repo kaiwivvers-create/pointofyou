@@ -26,6 +26,7 @@ class BrandSettingsController extends Controller
             'logo_file_raw' => 'nullable|image|max:2048',
             'logo_cropped' => 'nullable|string',
             'landing_kicker' => 'nullable|string|max:255',
+            'landing_badge' => 'nullable|string|max:255',
             'fan_favourite_ids' => 'nullable|array',
             'fan_favourite_ids.*' => 'exists:menu_items,id',
             'address' => 'nullable|string|max:255',
@@ -36,6 +37,7 @@ class BrandSettingsController extends Controller
             'primary_color' => 'required|string|max:7',
             'secondary_color' => 'required|string|max:7',
             'accent_color' => 'required|string|max:7',
+            'primary_font_color' => 'required|string|max:7',
         ]);
 
         $settings = BrandSettings::getSettings();

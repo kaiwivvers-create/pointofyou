@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
-use App\Enums\UserRole;
+use App\Models\Role;
 use App\Http\Controllers\Controller;
+use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,25 +28,21 @@ class UserController extends Controller
 
         // Filter by role
         if ($request->filled('role')) {
-            try {
-                $query->where('role', UserRole::from($request->role));
-            } catch (\ValueError $e) {
-                // Invalid role, ignore filter
-            }
+            $query->where('role_id', $request->role);
         }
 
         $users = $query->orderBy('name')->paginate(15);
 
         return view('super-admin.users.index', [
             'users' => $users,
-            'roles' => [UserRole::SuperAdmin, UserRole::Owner, UserRole::Manager, UserRole::Admin, UserRole::Cashier],
+            'roles' => Role::all(),
         ]);
     }
 
     public function create(): View
     {
         return view('super-admin.users.create', [
-            'roles' => [UserRole::SuperAdmin, UserRole::Owner, UserRole::Manager, UserRole::Admin, UserRole::Cashier],
+            'roles' => Role::all(),
         ]);
     }
 
@@ -53,12 +50,35 @@ class UserController extends Controller
     {
         $validated = $this->validateUser($request);
 
-        User::create([
+        $role = Role::find($validated['role']);
+        
+        $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
-            'role' => UserRole::from($validated['role']),
+            'role_id' => $validated['role'],
+            'role' => $role ? \App\Enums\UserRole::tryFrom($role->slug) ?? \App\Enums\UserRole::Cashier : \App\Enums\UserRole::Cashier,
         ]);
+
+        // Create employee record for staff roles with is_paid true or staff roles
+        if ($role && ($role->is_paid || in_array($role->slug, ['cashier', 'admin', 'manager']))) {
+            $nameParts = explode(' ', $validated['name'], 2);
+            $firstName = $nameParts[0];
+            $lastName = $nameParts[1] ?? '';
+
+            $employee = Employee::create([
+                'employee_id' => 'EMP-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $validated['email'],
+                'position' => $role->name,
+                'base_salary' => $role->base_salary ?? 0,
+                'status' => 'active',
+            ]);
+
+            $user->employee_id = $employee->id;
+            $user->save();
+        }
 
         return redirect()->route('super-admin.users.index')->with('success', 'Staff user created.');
     }
@@ -67,7 +87,7 @@ class UserController extends Controller
     {
         return view('super-admin.users.edit', [
             'user' => $user,
-            'roles' => [UserRole::SuperAdmin, UserRole::Admin, UserRole::Cashier],
+            'roles' => Role::all(),
         ]);
     }
 
@@ -77,7 +97,10 @@ class UserController extends Controller
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
-        $user->role = UserRole::from($validated['role']);
+        $user->role_id = $validated['role'];
+        
+        $role = Role::find($validated['role']);
+        $user->role = $role ? \App\Enums\UserRole::tryFrom($role->slug) ?? \App\Enums\UserRole::Cashier : \App\Enums\UserRole::Cashier;
 
         if (! empty($validated['password'])) {
             $user->password = $validated['password'];
@@ -106,7 +129,7 @@ class UserController extends Controller
     {
         $passwordRule = $user
             ? ['nullable', 'string', 'min:8']
-            : ['required', 'string', 'min:8'];
+            : ['required', 'string', 'min:8', 'confirmed'];
 
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -117,7 +140,7 @@ class UserController extends Controller
                 Rule::unique('users', 'email')->ignore($user?->id),
             ],
             'password' => $passwordRule,
-            'role' => ['required', Rule::in(array_column(UserRole::cases(), 'value'))],
+            'role' => ['required', 'exists:roles,id'],
         ]);
     }
 }

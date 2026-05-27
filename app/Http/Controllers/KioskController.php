@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CafeTable;
+use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Promo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
@@ -29,11 +31,21 @@ class KioskController extends Controller
             return redirect()->route('kiosk.welcome');
         }
 
-        $menuItems = MenuItem::where('is_available', true)->with('modifications')->get()->groupBy('category');
+        // Load visible categories in saved order
+        $orderedCategories = MenuCategory::visible()->pluck('name');
+
+        $allItems = MenuItem::where('is_available', true)->orderBy('name')->with('modifications')->get()->groupBy('category');
+
+        // Build ordered collection: only visible categories, in sort_order sequence
+        $menuItems = $orderedCategories->mapWithKeys(function ($cat) use ($allItems) {
+            return [$cat => $allItems->get($cat, collect())];
+        })->filter(fn($items) => $items->isNotEmpty());
+
         $cart = Session::get('kiosk_cart', []);
         $cartTotal = collect($cart)->sum('line_total');
+        $promos = Promo::active()->ordered()->get();
 
-        return view('kiosk.menu', compact('menuItems', 'cart', 'cartTotal'));
+        return view('kiosk.menu', compact('menuItems', 'cart', 'cartTotal', 'promos'));
     }
 
     public function addToCart(Request $request, MenuItem $menuItem)
@@ -42,6 +54,7 @@ class KioskController extends Controller
             'quantity' => 'required|integer|min:1',
             'modifications' => 'nullable|array',
             'modifications.*' => 'exists:menu_item_modifications,id',
+            'notes' => 'nullable|string|max:255',
         ]);
 
         $quantity = $request->integer('quantity');
@@ -73,6 +86,7 @@ class KioskController extends Controller
             'unit_price' => $unitPrice,
             'line_total' => $lineTotal,
             'modifications' => $selectedMods,
+            'notes' => $request->input('notes'),
         ];
 
         Session::push('kiosk_cart', $cartItem);
@@ -94,12 +108,16 @@ class KioskController extends Controller
     {
         $request->validate([
             'quantity' => 'required|integer|min:1|max:20',
+            'notes' => 'nullable|string|max:255',
         ]);
 
         $cart = Session::get('kiosk_cart', []);
         if (isset($cart[$cartIndex])) {
             $cart[$cartIndex]['quantity'] = $request->integer('quantity');
             $cart[$cartIndex]['line_total'] = $cart[$cartIndex]['unit_price'] * $request->integer('quantity');
+            if ($request->has('notes')) {
+                $cart[$cartIndex]['notes'] = $request->input('notes');
+            }
             Session::put('kiosk_cart', $cart);
         }
 
@@ -164,6 +182,7 @@ class KioskController extends Controller
                 'unit_price' => $item['unit_price'],
                 'line_total' => $item['line_total'],
                 'modifications' => $item['modifications'] ?? [],
+                'notes' => $item['notes'] ?? null,
             ]);
         }
 

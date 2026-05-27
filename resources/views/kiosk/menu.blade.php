@@ -1,7 +1,9 @@
 @extends('kiosk.layout')
 
 @section('content')
-
+    @php
+        $brandSettings = \App\Models\BrandSettings::getSettings();
+    @endphp
 <div class="kiosk-container">
     <!-- Header -->
     <header class="kiosk-header shadow-sm">
@@ -11,41 +13,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="font-display text-2xl font-bold text-amber-950 tracking-tight">Golden Crumb</h1>
+            <h1 class="font-display text-2xl font-bold text-primary-font tracking-tight">{{ $brandSettings->app_name }}</h1>
         </div>
         <div class="bg-amber-100 text-amber-900 px-5 py-2.5 rounded-full font-bold text-sm tracking-wide uppercase shadow-sm border border-amber-200/50">
             {{ str_replace('_', ' ', session('kiosk_order_type', '')) }}
         </div>
     </header>
 
-    <!-- Promo Banner -->
-    <div id="promoBanner" class="promo-banner bg-gradient-to-r from-amber-600 to-amber-800 text-white py-3 overflow-hidden cursor-grab active:cursor-grabbing select-none" style="position: fixed; top: 80px; left: 120px; right: 350px; z-index: 45;">
-        <div id="promoContent" class="promo-content flex items-center gap-8 whitespace-nowrap">
-            <span class="text-lg font-bold">🎉 Special Offer: Buy 2 Pastries Get 1 Free!</span>
-            <span class="text-lg font-bold">☕ Free Coffee with any Breakfast Combo!</span>
-            <span class="text-lg font-bold">🍪 20% Off All Cookies Today!</span>
-            <span class="text-lg font-bold">🥐 Freshly Baked Daily - Order Now!</span>
-            <span class="text-lg font-bold">🎉 Special Offer: Buy 2 Pastries Get 1 Free!</span>
-            <span class="text-lg font-bold">☕ Free Coffee with any Breakfast Combo!</span>
-            <span class="text-lg font-bold">🍪 20% Off All Cookies Today!</span>
-            <span class="text-lg font-bold">🥐 Freshly Baked Daily - Order Now!</span>
-        </div>
-    </div>
-
     <!-- Left Sidebar: Categories -->
     <aside class="kiosk-sidebar-left hide-scrollbar">
-        @foreach([
-            'promo' => ['icon' => 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&auto=format&fit=crop&q=80', 'label' => 'Promo'],
-            'food' => ['icon' => 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=120&auto=format&fit=crop&q=80', 'label' => 'Food'],
-            'drinks' => ['icon' => 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=120&auto=format&fit=crop&q=80', 'label' => 'Drinks'],
-            'pastry' => ['icon' => 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=120&auto=format&fit=crop&q=80', 'label' => 'Pastry']
-        ] as $cat => $data)
-            <button onclick="document.getElementById('cat-{{ $cat }}')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
+        @foreach(\App\Models\MenuCategory::visible()->get() as $category)
+            <button onclick="document.getElementById('cat-{{ $category->name }}')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
                 class="category-btn flex flex-col items-center gap-2 p-2 w-24 rounded-2xl transition-all hover:bg-amber-50 hover:scale-105 group focus:outline-none cursor-pointer">
                 <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-100 shadow-sm group-hover:border-amber-500 transition-colors">
-                    <img src="{{ $data['icon'] }}" class="category-img" alt="{{ $data['label'] }}">
+                    <img src="{{ \App\Models\MenuCategory::defaultIcon($category->name) }}" class="category-img" alt="{{ $category->label }}">
                 </div>
-                <span class="text-[11px] font-bold text-stone-600 uppercase tracking-wider group-hover:text-amber-800">{{ $data['label'] }}</span>
+                <span class="text-[11px] font-bold text-stone-600 uppercase tracking-wider group-hover:text-amber-800">{{ $category->label }}</span>
             </button>
         @endforeach
     </aside>
@@ -62,7 +45,7 @@
             <span class="bg-amber-800 text-white text-sm font-bold w-8 h-8 flex items-center justify-center rounded-full shadow-sm">{{ count($cart) }}</span>
         </div>
         
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar">
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar min-h-0">
             @php
                 // Group cart items by menu_item_id and modifications
                 $groupedCart = [];
@@ -81,7 +64,8 @@
                         $groupedCart[$key]['items'][] = [
                             'index' => $index,
                             'quantity' => $cartItem['quantity'],
-                            'line_total' => $cartItem['line_total']
+                            'line_total' => $cartItem['line_total'],
+                            'notes' => $cartItem['notes'] ?? ''
                         ];
                     }
                 }
@@ -118,6 +102,8 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
+                            @else
+                                <button onclick="openEditModal({{ $group['items'][0]['index'] }}, '{{ addslashes($group['name']) }}', {{ $group['items'][0]['quantity'] }}, {{ $group['unit_price'] }}, '{{ addslashes($group['items'][0]['notes'] ?? '') }}', {{ !empty($group['modifications']) ? 'true' : 'false' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
                             @endif
                             <form method="POST" action="{{ route('kiosk.cart.remove', $group['items'][0]['index']) }}">
                                 @csrf
@@ -125,23 +111,40 @@
                             </form>
                         </div>
                     </div>
+                    
+                    @if(!$hasMultipleItems && !empty($group['items'][0]['notes']))
+                        <div class="px-4 pb-4 pt-0">
+                            <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                "{{ $group['items'][0]['notes'] }}"
+                            </div>
+                        </div>
+                    @endif
 
                     <!-- Dropdown for individual items -->
                     @if($hasMultipleItems)
                         <div id="dropdown-{{$groupKey}}" class="hidden border-t border-stone-100 bg-stone-50">
                             @foreach($group['items'] as $item)
-                                <div class="p-3 pl-6 flex justify-between items-center border-b border-stone-100 last:border-b-0">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-sm text-stone-500 font-medium">Item {{ $loop->iteration }}</span>
-                                        <span class="text-sm text-stone-600">Qty: {{ $item['quantity'] }}</span>
-                                        <span class="text-sm font-semibold text-stone-800">${{ number_format($item['line_total'], 2) }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <button onclick="openEditModal({{ $item['index'] }}, '{{ $group['name'] }}', {{ $item['quantity'] }}, {{ $group['unit_price'] }}, {{ !empty($group['modifications']) ? 'true' : 'false' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
-                                        <form method="POST" action="{{ route('kiosk.cart.remove', $item['index']) }}" class="inline">
-                                            @csrf
-                                            <button type="submit" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg font-medium hover:bg-red-200 transition-colors cursor-pointer">Remove</button>
-                                        </form>
+                                <div class="p-3 pl-6 border-b border-stone-100 last:border-b-0">
+                                    <div class="flex flex-col gap-1.5 w-full">
+                                        <div class="flex justify-between items-center w-full">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-sm text-stone-500 font-medium">Item {{ $loop->iteration }}</span>
+                                                <span class="text-sm text-stone-600">Qty: {{ $item['quantity'] }}</span>
+                                                <span class="text-sm font-semibold text-stone-800">${{ number_format($item['line_total'], 2) }}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <button onclick="openEditModal({{ $item['index'] }}, '{{ addslashes($group['name']) }}', {{ $item['quantity'] }}, {{ $group['unit_price'] }}, '{{ addslashes($item['notes'] ?? '') }}', {{ !empty($group['modifications']) ? 'true' : 'false' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
+                                                <form method="POST" action="{{ route('kiosk.cart.remove', $item['index']) }}" class="inline">
+                                                    @csrf
+                                                    <button type="submit" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg font-medium hover:bg-red-200 transition-colors cursor-pointer">Remove</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        @if(!empty($item['notes']))
+                                            <div class="text-xs text-stone-500 italic break-words pr-2">
+                                                "{{ $item['notes'] }}"
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -181,18 +184,16 @@
 
     <!-- Middle: Items Grid (Main Scrollable Area) -->
     <main class="kiosk-main-content">
-        <div class="max-w-5xl mx-auto">
-            @if(session('success'))
-                <div class="bg-amber-100 text-amber-900 p-4 rounded-xl mb-8 font-medium text-center shadow-sm border border-amber-200">
-                    {{ session('success') }}
-                </div>
-            @endif
+        @if(session('success'))
+            {{--<div class="bg-amber-100 text-amber-900 p-4 rounded-xl mb-8 font-medium text-center shadow-sm border border-amber-200">
+                {{ session('success') }}
+            </div>--}}
+        @endif
 
             @forelse($menuItems as $category => $items)
-                <div id="cat-{{ strtolower($category) }}" class="mb-14 scroll-mt-28">
+                <div id="cat-{{ strtolower($category) }}" class="mb-14">
                     <h2 class="font-display text-3xl font-bold text-amber-950 mb-6 capitalize flex items-center gap-4">
                         {{ $category }}
-                        <div class="h-[2px] bg-amber-100 flex-1 rounded-full"></div>
                     </h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -232,9 +233,10 @@
 </div>
 
 <!-- Item Modal Backdrop -->
+<!-- Item Modal Backdrop -->
 <div id="itemModalBackdrop" class="kiosk-modal-backdrop" onclick="if(event.target === this) closeItemModal()">
     <!-- Modal Content -->
-    <div id="itemModalContent" class="kiosk-modal-content scale-95 opacity-0 transition-all duration-200">
+    <div id="itemModalContent" class="kiosk-modal-content">
         <form id="itemForm" method="POST" action="" class="flex flex-col h-full max-h-[90vh]">
             @csrf
             
@@ -263,6 +265,12 @@
                     </div>
                 </div>
 
+                <!-- Notes -->
+                <div class="mb-8">
+                    <h3 class="font-display text-xl font-bold text-amber-950 mb-3">Special Notes</h3>
+                    <textarea id="itemNotes" name="notes" rows="2" class="w-full bg-stone-50 border-2 border-stone-100 rounded-xl p-4 focus:ring-0 focus:border-amber-300 transition-colors text-stone-700 resize-none font-medium placeholder:text-stone-400" placeholder="Any special requests?"></textarea>
+                </div>
+
                 <!-- Quantity -->
                 <div class="flex items-center justify-between bg-[#faf6f0] p-5 rounded-2xl border border-amber-200/50 mt-auto">
                     <span class="font-bold text-stone-700 text-lg">Quantity</span>
@@ -286,7 +294,7 @@
 
 <!-- Edit Modal Backdrop -->
 <div id="editModalBackdrop" class="kiosk-modal-backdrop" onclick="if(event.target === this) closeEditModal()">
-    <div id="editModalContent" class="kiosk-modal-content max-w-md scale-95 opacity-0 transition-all duration-200">
+    <div id="editModalContent" class="kiosk-modal-content max-w-md">
         <div class="p-6">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="editModalTitle" class="font-display text-2xl font-bold text-amber-950">Edit Item</h2>
@@ -297,6 +305,12 @@
                 <!-- No Options Message -->
                 <div id="editNoOptions" class="hidden text-center py-8">
                     <p class="text-stone-500 font-medium">No additional options available for this item.</p>
+                </div>
+
+                <!-- Edit Notes -->
+                <div>
+                    <h3 class="font-bold text-stone-700 mb-2">Special Notes</h3>
+                    <textarea id="editItemNotes" rows="2" class="w-full bg-stone-50 border-2 border-stone-100 rounded-xl p-3 focus:ring-0 focus:border-amber-300 transition-colors text-stone-700 resize-none font-medium placeholder:text-stone-400" placeholder="Any special requests?"></textarea>
                 </div>
 
                 <!-- Quantity -->
@@ -337,11 +351,12 @@
         }
     }
     
-    function openEditModal(index, name, quantity, unitPrice, hasModifications = false) {
+    function openEditModal(index, name, quantity, unitPrice, notes = '', hasModifications = false) {
         currentEditIndex = index;
         document.getElementById('editModalTitle').innerText = name;
         document.getElementById('editQtyInput').value = quantity;
         document.getElementById('editUnitPrice').value = unitPrice.toFixed(2);
+        document.getElementById('editItemNotes').value = notes || '';
 
         const noOptionsSection = document.getElementById('editNoOptions');
         const quantitySection = document.getElementById('editQuantitySection');
@@ -355,24 +370,14 @@
         }
 
         const backdrop = document.getElementById('editModalBackdrop');
-        const content = document.getElementById('editModalContent');
         backdrop.classList.add('show');
-        setTimeout(() => {
-            content.classList.remove('scale-95', 'opacity-0');
-            content.classList.add('scale-100', 'opacity-1');
-        }, 10);
         updateEditTotal();
     }
 
     function closeEditModal() {
         const backdrop = document.getElementById('editModalBackdrop');
-        const content = document.getElementById('editModalContent');
-        content.classList.remove('scale-100', 'opacity-1');
-        content.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => {
-            backdrop.classList.remove('show');
-            currentEditIndex = null;
-        }, 200);
+        backdrop.classList.remove('show');
+        currentEditIndex = null;
     }
     
     function updateEditQty(change) {
@@ -396,6 +401,7 @@
 
         const qty = parseInt(document.getElementById('editQtyInput').value);
         const unitPrice = parseFloat(document.getElementById('editUnitPrice').value);
+        const notes = document.getElementById('editItemNotes').value;
 
         // Create form and submit
         const form = document.createElement('form');
@@ -424,6 +430,12 @@
         qtyInput.value = qty;
         form.appendChild(qtyInput);
 
+        const notesInput = document.createElement('input');
+        notesInput.type = 'hidden';
+        notesInput.name = 'notes';
+        notesInput.value = notes;
+        form.appendChild(notesInput);
+
         document.body.appendChild(form);
         form.submit();
     }
@@ -437,6 +449,7 @@
         
         currentBasePrice = parseFloat(item.price);
         document.getElementById('qtyInput').value = 1;
+        document.getElementById('itemNotes').value = '';
         
         const custSection = document.getElementById('customizationsSection');
         const custList = document.getElementById('customizationsList');
@@ -466,22 +479,12 @@
         updateModalTotal();
 
         const backdrop = document.getElementById('itemModalBackdrop');
-        const content = document.getElementById('itemModalContent');
         backdrop.classList.add('show');
-        setTimeout(() => {
-            content.classList.remove('scale-95', 'opacity-0');
-            content.classList.add('scale-100', 'opacity-1');
-        }, 10);
     }
 
     function closeItemModal() {
         const backdrop = document.getElementById('itemModalBackdrop');
-        const content = document.getElementById('itemModalContent');
-        content.classList.remove('scale-100', 'opacity-1');
-        content.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => {
-            backdrop.classList.remove('show');
-        }, 200);
+        backdrop.classList.remove('show');
     }
     
     function updateQty(change) {
@@ -506,37 +509,74 @@
         document.getElementById('modalTotalBtn').innerText = `($${total.toFixed(2)})`;
     }
 
-    // Promo Banner Drag Functionality
+    // Promo Banner Carousel & Drag Functionality
     const promoBanner = document.getElementById('promoBanner');
     const promoContent = document.getElementById('promoContent');
     let isDown = false;
     let startX;
     let scrollLeft;
+    let autoScrollInterval;
+    let currentIndex = 0;
 
-    promoBanner.addEventListener('mousedown', (e) => {
-        isDown = true;
-        promoContent.classList.add('dragging');
-        startX = e.pageX - promoBanner.offsetLeft;
-        scrollLeft = promoBanner.scrollLeft;
-    });
+    if (promoBanner && promoContent) {
+        const slides = promoContent.querySelectorAll('.promo-slide');
+        const totalSlides = slides.length;
 
-    promoBanner.addEventListener('mouseleave', () => {
-        isDown = false;
-        promoContent.classList.remove('dragging');
-    });
+        // Auto-scroll every 3 seconds
+        function startAutoScroll() {
+            autoScrollInterval = setInterval(() => {
+                if (!isDown) {
+                    currentIndex = (currentIndex + 1) % totalSlides;
+                    const slideWidth = promoBanner.offsetWidth;
+                    promoBanner.scrollTo({
+                        left: currentIndex * slideWidth,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 3000);
+        }
 
-    promoBanner.addEventListener('mouseup', () => {
-        isDown = false;
-        promoContent.classList.remove('dragging');
-    });
+        function stopAutoScroll() {
+            clearInterval(autoScrollInterval);
+        }
 
-    promoBanner.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - promoBanner.offsetLeft;
-        const walk = (x - startX) * 2;
-        promoBanner.scrollLeft = scrollLeft - walk;
-    });
+        startAutoScroll();
+
+        // Drag functionality
+        promoBanner.addEventListener('mousedown', (e) => {
+            isDown = true;
+            promoContent.classList.add('dragging');
+            startX = e.pageX - promoBanner.offsetLeft;
+            scrollLeft = promoBanner.scrollLeft;
+            stopAutoScroll();
+        });
+
+        promoBanner.addEventListener('mouseleave', () => {
+            isDown = false;
+            promoContent.classList.remove('dragging');
+            startAutoScroll();
+        });
+
+        promoBanner.addEventListener('mouseup', () => {
+            isDown = false;
+            promoContent.classList.remove('dragging');
+            startAutoScroll();
+        });
+
+        promoBanner.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - promoBanner.offsetLeft;
+            const walk = (x - startX) * 2;
+            promoBanner.scrollLeft = scrollLeft - walk;
+        });
+
+        // Update current index on scroll
+        promoBanner.addEventListener('scroll', () => {
+            const slideWidth = promoBanner.offsetWidth;
+            currentIndex = Math.round(promoBanner.scrollLeft / slideWidth);
+        });
+    }
 </script>
 @endsection
 

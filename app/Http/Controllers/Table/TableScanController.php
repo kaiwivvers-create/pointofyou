@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Table;
 
 use App\Http\Controllers\Controller;
 use App\Models\CafeTable;
+use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Promo;
 use App\Enums\OrderStatus;
 use App\Support\TableCart;
 use Illuminate\Http\RedirectResponse;
@@ -41,12 +43,21 @@ class TableScanController extends Controller
 
     public function menu(Request $request): View
     {
-        $items = MenuItem::query()
+        // Load visible categories in saved order
+        $orderedCategories = MenuCategory::visible()->pluck('name');
+
+        $allItems = MenuItem::query()
             ->where('is_available', true)
-            ->orderBy('category')
             ->orderBy('name')
             ->get()
             ->groupBy('category');
+
+        // Build ordered collection: only visible categories, in sort_order sequence
+        $items = $orderedCategories->mapWithKeys(function ($cat) use ($allItems) {
+            return [$cat => $allItems->get($cat, collect())];
+        })->filter(fn($items) => $items->isNotEmpty());
+
+        $promos = Promo::active()->ordered()->get();
 
         return view('table.menu', [
             'tableName' => $request->session()->get('cafe_table_name'),
@@ -54,6 +65,7 @@ class TableScanController extends Controller
             'cart' => TableCart::items($request),
             'cartCount' => TableCart::count($request),
             'cartTotal' => TableCart::total($request),
+            'promos' => $promos,
         ]);
     }
 
@@ -63,7 +75,18 @@ class TableScanController extends Controller
             return back()->with('error', 'That item is not available right now.');
         }
 
-        TableCart::add($request, $menuItem);
+        $request->validate([
+            'quantity' => 'required|integer|min:1',
+            'modifications' => 'nullable|array',
+            'modifications.*' => 'exists:menu_item_modifications,id',
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        $quantity = $request->integer('quantity');
+        $modifications = $request->input('modifications', []);
+        $notes = $request->input('notes', '');
+
+        TableCart::add($request, $menuItem, $quantity, $modifications, $notes);
 
         return back()->with('success', "Added {$menuItem->name} to your order.");
     }
@@ -88,12 +111,14 @@ class TableScanController extends Controller
     {
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1', 'max:20'],
+            'notes' => ['nullable', 'string', 'max:255'],
         ]);
 
         TableCart::updateItemByIndex(
             $request,
             $index,
-            (int) $validated['quantity']
+            (int) $validated['quantity'],
+            $validated['notes'] ?? ''
         );
 
         return back();
@@ -131,6 +156,8 @@ class TableScanController extends Controller
                 'quantity' => $line['quantity'],
                 'unit_price' => $line['unit_price'],
                 'line_total' => $lineTotal,
+                'modifications' => $line['modifications'] ?? [],
+                'notes' => $line['notes'] ?? null,
             ]);
         }
 

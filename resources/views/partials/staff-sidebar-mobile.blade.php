@@ -1,25 +1,37 @@
 @php
     $user = auth()->user();
-    $links = [];
+    
+    $can = function ($permission) use ($user) {
+        if ($user->isSuperAdmin()) return true;
+        $p = \App\Models\Permission::where('role', $user->role->value)
+            ->where('permission', $permission)
+            ->first();
+        return $p && $p->can_view;
+    };
 
-    if ($user->isSuperAdmin()) {
-        $links = [
-            ['route' => 'super-admin.dashboard', 'label' => 'Home', 'match' => 'super-admin.dashboard'],
-            ['route' => 'super-admin.users.index', 'label' => 'Staff', 'match' => 'super-admin.users.*'],
-            ['route' => 'admin.menu.index', 'label' => 'Menu', 'match' => 'admin.menu.*'],
-            ['route' => 'admin.tables.index', 'label' => 'Tables', 'match' => 'admin.tables.*'],
-            ['route' => 'cashier.dashboard', 'label' => 'Pay', 'match' => 'cashier.*'],
-        ];
-    } elseif ($user->isAdmin()) {
-        $links = [
-            ['route' => 'admin.dashboard', 'label' => 'Home', 'match' => 'admin.dashboard'],
-            ['route' => 'admin.menu.index', 'label' => 'Menu', 'match' => 'admin.menu.*'],
-            ['route' => 'admin.tables.index', 'label' => 'Tables', 'match' => 'admin.tables.*'],
-        ];
-    } elseif ($user->isCashier()) {
-        $links = [
-            ['route' => 'cashier.dashboard', 'label' => 'Payments', 'match' => 'cashier.*'],
-        ];
+    $allPossibleLinks = [
+        ['permission' => 'dashboard', 'route' => $user->isSuperAdmin() ? 'super-admin.dashboard' : ($user->isOwner() ? 'owner.dashboard' : ($user->isManager() ? 'manager.dashboard' : 'admin.dashboard')), 'label' => 'Home', 'match' => '*.dashboard'],
+        ['permission' => 'brand_settings', 'route' => 'super-admin.brand-settings.index', 'label' => 'Brand', 'match' => 'super-admin.brand-settings.*'],
+        ['permission' => 'users', 'route' => 'super-admin.users.index', 'label' => 'Staff', 'match' => 'super-admin.users.*'],
+        ['permission' => 'permissions', 'route' => 'super-admin.permissions.index', 'label' => 'Permissions', 'match' => 'super-admin.permissions.*'],
+        ['permission' => 'roles', 'route' => 'super-admin.roles.index', 'label' => 'Roles', 'match' => 'super-admin.roles.*'],
+        ['permission' => 'menu', 'route' => 'admin.menu.index', 'label' => 'Menu', 'match' => 'admin.menu.*'],
+        ['permission' => 'categories', 'route' => 'admin.menu-categories.index', 'label' => 'Categories', 'match' => 'admin.menu-categories.*'],
+        ['permission' => 'promos', 'route' => 'admin.promos.index', 'label' => 'Promos', 'match' => 'admin.promos.*'],
+        ['permission' => 'tables', 'route' => 'admin.tables.index', 'label' => 'Tables', 'match' => 'admin.tables.*'],
+        ['permission' => 'kitchen', 'route' => 'admin.current-orders.index', 'label' => 'Kitchen', 'match' => 'admin.current-orders.*'],
+        ['permission' => 'orders', 'route' => 'cashier.dashboard', 'label' => 'Pay', 'match' => 'cashier.*'],
+        ['permission' => 'inventory', 'route' => 'inventory.index', 'label' => 'Inventory', 'match' => 'inventory.*'],
+        ['permission' => 'payroll', 'route' => 'payroll.index', 'label' => 'Payroll', 'match' => 'payroll.*'],
+        ['permission' => 'expenses', 'route' => 'expenses.index', 'label' => 'Expenses', 'match' => 'expenses.*'],
+        ['permission' => 'reports', 'route' => 'reports.index', 'label' => 'Reports', 'match' => 'reports.*'],
+    ];
+
+    $links = [];
+    foreach ($allPossibleLinks as $link) {
+        if ($can($link['permission'])) {
+            $links[] = $link;
+        }
     }
 @endphp
 
@@ -29,9 +41,10 @@
             href="{{ route($link['route']) }}"
             @class([
                 'shrink-0 rounded-lg px-4 py-2 text-xs font-semibold transition-colors',
-                'bg-slate-900 text-white shadow-sm' => request()->routeIs($link['match']),
-                'bg-slate-100 text-slate-700 hover:bg-slate-200' => ! request()->routeIs($link['match']),
+                'bg-slate-900 text-white shadow-sm' => request()->routeIs($link['match']) || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard'])),
+                'bg-slate-100 text-slate-700 hover:bg-slate-200' => !(request()->routeIs($link['match']) || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard']))),
             ])
+            style="{{ (request()->routeIs($link['match']) || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard']))) ? 'background-color: ' . ($brandSettings->primary_font_color ?? '#78350f') : '' }}"
         >{{ $link['label'] }}</a>
     @endforeach
 </div>

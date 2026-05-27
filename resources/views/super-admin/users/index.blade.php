@@ -101,8 +101,8 @@
     @endif
 
     <!-- Create Modal -->
-    <div id="createModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div id="createModalContent" class="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden scale-95 opacity-0 transition-all duration-200">
+    <div id="createModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
+        <div id="createModalContent" class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden transform transition-all duration-200 scale-95 opacity-0">
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-xl font-semibold text-slate-900">Add staff user</h2>
                 <p class="text-sm text-slate-500 mt-1">Create a new staff account.</p>
@@ -119,8 +119,8 @@
     </div>
 
     <!-- Edit Modal -->
-    <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div id="editModalContent" class="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden scale-95 opacity-0 transition-all duration-200">
+    <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
+        <div id="editModalContent" class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden transform transition-all duration-200 scale-95 opacity-0">
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-xl font-semibold text-slate-900">Edit staff user</h2>
             </div>
@@ -129,37 +129,36 @@
                 @method('PUT')
                 @include('super-admin.users._form', ['roles' => $roles, 'user' => null])
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
+                    <button type="button" onclick="resetPassword()" class="staff-btn-secondary">Reset Password</button>
                     <button type="button" onclick="closeEditModal()" class="staff-btn-secondary">Cancel</button>
                     <button type="submit" class="staff-btn-primary">Update user</button>
                 </div>
             </form>
         </div>
     </div>
+@endsection
 
+@push('scripts')
     <script>
         function openCreateModal() {
             const modal = document.getElementById('createModal');
             const content = document.getElementById('createModalContent');
             const form = modal.querySelector('form');
             
-            // Clear form fields
-            form.querySelector('[name="name"]').value = '';
-            form.querySelector('[name="email"]').value = '';
-            form.querySelector('[name="password"]').value = '';
-            form.querySelector('[name="role"]').value = '';
+            form.reset();
             
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             setTimeout(() => {
                 content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-1');
+                content.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
 
         function closeCreateModal() {
             const modal = document.getElementById('createModal');
             const content = document.getElementById('createModalContent');
-            content.classList.remove('scale-100', 'opacity-1');
+            content.classList.remove('scale-100', 'opacity-100');
             content.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 modal.classList.add('hidden');
@@ -175,25 +174,49 @@
             form.querySelector('[name="name"]').value = user.name;
             form.querySelector('[name="email"]').value = user.email;
             form.querySelector('[name="password"]').value = '';
-            form.querySelector('[name="role"]').value = user.role.value;
+            form.querySelector('[name="role"]').value = user.role_id;
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             setTimeout(() => {
                 content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-1');
+                content.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
 
         function closeEditModal() {
             const modal = document.getElementById('editModal');
             const content = document.getElementById('editModalContent');
-            content.classList.remove('scale-100', 'opacity-1');
+            content.classList.remove('scale-100', 'opacity-100');
             content.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
             }, 200);
         }
+
+        function resetPassword() {
+            const newPassword = prompt('Enter new password:');
+            if (newPassword && newPassword.length >= 8) {
+                const confirmPassword = prompt('Confirm new password:');
+                if (newPassword === confirmPassword) {
+                    const form = document.getElementById('editForm');
+                    form.querySelector('[name="password"]').value = newPassword;
+                    alert('Password will be updated when you click Update user');
+                } else {
+                    alert('Passwords do not match.');
+                }
+            } else if (newPassword) {
+                alert('Password must be at least 8 characters.');
+            }
+        }
+
+        document.getElementById('createModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCreateModal();
+        });
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
     </script>
-@endsection
+@endpush

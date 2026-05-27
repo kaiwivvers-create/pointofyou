@@ -24,7 +24,7 @@
                 @else
                     <span class="text-2xl" aria-hidden="true">{{ $brandSettings->logo_fallback }}</span>
                 @endif
-                <span class="font-display text-xl sm:text-2xl font-medium" style="color: {{ $brandSettings->primary_color }};">{{ $brandSettings->app_name }}</span>
+                <span class="font-display text-xl sm:text-2xl font-medium" style="color: {{ $brandSettings->primary_font_color }};">{{ $brandSettings->app_name }}</span>
             </a>
             <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
                 <a href="#treats" class="hover:text-amber-800 transition-colors">Our Bakes</a>
@@ -48,7 +48,7 @@
         </div>
         <div class="relative w-full px-4 sm:px-8 lg:px-14 py-20 lg:py-28">
             <div class="max-w-3xl">
-                <p class="text-amber-200/90 text-sm sm:text-base font-medium mb-4">Artisan bakery since 2026</p>
+                <p class="text-amber-200/90 text-sm sm:text-base font-medium mb-4">{{ $brandSettings->landing_badge ?? 'Artisan bakery since 2026' }}</p>
                 <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-semibold text-amber-50 leading-[1.15] mb-6">
                     {{ $brandSettings->landing_kicker ?? 'Baked with love,<br class="hidden sm:block"> served with warmth' }}
                 </h1>

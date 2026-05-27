@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'role_id',
+        'employee_id',
     ];
 
     /**
@@ -73,6 +75,21 @@ class User extends Authenticatable
     public function isCashier(): bool
     {
         return $this->role === UserRole::Cashier;
+    }
+
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
+    }
+
+    public function dbRole()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function isStaffEmployee(): bool
+    {
+        return in_array($this->role, [UserRole::Cashier, UserRole::Admin, UserRole::Manager]) && $this->employee;
     }
 }
 

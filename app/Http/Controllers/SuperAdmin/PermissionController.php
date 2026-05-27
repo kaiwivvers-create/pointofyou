@@ -17,10 +17,19 @@ class PermissionController extends Controller
         // Define all available permissions
         $allPermissions = [
             'dashboard' => 'Dashboard',
-            'menu' => 'Menu Items',
-            'tables' => 'Tables & QR',
+            'brand_settings' => 'Brand Settings',
             'users' => 'Staff Users',
-            'orders' => 'Orders/Payments',
+            'permissions' => 'Permissions',
+            'roles' => 'Roles & Wages',
+            'menu' => 'Menu Items',
+            'categories' => 'Menu Categories',
+            'promos' => 'Promos',
+            'tables' => 'Tables & QR',
+            'orders' => 'Payments',
+            'kitchen' => 'Kitchen Orders',
+            'inventory' => 'Inventory',
+            'payroll' => 'Payroll',
+            'expenses' => 'Expenses',
             'reports' => 'Reports',
         ];
         

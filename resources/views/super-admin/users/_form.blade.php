@@ -21,11 +21,17 @@
         </label>
         <input id="password" name="password" type="password" @if (! $isEdit) required @endif class="staff-input" autocomplete="new-password">
     </div>
+    @if (! $isEdit)
+    <div>
+        <label for="password_confirmation" class="staff-label">Confirm Password</label>
+        <input id="password_confirmation" name="password_confirmation" type="password" required class="staff-input" autocomplete="new-password">
+    </div>
+    @endif
     <div>
         <label for="role" class="staff-label">Role</label>
         <select id="role" name="role" required class="staff-input">
             @foreach ($roles as $role)
-                <option value="{{ $role->value }}" @selected(old('role', $user?->role?->value) === $role->value)>{{ $role->label() }}</option>
+                <option value="{{ $role->id }}" @selected(old('role', $user?->role_id) == $role->id)>{{ $role->name }}</option>
             @endforeach
         </select>
     </div>

@@ -14,17 +14,36 @@ class TableCart
         return $request->session()->get(self::SESSION_KEY, []);
     }
 
-    public static function add(Request $request, MenuItem $menuItem, int $quantity = 1): void
+    public static function add(Request $request, MenuItem $menuItem, int $quantity = 1, array $modifications = [], ?string $notes = ''): void
     {
         $cart = self::items($request);
+
+        $modsTotal = 0;
+        $selectedMods = [];
+        
+        if (!empty($modifications)) {
+            $availableMods = $menuItem->modifications->keyBy('id');
+            foreach ($modifications as $modId) {
+                if ($availableMods->has($modId)) {
+                    $mod = $availableMods->get($modId);
+                    $selectedMods[] = [
+                        'name' => $mod->name,
+                        'additional_price' => $mod->additional_price,
+                    ];
+                    $modsTotal += $mod->additional_price;
+                }
+            }
+        }
 
         // Add as individual item instead of grouping
         $cart[] = [
             'menu_item_id' => $menuItem->id,
             'name' => $menuItem->name,
             'emoji' => $menuItem->emoji,
-            'unit_price' => (float) $menuItem->price,
+            'unit_price' => (float) $menuItem->price + $modsTotal,
             'quantity' => $quantity,
+            'modifications' => $selectedMods,
+            'notes' => $notes,
         ];
 
         $request->session()->put(self::SESSION_KEY, $cart);
@@ -44,7 +63,7 @@ class TableCart
         $request->session()->put(self::SESSION_KEY, $cart);
     }
 
-    public static function updateItemByIndex(Request $request, int $index, int $quantity): void
+    public static function updateItemByIndex(Request $request, int $index, int $quantity, ?string $notes = ''): void
     {
         $cart = self::items($request);
 
@@ -54,6 +73,9 @@ class TableCart
                 $cart = array_values($cart); // re-index
             } else {
                 $cart[$index]['quantity'] = $quantity;
+                if ($request->has('notes')) {
+                    $cart[$index]['notes'] = $notes;
+                }
             }
         }
 

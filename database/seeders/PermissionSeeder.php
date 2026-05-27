@@ -13,7 +13,7 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $roles = ['owner', 'manager', 'admin', 'cashier'];
-        $permissions = ['dashboard', 'menu', 'tables', 'users', 'orders', 'reports'];
+        $permissions = ['dashboard', 'menu', 'tables', 'users', 'orders', 'reports', 'inventory', 'payroll', 'expenses'];
         
         foreach ($roles as $role) {
             foreach ($permissions as $permission) {
@@ -35,14 +35,14 @@ class PermissionSeeder extends Seeder
             return true;
         }
         
-        // Manager can see dashboard, menu, tables, orders
+        // Manager can see dashboard, menu, tables, orders, inventory, payroll, expenses
         if ($role === 'manager') {
-            return in_array($permission, ['dashboard', 'menu', 'tables', 'orders']);
+            return in_array($permission, ['dashboard', 'menu', 'tables', 'orders', 'inventory', 'payroll', 'expenses']);
         }
         
-        // Admin can see dashboard, menu, tables
+        // Admin can see dashboard, menu, tables, inventory
         if ($role === 'admin') {
-            return in_array($permission, ['dashboard', 'menu', 'tables']);
+            return in_array($permission, ['dashboard', 'menu', 'tables', 'inventory']);
         }
         
         // Cashier can only see orders
@@ -60,14 +60,14 @@ class PermissionSeeder extends Seeder
             return true;
         }
         
-        // Manager can edit menu, tables, orders
+        // Manager can edit menu, tables, orders, inventory, payroll, expenses
         if ($role === 'manager') {
-            return in_array($permission, ['menu', 'tables', 'orders']);
+            return in_array($permission, ['menu', 'tables', 'orders', 'inventory', 'payroll', 'expenses']);
         }
         
-        // Admin can edit menu, tables
+        // Admin can edit menu, tables, inventory
         if ($role === 'admin') {
-            return in_array($permission, ['menu', 'tables']);
+            return in_array($permission, ['menu', 'tables', 'inventory']);
         }
         
         // Cashier can edit orders
