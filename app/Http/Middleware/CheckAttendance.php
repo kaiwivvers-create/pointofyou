@@ -34,11 +34,11 @@ class CheckAttendance
                     'requires_checkin' => true
                 ], 403);
             }
-            
-            return redirect()->route('attendance.index')
+
+            return redirect()->route($user->dashboard_route)
                 ->with('error', 'You must check in before performing this action.');
         }
-        
+
         // If already checked out, restrict access
         if ($attendance->check_out) {
             if ($request->expectsJson()) {
@@ -47,8 +47,8 @@ class CheckAttendance
                     'already_checked_out' => true
                 ], 403);
             }
-            
-            return redirect()->route('attendance.index')
+
+            return redirect()->route($user->dashboard_route)
                 ->with('error', 'You have already checked out. You cannot perform this action.');
         }
         

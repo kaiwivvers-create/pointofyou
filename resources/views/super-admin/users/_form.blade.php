@@ -6,11 +6,11 @@
 <div class="space-y-5">
     <div>
         <label for="name" class="staff-label">Name</label>
-        <input id="name" name="name" type="text" required value="{{ old('name', $user?->name) }}" class="staff-input">
+        <input id="name" name="name" type="text" required maxlength="255" value="{{ old('name', $user?->name) }}" class="staff-input">
     </div>
     <div>
         <label for="email" class="staff-label">Email</label>
-        <input id="email" name="email" type="email" required value="{{ old('email', $user?->email) }}" class="staff-input">
+        <input id="email" name="email" type="email" required maxlength="255" value="{{ old('email', $user?->email) }}" class="staff-input">
     </div>
     <div>
         <label for="password" class="staff-label">
@@ -19,12 +19,12 @@
                 <span class="font-normal text-slate-500">(leave blank to keep current)</span>
             @endif
         </label>
-        <input id="password" name="password" type="password" @if (! $isEdit) required @endif class="staff-input" autocomplete="new-password">
+        <input id="password" name="password" type="password" maxlength="255" @if (! $isEdit) required @endif class="staff-input" autocomplete="new-password">
     </div>
     @if (! $isEdit)
     <div>
         <label for="password_confirmation" class="staff-label">Confirm Password</label>
-        <input id="password_confirmation" name="password_confirmation" type="password" required class="staff-input" autocomplete="new-password">
+        <input id="password_confirmation" name="password_confirmation" type="password" required maxlength="255" class="staff-input" autocomplete="new-password">
     </div>
     @endif
     <div>

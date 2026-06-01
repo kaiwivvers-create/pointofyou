@@ -27,7 +27,7 @@ class PermitController extends Controller
             'type' => 'required|string|in:leave,overtime,other',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'reason' => 'required|string',
+            'reason' => 'required|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
         ]);
 
         $validated['user_id'] = auth()->id();
@@ -52,7 +52,7 @@ class PermitController extends Controller
     public function reject(Request $request, Permit $permit)
     {
         $validated = $request->validate([
-            'rejection_reason' => 'required|string',
+            'rejection_reason' => 'required|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
         ]);
 
         $permit->update([

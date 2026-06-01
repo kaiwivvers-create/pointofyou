@@ -73,7 +73,7 @@
                 <form method="POST" action="{{ route('super-admin.database.seed') }}">
                     @csrf
                     <div class="flex gap-2">
-                        <input type="text" name="seeder" placeholder="Seeder class (optional)" class="staff-input flex-1">
+                        <input type="text" name="seeder" maxlength="255" placeholder="Seeder class (optional)" class="staff-input flex-1">
                         <button type="submit" class="staff-btn-secondary" onclick="return confirm('Seed database?')">
                             Seed
                         </button>

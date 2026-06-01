@@ -490,6 +490,32 @@
     </div>
 </div>
 
+<!-- Promo Modal Backdrop -->
+<div id="promoModalBackdrop" class="kiosk-modal-backdrop" onclick="if(event.target === this) closePromoModal()">
+    <div id="promoModalContent" class="kiosk-modal-content max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="relative">
+            <img id="promoModalImg" src="" class="w-full h-64 object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <button type="button" onclick="closePromoModal()" class="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow hover:bg-white text-xl font-bold text-stone-700 z-10 transition-colors cursor-pointer">×</button>
+            <div class="absolute bottom-6 left-6 right-6">
+                <h2 id="promoModalTitle" class="font-display text-3xl font-bold text-white leading-tight drop-shadow-md"></h2>
+            </div>
+        </div>
+        <div class="p-6">
+            <p id="promoModalDescription" class="text-stone-600 mb-6 font-medium leading-relaxed"></p>
+
+            <div id="promoRulesSection" class="space-y-4">
+                <!-- Promo rules will be populated here -->
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button type="button" onclick="closePromoModal()" class="flex-1 bg-stone-200 text-stone-700 font-bold py-3 rounded-xl hover:bg-stone-300 transition-colors cursor-pointer">Close</button>
+                <button type="button" onclick="applyPromo()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl transition-colors cursor-pointer">Apply Promo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let currentBasePrice = 0;
     let currentEditIndex = null;
@@ -764,6 +790,136 @@
             alert('Payment failed. Please try again.');
         }
     }
+
+    window.openPromoModal = function(promo, imgSrc) {
+        document.getElementById('promoModalImg').src = imgSrc;
+        document.getElementById('promoModalTitle').innerText = promo.title || 'Special Promotion';
+        document.getElementById('promoModalDescription').innerText = promo.description || '';
+
+        const rulesSection = document.getElementById('promoRulesSection');
+        let rulesHtml = '';
+
+        if (promo.rules && promo.rules.length > 0) {
+            rulesHtml = '<h3 class="font-display text-xl font-bold text-amber-950 mb-4">Promo Details</h3>';
+            promo.rules.forEach(rule => {
+                if (rule.buy_item && rule.get_item) {
+                    rulesHtml += `
+                        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                            <p class="font-semibold text-amber-950">Buy ${rule.buy_quantity}x ${rule.buy_item.name}</p>
+                            <p class="text-amber-800 mt-1">Get ${rule.get_quantity}x ${rule.get_item.name}</p>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        if (promo.discount_value) {
+            rulesHtml += `
+                <div class="bg-green-50 rounded-xl p-4 border border-green-200">
+                    <p class="font-semibold text-green-950">${promo.discount_value}% Discount</p>
+                </div>
+            `;
+        }
+
+        if (!rulesHtml) {
+            rulesHtml = '<p class="text-stone-500 italic">No additional details available.</p>';
+        }
+
+        rulesSection.innerHTML = rulesHtml;
+
+        const backdrop = document.getElementById('promoModalBackdrop');
+        backdrop.classList.add('show');
+    };
+
+    window.closePromoModal = function() {
+        const backdrop = document.getElementById('promoModalBackdrop');
+        backdrop.classList.remove('show');
+    };
+
+    let currentPromo = null;
+
+    window.openPromoModal = function(promo, imgSrc) {
+        currentPromo = promo;
+        document.getElementById('promoModalImg').src = imgSrc;
+        document.getElementById('promoModalTitle').innerText = promo.title || 'Special Promotion';
+        document.getElementById('promoModalDescription').innerText = promo.description || '';
+
+        const rulesSection = document.getElementById('promoRulesSection');
+        let rulesHtml = '';
+
+        if (promo.rules && promo.rules.length > 0) {
+            rulesHtml = '<h3 class="font-display text-xl font-bold text-amber-950 mb-4">Promo Details</h3>';
+            promo.rules.forEach(rule => {
+                let promoText = '';
+                if (rule.buy_item) {
+                    promoText = `Buy ${rule.buy_quantity}x ${rule.buy_item.name}`;
+                }
+                if (rule.get_item) {
+                    promoText += promoText ? ', ' : '';
+                    promoText += `Get ${rule.get_quantity}x ${rule.get_item.name}`;
+                }
+                if (promo.discount_value) {
+                    promoText += promoText ? ', ' : '';
+                    promoText += `Get ${promo.discount_value}% Discount`;
+                }
+
+                if (promoText) {
+                    rulesHtml += `
+                        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                            <p class="font-semibold text-amber-950">${promoText}</p>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        if (promo.discount_value) {
+            if (!rulesHtml) {
+                rulesHtml = '<h3 class="font-display text-xl font-bold text-amber-950 mb-4">Promo Details</h3>';
+            }
+            rulesHtml += `
+                <div class="bg-green-50 rounded-xl p-4 border border-green-200">
+                    <p class="font-semibold text-green-950">${promo.discount_value}% Discount</p>
+                </div>
+            `;
+        }
+
+        if (!rulesHtml) {
+            rulesHtml = '<p class="text-stone-500 italic">No additional details available.</p>';
+        }
+
+        rulesSection.innerHTML = rulesHtml;
+
+        const backdrop = document.getElementById('promoModalBackdrop');
+        backdrop.classList.add('show');
+    };
+
+    window.applyPromo = function() {
+        if (!currentPromo) return;
+
+        // Store promo in session via AJAX
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/kiosk/promo/apply';
+
+        const csrfToken = document.querySelector('input[name="_token"]')?.value;
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+        }
+
+        const promoInput = document.createElement('input');
+        promoInput.type = 'hidden';
+        promoInput.name = 'promo_id';
+        promoInput.value = currentPromo.id;
+        form.appendChild(promoInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    };
 
 </script>
 @endsection

@@ -26,8 +26,8 @@ class PromoController extends Controller
         $validated = $request->validateWithBag('createPromo', [
             'image' => 'required|image|max:5120',
             'cropped_image' => 'nullable|string',
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
+            'title' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'is_active' => 'boolean',
             'order' => ['required', 'integer', 'min:0', 'unique:promos,order'],
             'discount_type' => 'nullable|in:percentage,fixed',
@@ -38,6 +38,16 @@ class PromoController extends Controller
             'rules.*.buy_quantity' => 'nullable|integer|min:1',
             'rules.*.get_quantity' => 'nullable|integer|min:1',
         ]);
+
+        // Custom validation: if there's a get item, there must be a buy item
+        $rules = $validated['rules'] ?? [];
+        foreach ($rules as $rule) {
+            if (!empty($rule['get_item_id']) && empty($rule['buy_item_id'])) {
+                return back()->withInput()->withErrors([
+                    'rules' => 'You cannot have a "get" item without a "buy" item. Please select a buy item first.',
+                ], 'createPromo');
+            }
+        }
 
         // Use cropped image if available, otherwise use original
         if ($request->filled('cropped_image')) {
@@ -88,8 +98,8 @@ class PromoController extends Controller
         $validated = $request->validateWithBag('editPromo', [
             'image' => 'nullable|image|max:5120',
             'cropped_image' => 'nullable|string',
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
+            'title' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'is_active' => 'boolean',
             'order' => ['required', 'integer', 'min:0', Rule::unique('promos', 'order')->ignore($promo->id)],
             'discount_type' => 'nullable|in:percentage,fixed',
@@ -100,6 +110,16 @@ class PromoController extends Controller
             'rules.*.buy_quantity' => 'nullable|integer|min:1',
             'rules.*.get_quantity' => 'nullable|integer|min:1',
         ]);
+
+        // Custom validation: if there's a get item, there must be a buy item
+        $rules = $validated['rules'] ?? [];
+        foreach ($rules as $rule) {
+            if (!empty($rule['get_item_id']) && empty($rule['buy_item_id'])) {
+                return back()->withInput()->withErrors([
+                    'rules' => 'You cannot have a "get" item without a "buy" item. Please select a buy item first.',
+                ], 'editPromo');
+            }
+        }
 
         // Use cropped image if available, otherwise use original
         if ($request->filled('cropped_image')) {

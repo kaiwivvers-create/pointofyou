@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class BrandSettings extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'app_name',
         'logo_fallback',

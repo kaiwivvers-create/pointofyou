@@ -21,9 +21,10 @@ class EnsureRole
             abort(403);
         }
 
-        $allowed = collect($roles)
-            ->map(fn (string $role) => UserRole::from($role))
-            ->contains($user->role);
+        // Check database role slug first, fallback to enum
+        $userRole = $user->dbRole ? $user->dbRole->slug : $user->role->value;
+
+        $allowed = in_array($userRole, $roles);
 
         if (! $allowed) {
             abort(403, 'You do not have access to this area.');

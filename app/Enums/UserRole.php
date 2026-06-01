@@ -10,6 +10,7 @@ enum UserRole: string
     case Admin = 'admin';
     case Chef = 'chef';
     case Cashier = 'cashier';
+    case Test = 'test';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum UserRole: string
             self::Admin => 'Admin',
             self::Chef => 'Chef',
             self::Cashier => 'Cashier',
+            self::Test => 'Test',
         };
     }
 
@@ -32,6 +34,7 @@ enum UserRole: string
             self::Admin => 'admin.dashboard',
             self::Chef => 'admin.kitchen.dashboard',
             self::Cashier => 'cashier.dashboard',
+            self::Test => 'admin.dashboard',
         };
     }
 }

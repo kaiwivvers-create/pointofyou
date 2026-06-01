@@ -1,12 +1,12 @@
 @extends('layouts.staff')
 
-@section('title', 'Admin Dashboard')
+@section('title', 'Dashboard')
 
 @section('content')
     <div class="staff-page-header">
         <div>
-            <h1 class="staff-page-title">Admin Dashboard</h1>
-            <p class="staff-page-subtitle">Manage food, drinks, and table QR codes.</p>
+            <h1 class="staff-page-title">Hello, {{ Auth::user()->name }}</h1>
+            <p class="staff-page-subtitle">Welcome to your dashboard. Use the sidebar to navigate.</p>
         </div>
     </div>
 
@@ -25,9 +25,11 @@
         </div>
     </div>
 
+    @if (Auth::user()->role->value === 'admin')
     <div class="flex flex-wrap gap-3">
         <a href="{{ route('admin.menu.create') }}" class="staff-btn-primary">Add menu item</a>
         <a href="{{ route('admin.menu.index') }}" class="staff-btn-secondary">Edit menu</a>
         <a href="{{ route('admin.tables.index') }}" class="staff-btn-secondary">Table QR codes</a>
     </div>
+    @endif
 @endsection

@@ -2,16 +2,21 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Promo extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'image',
         'title',
         'description',
         'is_active',
         'order',
+        'discount_type',
+        'discount_value',
     ];
 
     protected $casts = [

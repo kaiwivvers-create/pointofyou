@@ -71,16 +71,16 @@ class PayrollController extends Controller
     public function storeEmployee(Request $request)
     {
         $validated = $request->validate([
-            'employee_id' => 'required|string|unique:employees',
-            'full_name' => 'required|string',
-            'email' => 'required|email|unique:employees',
-            'phone' => 'nullable|string',
-            'position' => 'required|string',
+            'employee_id' => 'required|string|max:255|unique:employees|regex:/^[a-zA-Z0-9\-_]+$/',
+            'full_name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'email' => 'required|email|max:255|unique:employees',
+            'phone' => 'nullable|string|max:50|regex:/^[0-9\s\-\(\)\.]+$/',
+            'position' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
             'hire_date' => 'required|date',
             'base_salary' => 'required|numeric',
-            'bank_name' => 'nullable|string',
-            'bank_account' => 'nullable|string',
-            'address' => 'nullable|string',
+            'bank_name' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'bank_account' => 'nullable|string|max:50|regex:/^[0-9\-]+$/',
+            'address' => 'nullable|string|max:500|regex:/^[a-zA-Z0-9\s\-.,\'@#]+$/',
             'status' => 'required|in:active,inactive,terminated'
         ]);
 

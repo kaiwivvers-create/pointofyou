@@ -39,7 +39,7 @@
 
             <div class="mb-6">
                 <label for="reason" class="staff-label">Reason</label>
-                <textarea id="reason" name="reason" rows="4" required class="staff-input" placeholder="Explain why you need this permit..."></textarea>
+                <textarea id="reason" name="reason" rows="4" required maxlength="5000" class="staff-input" placeholder="Explain why you need this permit..."></textarea>
             </div>
 
             <div class="flex justify-end gap-3">

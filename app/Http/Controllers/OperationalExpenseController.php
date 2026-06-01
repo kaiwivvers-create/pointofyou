@@ -62,9 +62,9 @@ class OperationalExpenseController extends Controller
     public function storeCategory(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-            'color' => 'nullable|string'
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
+            'color' => 'nullable|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/'
         ]);
 
         ExpenseCategory::create($validated);

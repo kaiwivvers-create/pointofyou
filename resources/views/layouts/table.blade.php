@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Menu') — {{ $brandSettings->app_name }}</title>
     @php
         $brandSettings = \App\Models\BrandSettings::getSettings();
         $favicon = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : asset('favicon.ico');
     @endphp
+    <title>@yield('title', 'Menu') — {{ $brandSettings->app_name }}</title>
     <link rel="icon" type="image/x-icon" href="{{ $favicon }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=fredoka:400,500,600,700|nunito:400,500,600,700" rel="stylesheet">

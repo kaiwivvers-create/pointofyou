@@ -21,23 +21,23 @@ class BrandSettingsController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'app_name' => 'required|string|max:255',
-            'logo_fallback' => 'required|string|max:10',
+            'app_name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'logo_fallback' => 'required|string|max:10|regex:/^[a-zA-Z0-9]+$/',
             'logo_file_raw' => 'nullable|image|max:2048',
             'logo_cropped' => 'nullable|string',
-            'landing_kicker' => 'nullable|string|max:255',
-            'landing_badge' => 'nullable|string|max:255',
+            'landing_kicker' => 'nullable|string|max:500|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
+            'landing_badge' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'fan_favourite_ids' => 'nullable|array',
             'fan_favourite_ids.*' => 'exists:menu_items,id',
-            'address' => 'nullable|string|max:255',
-            'hours' => 'nullable|string',
-            'instagram' => 'nullable|string|max:255',
-            'facebook' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:255',
-            'primary_color' => 'required|string|max:7',
-            'secondary_color' => 'required|string|max:7',
-            'accent_color' => 'required|string|max:7',
-            'primary_font_color' => 'required|string|max:7',
+            'address' => 'nullable|string|max:500|regex:/^[a-zA-Z0-9\s\-.,\'@#]+$/',
+            'hours' => 'nullable|string|regex:/^[a-zA-Z0-9\s\-.,:]+$/',
+            'instagram' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9@._\-]+$/',
+            'facebook' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9@._\/\-]+$/',
+            'phone' => 'nullable|string|max:50|regex:/^[0-9\s\-\(\)\.]+$/',
+            'primary_color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+            'secondary_color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+            'accent_color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+            'primary_font_color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
 
         $settings = BrandSettings::getSettings();

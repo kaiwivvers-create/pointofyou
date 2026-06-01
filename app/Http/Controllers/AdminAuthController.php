@@ -13,7 +13,7 @@ class AdminAuthController extends Controller
     public function create(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route(Auth::user()->role->dashboardRoute());
+            return redirect()->route(Auth::user()->dashboard_route);
         }
 
         return view('admin.login');
@@ -34,7 +34,7 @@ class AdminAuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route($request->user()->role->dashboardRoute()));
+        return redirect()->intended(route($request->user()->dashboard_route));
     }
 
     public function destroy(Request $request): RedirectResponse

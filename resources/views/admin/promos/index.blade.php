@@ -40,8 +40,19 @@
                             <td class="text-sm text-slate-600">
                                 @if ($promo->rules && $promo->rules->count() > 0)
                                     @foreach ($promo->rules as $rule)
-                                        Buy {{ $rule->buy_quantity }} {{ $rule->buyItem?->name ?? 'item' }}, Get {{ $rule->get_quantity }} {{ $rule->getItem?->name ?? 'item' }}
-                                        @if (!$loop->last)<br>@endif
+                                        @php
+                                            $ruleText = '';
+                                            if ($rule->buyItem) {
+                                                $ruleText = 'Buy ' . $rule->buy_quantity . ' ' . $rule->buyItem->name;
+                                            }
+                                            if ($rule->getItem) {
+                                                $ruleText .= ($ruleText ? ', ' : '') . 'Get ' . $rule->get_quantity . ' ' . $rule->getItem->name;
+                                            }
+                                        @endphp
+                                        @if($ruleText)
+                                            {{ $ruleText }}
+                                            @if (!$loop->last)<br>@endif
+                                        @endif
                                     @endforeach
                                     @if ($promo->discount_type)
                                         <br>({{ $promo->discount_type }}: {{ $promo->discount_value }})
@@ -134,7 +145,6 @@
     </div>
 
     <script>
-        let cropper = null;
         @php
             $promoData = $promos->map(function ($promo) {
                 return [
@@ -230,7 +240,7 @@
             const content = document.getElementById('editModalContent');
             const form = document.getElementById('editForm');
             const storageBaseUrl = @json(asset('storage'));
-            form.action = '/admin/promos/' + promo.id;
+            form.action = '{{ route('admin.promos.update', ':id') }}'.replace(':id', promo.id);
             document.getElementById('editPromoId').value = promo.id;
             form.querySelector('[name="title"]').value = promo.title || '';
             form.querySelector('[name="description"]').value = promo.description || '';
@@ -493,34 +503,28 @@
             const container = document.getElementById('promoRulesContainer-' + prefix);
             const ruleCount = container.querySelectorAll('.promo-rule-row').length;
             const menuItems = @json(\App\Models\MenuItem::where('is_available', true)->orderBy('name')->get(['id', 'name'])->toArray());
-            
-            let options = '<option value="">Select item to buy</option>';
+
+            let buyOptions = '<option value="">Select item to buy</option>';
             menuItems.forEach(item => {
-                options += `<option value="${item.id}">${item.name}</option>`;
+                buyOptions += `<option value="${item.id}">${item.name}</option>`;
             });
-            
+
             const newRow = document.createElement('div');
             newRow.className = 'promo-rule-row grid grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-lg';
             newRow.dataset.index = ruleCount;
             newRow.innerHTML = `
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Buy Item</label>
-                    <select name="rules[${ruleCount}][buy_item_id]" class="staff-input">${options}</select>
+                    <select name="rules[${ruleCount}][buy_item_id]" class="staff-input">${buyOptions}</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Buy Quantity</label>
                     <input type="number" name="rules[${ruleCount}][buy_quantity]" value="1" min="1" class="staff-input">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
-                    <select name="rules[${ruleCount}][get_item_id]" class="staff-input"><option value="">Select item to get</option></select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
-                    <input type="number" name="rules[${ruleCount}][get_quantity]" value="1" min="1" class="staff-input">
-                </div>
+                <input type="hidden" name="rules[${ruleCount}][get_item_id]" value="">
+                <input type="hidden" name="rules[${ruleCount}][get_quantity]" value="1">
             `;
-            
+
             container.appendChild(newRow);
         }
 
@@ -528,24 +532,16 @@
             const container = document.getElementById('promoRulesContainer-' + prefix);
             const ruleCount = container.querySelectorAll('.promo-rule-row').length;
             const menuItems = @json(\App\Models\MenuItem::where('is_available', true)->orderBy('name')->get(['id', 'name'])->toArray());
-            
+
             let getOptions = '<option value="">Select item to get</option>';
             menuItems.forEach(item => {
                 getOptions += `<option value="${item.id}">${item.name}</option>`;
             });
-            
+
             const newRow = document.createElement('div');
             newRow.className = 'promo-rule-row grid grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-lg';
             newRow.dataset.index = ruleCount;
             newRow.innerHTML = `
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Buy Item</label>
-                    <select name="rules[${ruleCount}][buy_item_id]" class="staff-input"><option value="">Select item to buy</option></select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Buy Quantity</label>
-                    <input type="number" name="rules[${ruleCount}][buy_quantity]" value="1" min="1" class="staff-input">
-                </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
                     <select name="rules[${ruleCount}][get_item_id]" class="staff-input">${getOptions}</select>
@@ -554,8 +550,10 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
                     <input type="number" name="rules[${ruleCount}][get_quantity]" value="1" min="1" class="staff-input">
                 </div>
+                <input type="hidden" name="rules[${ruleCount}][buy_item_id]" value="">
+                <input type="hidden" name="rules[${ruleCount}][buy_quantity]" value="1">
             `;
-            
+
             container.appendChild(newRow);
         }
 

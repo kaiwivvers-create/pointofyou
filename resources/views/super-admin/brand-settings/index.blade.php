@@ -24,7 +24,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">App Name</label>
-                        <input type="text" name="app_name" id="app_name" value="{{ $settings->app_name }}" class="staff-input" required oninput="updatePreview()">
+                        <input type="text" name="app_name" id="app_name" value="{{ $settings->app_name }}" maxlength="255" class="staff-input" required oninput="updatePreview()">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Logo Fallback Letter(s)</label>
@@ -52,12 +52,12 @@
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Landing Page Badge</label>
-                    <input type="text" name="landing_badge" id="landing_badge" value="{{ $settings->landing_badge ?? 'Artisan bakery since 2026' }}" class="staff-input" placeholder="e.g., Artisan bakery since 2026" oninput="updatePreview()">
+                    <input type="text" name="landing_badge" id="landing_badge" value="{{ $settings->landing_badge ?? 'Artisan bakery since 2026' }}" maxlength="255" class="staff-input" placeholder="e.g., Artisan bakery since 2026" oninput="updatePreview()">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Landing Page Kicker</label>
-                    <input type="text" name="landing_kicker" id="landing_kicker" value="{{ $settings->landing_kicker }}" class="staff-input" placeholder="e.g., Freshly baked goodness, every day." oninput="updatePreview()">
+                    <input type="text" name="landing_kicker" id="landing_kicker" value="{{ $settings->landing_kicker }}" maxlength="500" class="staff-input" placeholder="e.g., Freshly baked goodness, every day." oninput="updatePreview()">
                 </div>
             </div>
             
@@ -85,26 +85,26 @@
                 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                    <input type="text" name="address" id="address" value="{{ $settings->address }}" class="staff-input" placeholder="123 Baker Street" oninput="updatePreview()">
+                    <input type="text" name="address" id="address" value="{{ $settings->address }}" maxlength="500" class="staff-input" placeholder="123 Baker Street" oninput="updatePreview()">
                 </div>
                 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Hours</label>
-                    <textarea name="hours" id="hours" class="staff-input" rows="3" placeholder="Mon – Fri: 6am – 3pm&#10;Sat – Sun: 7am – 4pm" oninput="updatePreview()">{{ $settings->hours }}</textarea>
+                    <textarea name="hours" id="hours" maxlength="1000" class="staff-input" rows="3" placeholder="Mon – Fri: 6am – 3pm&#10;Sat – Sun: 7am – 4pm" oninput="updatePreview()">{{ $settings->hours }}</textarea>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Instagram</label>
-                        <input type="text" name="instagram" id="instagram" value="{{ $settings->instagram }}" class="staff-input" placeholder="@yourcafe" oninput="updatePreview()">
+                        <input type="text" name="instagram" id="instagram" value="{{ $settings->instagram }}" maxlength="255" class="staff-input" placeholder="@yourcafe" oninput="updatePreview()">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Facebook</label>
-                        <input type="text" name="facebook" id="facebook" value="{{ $settings->facebook }}" class="staff-input" placeholder="facebook.com/yourcafe" oninput="updatePreview()">
+                        <input type="text" name="facebook" id="facebook" value="{{ $settings->facebook }}" maxlength="255" class="staff-input" placeholder="facebook.com/yourcafe" oninput="updatePreview()">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                        <input type="text" name="phone" id="phone" value="{{ $settings->phone }}" class="staff-input" placeholder="(555) 123-4567" oninput="updatePreview()">
+                        <input type="text" name="phone" id="phone" value="{{ $settings->phone }}" maxlength="50" class="staff-input" placeholder="(555) 123-4567" oninput="updatePreview()">
                     </div>
                 </div>
             </div>

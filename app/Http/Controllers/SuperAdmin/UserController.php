@@ -136,7 +136,7 @@ class UserController extends Controller
             : ['required', 'string', 'min:8', 'confirmed'];
 
         return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s\-.,\'@]+$/'],
             'email' => [
                 'required',
                 'email',

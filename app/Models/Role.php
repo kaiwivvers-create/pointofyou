@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'name',
         'slug',
@@ -18,6 +21,7 @@ class Role extends Model
         'can_manage_expenses',
         'can_view_reports',
         'is_admin',
+        'dashboard_route',
     ];
 
     protected $casts = [

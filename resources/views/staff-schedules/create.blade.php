@@ -54,7 +54,7 @@
 
             <div class="mb-6">
                 <label for="notes" class="staff-label">Notes (Optional)</label>
-                <textarea id="notes" name="notes" rows="3" class="staff-input" placeholder="Any additional notes..."></textarea>
+                <textarea id="notes" name="notes" rows="3" maxlength="1000" class="staff-input" placeholder="Any additional notes..."></textarea>
             </div>
 
             <div class="flex justify-end gap-3">

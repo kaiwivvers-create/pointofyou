@@ -239,15 +239,15 @@ class InventoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string',
-            'sku' => 'required|string|unique:products',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'sku' => 'required|string|max:100|unique:products|regex:/^[a-zA-Z0-9\-_]+$/',
             'inventory_category_id' => 'nullable|exists:inventory_categories,id',
             'purchase_price' => 'required|numeric',
             'selling_price' => 'required|numeric',
             'stock_quantity' => 'required|integer',
             'min_stock_level' => 'required|integer',
-            'unit' => 'required|string',
-            'description' => 'nullable|string',
+            'unit' => 'required|string|max:50|regex:/^[a-zA-Z0-9\s\-.,]+$/',
+            'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'consume_on_takeout' => 'boolean',
             'consume_per_item' => 'nullable|integer|min:1',
         ]);
@@ -266,15 +266,15 @@ class InventoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string',
-            'sku' => 'required|string|unique:products,sku,' . $product->id,
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'sku' => 'required|string|max:100|unique:products,sku,' . $product->id . '|regex:/^[a-zA-Z0-9\-_]+$/',
             'inventory_category_id' => 'nullable|exists:inventory_categories,id',
             'purchase_price' => 'required|numeric',
             'selling_price' => 'required|numeric',
             'stock_quantity' => 'required|integer',
             'min_stock_level' => 'required|integer',
-            'unit' => 'required|string',
-            'description' => 'nullable|string',
+            'unit' => 'required|string|max:50|regex:/^[a-zA-Z0-9\s\-.,]+$/',
+            'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'consume_on_takeout' => 'sometimes|boolean',
             'consume_per_item' => 'nullable|integer|min:1',
         ]);
@@ -309,8 +309,8 @@ class InventoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'type' => 'required|in:ingredient,supply',
         ]);
 
@@ -325,8 +325,8 @@ class InventoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'type' => 'required|in:ingredient,supply',
         ]);
 

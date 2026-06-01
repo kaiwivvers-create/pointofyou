@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class PaymentSettings extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'qr_code_image',
         'qr_code_instructions',

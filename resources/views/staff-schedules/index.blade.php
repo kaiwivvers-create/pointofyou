@@ -8,7 +8,7 @@
             <h1 class="staff-page-title">Staff Schedules</h1>
             <p class="staff-page-subtitle">Manage work days, days off, and expected work hours.</p>
         </div>
-        <a href="{{ route('staff-schedules.create') }}" class="staff-btn-primary">Add Schedule</a>
+        <button onclick="openCreateModal()" class="staff-btn-primary">Add Schedule</button>
     </div>
 
     <x-flash />
@@ -67,4 +67,87 @@
             {{ $schedules->links() }}
         </div>
     @endif
+
+    <!-- Create Modal -->
+    <div id="createModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 transform transition-all duration-200 scale-95 opacity-0" id="createModalContent">
+            <div class="p-6 border-b border-slate-200">
+                <h2 class="text-xl font-semibold text-slate-900">Add Schedule</h2>
+            </div>
+            <form method="POST" action="{{ route('staff-schedules.store') }}" class="p-6">
+                @csrf
+                <div class="mb-4">
+                    <label for="user_id" class="staff-label">Employee</label>
+                    <select id="user_id" name="user_id" required class="staff-input">
+                        <option value="">Select employee</option>
+                        @foreach ($users as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->role->label() }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="date" class="staff-label">Date</label>
+                    <input type="date" id="date" name="date" required class="staff-input">
+                </div>
+
+                <div class="mb-4">
+                    <label for="type" class="staff-label">Type</label>
+                    <select id="type" name="type" required class="staff-input">
+                        <option value="work_day">Work Day</option>
+                        <option value="day_off">Day Off</option>
+                        <option value="holiday">Holiday</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="expected_start_time" class="staff-label">Expected Start Time</label>
+                    <input type="time" id="expected_start_time" name="expected_start_time" value="09:00" class="staff-input">
+                    <p class="text-xs text-slate-500 mt-1">Default: 9:00 AM</p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="expected_end_time" class="staff-label">Expected End Time</label>
+                    <input type="time" id="expected_end_time" name="expected_end_time" value="17:00" class="staff-input">
+                    <p class="text-xs text-slate-500 mt-1">Default: 5:00 PM</p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="notes" class="staff-label">Notes (Optional)</label>
+                    <textarea id="notes" name="notes" rows="3" maxlength="1000" class="staff-input" placeholder="Any additional notes..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeCreateModal()" class="staff-btn-secondary">Cancel</button>
+                    <button type="submit" class="staff-btn-primary">Create Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openCreateModal() {
+            const modal = document.getElementById('createModal');
+            const content = document.getElementById('createModalContent');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeCreateModal() {
+            const modal = document.getElementById('createModal');
+            const content = document.getElementById('createModalContent');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }, 200);
+        }
+    </script>
 @endsection

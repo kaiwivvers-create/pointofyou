@@ -143,7 +143,7 @@ class TableScanController extends Controller
     {
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1', 'max:20'],
-            'notes' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s\-.,!?@]+$/'],
         ]);
 
         TableCart::updateItemByIndex(
@@ -225,5 +225,47 @@ class TableScanController extends Controller
         TableCart::clear($request);
 
         return redirect()->route('table.welcome');
+    }
+
+    public function applyPromo(Request $request): RedirectResponse
+    {
+        $request->validate(['promo_id' => 'required|exists:promos,id']);
+
+        $promo = Promo::findOrFail($request->promo_id);
+
+        if (!$promo->is_active) {
+            return redirect()->back()->with('error', 'This promo is not active.');
+        }
+
+        // Get current cart
+        $cart = $request->session()->get('table_cart', []);
+
+        // Remove any existing promo from cart
+        $cart = array_filter($cart, function($item) {
+            return !isset($item['is_promo']);
+        });
+
+        // Add promo to cart as a special item
+        $cart[] = [
+            'menu_item_id' => 0, // Special ID for promo items
+            'name' => 'Promo: ' . ($promo->title ?? 'Special Offer'),
+            'unit_price' => $promo->discount_value ?? 0,
+            'quantity' => 1,
+            'line_total' => $promo->discount_value ?? 0,
+            'modifications' => [],
+            'flavor' => null,
+            'notes' => $promo->description ?? '',
+            'signature' => 'promo_' . $promo->id,
+            'is_promo' => true,
+            'promo_id' => $promo->id,
+        ];
+
+        // Store updated cart
+        $request->session()->put('table_cart', $cart);
+
+        // Store promo in session - one promo per order
+        $request->session()->put('table_promo', $promo->id);
+
+        return redirect()->back()->with('success', 'Promo applied successfully!');
     }
 }

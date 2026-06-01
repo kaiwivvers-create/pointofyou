@@ -179,8 +179,6 @@
     </div>
 
     <script>
-        let cropper = null;
-
         function openAddModal() {
             const modal = document.getElementById('addModal');
             const content = document.getElementById('addModalContent');
@@ -207,7 +205,7 @@
             const modal = document.getElementById('editModal');
             const content = document.getElementById('editModalContent');
             const form = document.getElementById('editForm');
-            form.action = '/admin/menu/' + item.id;
+            form.action = '{{ route('admin.menu.update', ['menu' => 'PLACEHOLDER']) }}'.replace('PLACEHOLDER', item.id);
             form.querySelector('[name="name"]').value = item.name;
             form.querySelector('[name="description"]').value = item.description || '';
             form.querySelector('[name="category"]').value = item.category;
@@ -234,6 +232,40 @@
                 item.flavors.forEach((flavor, index) => {
                     addFlavorRow(flavor.name, flavor.additional_price, flavor.id, 'edit');
                 });
+            }
+
+            // Load ingredients if any
+            if (item.ingredients && item.ingredients.length > 0) {
+                console.log('Loading ingredients:', item.ingredients);
+                // First, uncheck all ingredient checkboxes in edit modal only
+                document.querySelectorAll('#editForm .ingredient-checkbox').forEach(cb => {
+                    cb.checked = false;
+                    const qtyInput = cb.closest('div.flex')?.querySelector('.ingredient-quantity');
+                    if (qtyInput) {
+                        qtyInput.disabled = true;
+                        qtyInput.value = 0;
+                    }
+                });
+
+                // Then check the ones that are in the item
+                item.ingredients.forEach(ingredient => {
+                    console.log('Processing ingredient:', ingredient);
+                    const checkbox = document.querySelector(`#editForm input[name^="ingredients"][value="${ingredient.id}"]`);
+                    console.log('Found checkbox for ingredient', ingredient.id, ':', checkbox);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        const quantityInput = checkbox.closest('div.flex')?.querySelector('.ingredient-quantity');
+                        if (quantityInput) {
+                            quantityInput.disabled = false;
+                            quantityInput.value = ingredient.pivot.quantity || 0;
+                            console.log('Set quantity to:', ingredient.pivot.quantity);
+                        }
+                    } else {
+                        console.log('Checkbox not found for ingredient:', ingredient.id);
+                    }
+                });
+            } else {
+                console.log('No ingredients to load');
             }
 
             modal.classList.remove('hidden');

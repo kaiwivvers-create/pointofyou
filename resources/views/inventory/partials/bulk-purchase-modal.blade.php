@@ -24,11 +24,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Reference</label>
-                    <input type="text" name="reference" class="staff-input" placeholder="Supplier invoice, receipt number, etc.">
+                    <input type="text" name="reference" maxlength="255" class="staff-input" placeholder="Supplier invoice, receipt number, etc.">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
-                    <input type="text" name="notes" class="staff-input" placeholder="Optional notes">
+                    <input type="text" name="notes" maxlength="1000" class="staff-input" placeholder="Optional notes">
                 </div>
             </div>
 

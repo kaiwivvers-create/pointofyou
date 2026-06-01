@@ -124,11 +124,11 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                        <input type="text" name="name" required class="staff-input">
+                        <input type="text" name="name" required maxlength="255" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">SKU</label>
-                        <input type="text" name="sku" required class="staff-input">
+                        <input type="text" name="sku" required maxlength="100" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
@@ -161,7 +161,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Unit</label>
-                        <input type="text" name="unit" value="pcs" required class="staff-input">
+                        <input type="text" name="unit" value="pcs" required maxlength="50" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Quantity per takeout item</label>
@@ -170,7 +170,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea name="description" rows="3" class="staff-input"></textarea>
+                        <textarea name="description" rows="3" maxlength="5000" class="staff-input"></textarea>
                     </div>
                 </div>
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
@@ -195,11 +195,11 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                        <input type="text" name="name" id="editSupplyName" required class="staff-input">
+                        <input type="text" name="name" id="editSupplyName" required maxlength="255" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">SKU</label>
-                        <input type="text" name="sku" id="editSupplySku" required class="staff-input">
+                        <input type="text" name="sku" id="editSupplySku" required maxlength="100" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
@@ -232,7 +232,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Unit</label>
-                        <input type="text" name="unit" id="editSupplyUnit" required class="staff-input">
+                        <input type="text" name="unit" id="editSupplyUnit" required maxlength="50" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Quantity per takeout item</label>
@@ -240,7 +240,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea name="description" id="editSupplyDescription" rows="3" class="staff-input"></textarea>
+                        <textarea name="description" id="editSupplyDescription" rows="3" maxlength="5000" class="staff-input"></textarea>
                     </div>
                 </div>
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
@@ -286,11 +286,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Reference</label>
-                        <input type="text" name="reference" class="staff-input">
+                        <input type="text" name="reference" maxlength="255" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
-                        <textarea name="notes" rows="2" class="staff-input"></textarea>
+                        <textarea name="notes" rows="2" maxlength="1000" class="staff-input"></textarea>
                     </div>
                 </div>
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">

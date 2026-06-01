@@ -1,6 +1,5 @@
 @php
     $brandSettings = \App\Models\BrandSettings::getSettings();
-    $fanFavourites = \App\Models\MenuItem::whereIn('id', $brandSettings->fan_favourite_ids ?? [])->get();
     $favicon = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : asset('favicon.ico');
 @endphp
 <!DOCTYPE html>
@@ -18,7 +17,7 @@
 
     <header class="w-full sticky top-0 z-50 backdrop-blur-md border-b" style="background-color: {{ $brandSettings->secondary_color }}/90; border-color: {{ $brandSettings->primary_color }}/60;">
         <div class="w-full px-4 sm:px-8 lg:px-14 py-4 flex items-center justify-between gap-4">
-            <a href="#" class="flex items-center gap-2 shrink-0">
+            <a href="https://bryan.rplkodingan.com" class="flex items-center gap-2 shrink-0">
                 @if ($brandSettings->logo)
                     <img src="{{ asset('storage/' . $brandSettings->logo) }}" alt="{{ $brandSettings->app_name }}" class="w-8 h-8 rounded-lg object-cover">
                 @else
@@ -31,7 +30,7 @@
                 <a href="#about" class="hover:text-amber-800 transition-colors">About</a>
                 <a href="#order" class="hover:text-amber-800 transition-colors">Order</a>
             </nav>
-            <a href="/kiosk" class="shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold text-amber-50 hover:opacity-90 transition-colors" style="background-color: {{ $brandSettings->primary_color }};">
+            <a href="{{ route('kiosk.welcome') }}" class="shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold text-amber-50 hover:opacity-90 transition-colors" style="background-color: {{ $brandSettings->primary_color }};">
                 Order Now
             </a>
         </div>
@@ -88,66 +87,6 @@
         </div>
     </section>
 
-    <section id="treats" class="w-full py-16 sm:py-24">
-        <div class="w-full px-4 sm:px-8 lg:px-14">
-            <div class="mb-12">
-                <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-amber-950">Fan favorites</h2>
-                <p class="text-stone-600 mt-3 text-lg max-w-xl">Pulled from the oven before sunrise. Grab them while they're still warm.</p>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                @if ($fanFavourites->count() > 0)
-                    @foreach ($fanFavourites as $treat)
-                        <article class="group relative overflow-hidden rounded-2xl bg-white shadow-md shadow-amber-900/5 ring-1 ring-amber-100">
-                            <div class="aspect-[4/3] overflow-hidden">
-                                @if ($treat->image)
-                                    <img src="{{ asset('storage/' . $treat->image) }}" alt="{{ $treat->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                                @else
-                                    <div class="w-full h-full flex items-center justify-center bg-amber-100">
-                                        <span class="text-4xl">🥐</span>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="p-5">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <h3 class="font-display text-lg font-semibold text-amber-950">{{ $treat->name }}</h3>
-                                        <p class="text-stone-500 text-sm mt-1">{{ $treat->description }}</p>
-                                    </div>
-                                    <span class="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-900">${{ number_format($treat->price, 2) }}</span>
-                                </div>
-                            </div>
-                        </article>
-                    @endforeach
-                @else
-                    @php
-                        $treats = [
-                            ['name' => 'Country Sourdough', 'desc' => '72-hour ferment, crackly crust', 'price' => '$8', 'img' => 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80', 'emoji' => '🍞'],
-                            ['name' => 'Butter Croissant', 'desc' => 'Flaky layers, European butter', 'price' => '$4', 'img' => 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&q=80', 'emoji' => '🥐'],
-                            ['name' => 'Cinnamon Roll', 'desc' => 'Cream cheese frosting, soft center', 'price' => '$5', 'img' => 'https://images.unsplash.com/photo-1603532648955-039310f9a6a0?w=600&q=80', 'emoji' => '🌀'],
-                            ['name' => 'Berry Tart', 'desc' => 'Seasonal fruit, vanilla custard', 'price' => '$7', 'img' => 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&q=80', 'emoji' => '🫐'],
-                        ];
-                    @endphp
-                    @foreach ($treats as $treat)
-                        <article class="group relative overflow-hidden rounded-2xl bg-white shadow-md shadow-amber-900/5 ring-1 ring-amber-100">
-                            <div class="aspect-[4/3] overflow-hidden">
-                                <img src="{{ $treat['img'] }}" alt="{{ $treat['name'] }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                            </div>
-                            <div class="p-5">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <span class="text-lg" aria-hidden="true">{{ $treat['emoji'] }}</span>
-                                        <h3 class="font-display text-lg font-semibold text-amber-950 mt-1">{{ $treat['name'] }}</h3>
-                                        <p class="text-stone-500 text-sm mt-1">{{ $treat['desc'] }}</p>
-                                    </div>
-                                    <span class="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-900">{{ $treat['price'] }}</span>
-                                </div>
-                            </div>
-                        </article>
-                    @endforeach
-                @endif
-            </div>
-        </div>
-    </section>
 
     <section id="about" class="w-full bg-amber-950 text-amber-50">
         <div class="w-full grid lg:grid-cols-2 min-h-[28rem]">
@@ -199,30 +138,6 @@
         </div>
     </section>
 
-    <section id="order" class="w-full py-16 sm:py-24 bg-gradient-to-br from-amber-100 via-[#faf6f0] to-amber-50">
-        <div class="w-full px-4 sm:px-8 lg:px-14">
-            <div class="w-full rounded-3xl bg-amber-800 px-6 sm:px-12 lg:px-16 py-12 sm:py-16 lg:py-20 text-center lg:text-left lg:flex lg:items-center lg:justify-between lg:gap-12">
-                <div class="lg:max-w-xl">
-                    <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-amber-50 mb-4">Ready for something fresh?</h2>
-                    <p class="text-amber-100/90 text-lg">Pre-order for pickup or swing by before we sell out. Open daily 6am – 3pm.</p>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto lg:min-w-[28rem]" action="#" method="get">
-                    <label for="email" class="sr-only">Email address</label>
-                    <input
-                        id="email"
-                        type="email"
-                        name="email"
-                        placeholder="you@email.com"
-                        class="flex-1 rounded-full border-0 px-6 py-4 text-stone-800 placeholder:text-stone-400 focus:ring-2 focus:outline-none"
-                        style="background-color: {{ $brandSettings->secondary_color }};"
-                    >
-                    <button type="submit" class="rounded-full px-8 py-4 font-semibold text-amber-50 hover:opacity-90 transition-colors whitespace-nowrap" style="background-color: {{ $brandSettings->primary_color }};">
-                        Get updates
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <footer class="w-full bg-amber-950 text-amber-200/80">
         <div class="w-full px-4 sm:px-8 lg:px-14 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">

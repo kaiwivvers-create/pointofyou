@@ -104,11 +104,11 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Display Label</label>
-                    <input type="text" name="label" required placeholder="e.g. Hot Drinks" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)]">
+                    <input type="text" name="label" required maxlength="255" placeholder="e.g. Hot Drinks" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)]">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">System Tag (Lowercase, no spaces)</label>
-                    <input type="text" name="name" required placeholder="e.g. hot_drinks" pattern="^[a-z0-9_]+$" title="Only lowercase letters, numbers, and underscores" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] font-mono text-sm">
+                    <input type="text" name="name" required maxlength="100" placeholder="e.g. hot_drinks" pattern="^[a-z0-9_]+$" title="Only lowercase letters, numbers, and underscores" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] font-mono text-sm">
                 </div>
             </div>
             <div class="mt-6 flex justify-end">

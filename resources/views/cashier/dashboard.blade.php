@@ -112,7 +112,7 @@
             document.getElementById('table-name').textContent = tableName;
             
             // Load existing order for this table
-            fetch(`/cashier/orders/table/${tableId}`)
+            fetch('{{ route('cashier.orders.table', ':id') }}'.replace(':id', tableId))
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.order) {

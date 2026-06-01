@@ -35,6 +35,11 @@
                     </div>
                     
                     <div class="flex items-center gap-4">
+                        <button onclick="openEditModal({{ $category->id }}, '{{ $category->name }}', '{{ $category->label }}')" class="text-slate-400 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors" title="Edit Category">
+                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
                         <form action="{{ route('admin.menu-categories.toggle', $category) }}" method="POST">
                             @csrf
                             @method('PATCH')
@@ -86,11 +91,11 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Display Label</label>
-                    <input type="text" name="label" required placeholder="e.g. Hot Drinks" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)]">
+                    <input type="text" name="label" required maxlength="255" placeholder="e.g. Hot Drinks" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)]">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">System Tag (Lowercase, no spaces)</label>
-                    <input type="text" name="name" required placeholder="e.g. hot_drinks" pattern="^[a-z0-9_]+$" title="Only lowercase letters, numbers, and underscores" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] font-mono text-sm">
+                    <input type="text" name="name" required maxlength="100" placeholder="e.g. hot_drinks" pattern="^[a-z0-9_]+$" title="Only lowercase letters, numbers, and underscores" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] font-mono text-sm">
                 </div>
             </div>
             <div class="mt-6 flex justify-end">
@@ -103,12 +108,68 @@
             </div>
         </form>
     </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-200 scale-95 opacity-0" id="editModalContent">
+            <div class="p-6 border-b border-slate-200">
+                <h2 class="text-xl font-semibold text-slate-900">Edit Category</h2>
+            </div>
+            <form method="POST" action="" id="editForm" class="p-6">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="id" id="editId">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Display Label</label>
+                    <input type="text" name="label" id="editLabel" required maxlength="255" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)]">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">System Tag (Lowercase, no spaces)</label>
+                    <input type="text" name="name" id="editName" required maxlength="100" pattern="^[a-z0-9_]+$" title="Only lowercase letters, numbers, and underscores" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] font-mono text-sm">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeEditModal()" class="staff-btn-secondary">Cancel</button>
+                    <button type="submit" class="staff-btn-primary">Update Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
+    function openEditModal(id, name, label) {
+        const modal = document.getElementById('editModal');
+        const content = document.getElementById('editModalContent');
+        const form = document.getElementById('editForm');
+        
+        document.getElementById('editId').value = id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editLabel').value = label;
+        form.action = '{{ route('admin.menu-categories.update', ':id') }}'.replace(':id', id);
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeEditModal() {
+        const modal = document.getElementById('editModal');
+        const content = document.getElementById('editModalContent');
+        
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const el = document.getElementById('category-list');
         if (el) {

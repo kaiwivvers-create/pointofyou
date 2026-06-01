@@ -181,7 +181,7 @@ class KioskController extends Controller
     {
         $request->validate([
             'quantity' => 'required|integer|min:1|max:20',
-            'notes' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
         ]);
 
         $cart = Session::get('kiosk_cart', []);
@@ -310,5 +310,47 @@ class KioskController extends Controller
             'orderType' => Session::get('order_type', 'takeout'),
             'pickupLabel' => Session::get('pickup_label', 'Takeout'),
         ]);
+    }
+
+    public function applyPromo(Request $request)
+    {
+        $request->validate(['promo_id' => 'required|exists:promos,id']);
+
+        $promo = Promo::findOrFail($request->promo_id);
+
+        if (!$promo->is_active) {
+            return redirect()->back()->with('error', 'This promo is not active.');
+        }
+
+        // Get current cart
+        $cart = Session::get('kiosk_cart', []);
+
+        // Remove any existing promo from cart
+        $cart = array_filter($cart, function($item) {
+            return !isset($item['is_promo']);
+        });
+
+        // Add promo to cart as a special item
+        $cart[] = [
+            'menu_item_id' => 0, // Special ID for promo items
+            'name' => 'Promo: ' . ($promo->title ?? 'Special Offer'),
+            'unit_price' => $promo->discount_value ?? 0,
+            'quantity' => 1,
+            'line_total' => $promo->discount_value ?? 0,
+            'modifications' => [],
+            'flavor' => null,
+            'notes' => $promo->description ?? '',
+            'signature' => 'promo_' . $promo->id,
+            'is_promo' => true,
+            'promo_id' => $promo->id,
+        ];
+
+        // Store updated cart
+        Session::put('kiosk_cart', $cart);
+
+        // Store promo in session - one promo per order
+        Session::put('kiosk_promo', $promo->id);
+
+        return redirect()->back()->with('success', 'Promo applied successfully!');
     }
 }

@@ -50,6 +50,7 @@
                             required
                             autofocus
                             autocomplete="email"
+                            maxlength="255"
                             class="w-full rounded-xl border px-4 py-3 text-stone-800 placeholder:text-stone-400 focus:ring-2 outline-none transition-shadow focus-primary"
                             style="border-color: {{ $settings->primary_color }}40; background-color: {{ $settings->secondary_color }}40;"
                             placeholder="you@example.com"
@@ -64,6 +65,7 @@
                             name="password"
                             required
                             autocomplete="current-password"
+                            maxlength="255"
                             class="w-full rounded-xl border px-4 py-3 text-stone-800 placeholder:text-stone-400 focus:ring-2 outline-none transition-shadow focus-primary"
                             style="border-color: {{ $settings->primary_color }}40; background-color: {{ $settings->secondary_color }}40;"
                             placeholder="••••••••"

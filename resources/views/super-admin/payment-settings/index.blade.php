@@ -38,7 +38,7 @@
             
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">QR Code Instructions</label>
-                <textarea name="qr_code_instructions" id="qr_code_instructions" class="staff-input" rows="3" placeholder="Instructions for customers using QR code payment">{{ $settings->qr_code_instructions }}</textarea>
+                <textarea name="qr_code_instructions" id="qr_code_instructions" maxlength="5000" class="staff-input" rows="3" placeholder="Instructions for customers using QR code payment">{{ $settings->qr_code_instructions }}</textarea>
             </div>
         </div>
         
@@ -49,33 +49,33 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Bank Name</label>
-                    <input type="text" name="bank_name" id="bank_name" value="{{ $settings->bank_name }}" class="staff-input" placeholder="e.g., Chase Bank">
+                    <input type="text" name="bank_name" id="bank_name" value="{{ $settings->bank_name }}" maxlength="255" class="staff-input" placeholder="e.g., Chase Bank">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Account Number</label>
-                    <input type="text" name="account_number" id="account_number" value="{{ $settings->account_number }}" class="staff-input" placeholder="e.g., 1234567890">
+                    <input type="text" name="account_number" id="account_number" value="{{ $settings->account_number }}" maxlength="50" class="staff-input" placeholder="e.g., 1234567890">
                 </div>
             </div>
             
             <div class="mb-4">
                 <label class="block text-sm font-medium text-slate-700 mb-1">Account Name</label>
-                <input type="text" name="account_name" id="account_name" value="{{ $settings->account_name }}" class="staff-input" placeholder="e.g., Your Business Name">
+                <input type="text" name="account_name" id="account_name" value="{{ $settings->account_name }}" maxlength="255" class="staff-input" placeholder="e.g., Your Business Name">
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Bank Address</label>
-                    <input type="text" name="bank_address" id="bank_address" value="{{ $settings->bank_address }}" class="staff-input" placeholder="e.g., 123 Bank Street">
+                    <input type="text" name="bank_address" id="bank_address" value="{{ $settings->bank_address }}" maxlength="500" class="staff-input" placeholder="e.g., 123 Bank Street">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">SWIFT Code</label>
-                    <input type="text" name="swift_code" id="swift_code" value="{{ $settings->swift_code }}" class="staff-input" placeholder="e.g., CHASUS33">
+                    <input type="text" name="swift_code" id="swift_code" value="{{ $settings->swift_code }}" maxlength="20" class="staff-input" placeholder="e.g., CHASUS33">
                 </div>
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Transfer Instructions</label>
-                <textarea name="transfer_instructions" id="transfer_instructions" class="staff-input" rows="3" placeholder="Instructions for bank transfer payments">{{ $settings->transfer_instructions }}</textarea>
+                <textarea name="transfer_instructions" id="transfer_instructions" maxlength="5000" class="staff-input" rows="3" placeholder="Instructions for bank transfer payments">{{ $settings->transfer_instructions }}</textarea>
             </div>
         </div>
         
@@ -85,7 +85,7 @@
             
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Card Instructions</label>
-                <textarea name="card_instructions" id="card_instructions" class="staff-input" rows="3" placeholder="Instructions for card payments">{{ $settings->card_instructions }}</textarea>
+                <textarea name="card_instructions" id="card_instructions" maxlength="5000" class="staff-input" rows="3" placeholder="Instructions for card payments">{{ $settings->card_instructions }}</textarea>
             </div>
         </div>
         
@@ -95,7 +95,7 @@
             
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Cash Instructions</label>
-                <textarea name="cash_instructions" id="cash_instructions" class="staff-input" rows="3" placeholder="Instructions for cash payments">{{ $settings->cash_instructions }}</textarea>
+                <textarea name="cash_instructions" id="cash_instructions" maxlength="5000" class="staff-input" rows="3" placeholder="Instructions for cash payments">{{ $settings->cash_instructions }}</textarea>
             </div>
         </div>
         

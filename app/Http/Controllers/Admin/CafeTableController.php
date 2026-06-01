@@ -20,7 +20,7 @@ class CafeTableController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:10', 'regex:/^[a-zA-Z0-9\s\-]+$/'],
         ]);
 
         CafeTable::create($validated);

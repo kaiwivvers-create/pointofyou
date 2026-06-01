@@ -18,7 +18,7 @@ class MenuCategoryController extends Controller
     {
         $validated = $request->validate([
             'name'  => 'required|string|max:64|unique:menu_categories,name|regex:/^[a-z0-9_]+$/',
-            'label' => 'required|string|max:64',
+            'label' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
         ]);
 
         $maxOrder = MenuCategory::max('sort_order') ?? 0;
@@ -31,6 +31,21 @@ class MenuCategoryController extends Controller
         ]);
 
         return back()->with('success', 'Category "' . $validated['label'] . '" added.');
+    }
+
+    public function update(Request $request, MenuCategory $category)
+    {
+        $validated = $request->validate([
+            'name'  => 'required|string|max:64|unique:menu_categories,name,' . $category->id . '|regex:/^[a-z0-9_]+$/',
+            'label' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+        ]);
+
+        $category->update([
+            'name'  => strtolower($validated['name']),
+            'label' => $validated['label'],
+        ]);
+
+        return back()->with('success', 'Category "' . $validated['label'] . '" updated.');
     }
 
     public function reorder(Request $request)

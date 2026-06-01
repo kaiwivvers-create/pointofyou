@@ -29,17 +29,19 @@
         ['permission' => 'payroll', 'route' => 'payroll.index', 'label' => 'Payroll', 'match' => 'payroll.*'],
         ['permission' => 'expenses', 'route' => 'expenses.index', 'label' => 'Expenses', 'match' => 'expenses.*'],
         ['permission' => 'reports', 'route' => 'reports.index', 'label' => 'Reports', 'match' => 'reports.*'],
+        ['route' => '#', 'label' => 'Profile', 'match' => '', 'action' => 'openProfileModal()'],
     ];
 
     $links = [];
     foreach ($allPossibleLinks as $link) {
-        if ($can($link['permission'])) {
-            $links[] = $link;
+        if (isset($link['permission']) && !$can($link['permission'])) {
+            continue;
         }
+        $links[] = $link;
     }
 @endphp
 
-<div class="flex gap-2 min-w-max pb-1">
+<div class="flex gap-1 min-w-max pb-1">
     @foreach ($links as $link)
         @php
             $matches = explode('|', $link['match']);
@@ -52,9 +54,14 @@
             }
         @endphp
         <a
-            href="{{ route($link['route']) }}"
+            @if(isset($link['action']))
+                href="javascript:void(0)"
+                onclick="{{ $link['action'] }}; return false;"
+            @else
+                href="{{ route($link['route']) }}"
+            @endif
             @class([
-                'shrink-0 rounded-lg px-4 py-2 text-xs font-semibold transition-colors',
+                'shrink-0 rounded px-2 py-1 text-[10px] font-semibold transition-colors',
                 'bg-slate-900 text-white shadow-sm' => $isActive || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard'])),
                 'bg-slate-100 text-slate-700 hover:bg-slate-200' => !($isActive || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard']))),
             ])

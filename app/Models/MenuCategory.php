@@ -2,16 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 
 class MenuCategory extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'name',
         'label',
         'sort_order',
         'is_visible',
+        'icon_url',
     ];
 
     protected $casts = [
@@ -33,6 +37,19 @@ class MenuCategory extends Model
     public static function getOrdered()
     {
         return static::orderBy('sort_order')->get();
+    }
+
+    /**
+     * Get icon URL for this category.
+     * Uses database icon_url if available, otherwise falls back to default.
+     */
+    public function getIconUrlAttribute(): string
+    {
+        if ($this->icon_url) {
+            return $this->icon_url;
+        }
+
+        return $this->defaultIcon($this->name);
     }
 
     /**

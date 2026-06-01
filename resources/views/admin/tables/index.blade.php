@@ -33,7 +33,7 @@
     @if ($can('tables', 'edit'))
         <form method="POST" action="{{ route('super-admin.tables.store') }}" class="staff-card p-5 mb-8 flex flex-col sm:flex-row gap-3 max-w-lg">
             @csrf
-            <input type="text" name="name" required placeholder="Table name (e.g. Patio 4)" class="staff-input flex-1">
+            <input type="text" name="name" required maxlength="100" placeholder="Table name (e.g. Patio 4)" class="staff-input flex-1">
             <button type="submit" class="staff-btn-primary shrink-0">Add table</button>
         </form>
     @endif

@@ -21,15 +21,15 @@ class PaymentSettingsController extends Controller
         $request->validate([
             'qr_code_image_raw' => 'nullable|image|max:2048',
             'qr_code_cropped' => 'nullable|string',
-            'qr_code_instructions' => 'nullable|string',
-            'bank_name' => 'nullable|string|max:255',
-            'account_number' => 'nullable|string|max:255',
-            'account_name' => 'nullable|string|max:255',
-            'bank_address' => 'nullable|string|max:255',
-            'swift_code' => 'nullable|string|max:255',
-            'card_instructions' => 'nullable|string',
-            'transfer_instructions' => 'nullable|string',
-            'cash_instructions' => 'nullable|string',
+            'qr_code_instructions' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
+            'bank_name' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'account_number' => 'nullable|string|max:50|regex:/^[0-9\-]+$/',
+            'account_name' => 'nullable|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'bank_address' => 'nullable|string|max:500|regex:/^[a-zA-Z0-9\s\-.,\'@#]+$/',
+            'swift_code' => 'nullable|string|max:20|regex:/^[A-Z0-9]+$/',
+            'card_instructions' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
+            'transfer_instructions' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
+            'cash_instructions' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
         ]);
 
         $settings = PaymentSettings::getSettings();

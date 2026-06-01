@@ -8,7 +8,7 @@
             <h1 class="staff-page-title">Permits</h1>
             <p class="staff-page-subtitle">Manage leave requests, overtime requests, and other permits.</p>
         </div>
-        <a href="{{ route('permits.create') }}" class="staff-btn-primary">Request Permit</a>
+        <button onclick="openCreateModal()" class="staff-btn-primary">Request Permit</button>
     </div>
 
     <x-flash />
@@ -72,6 +72,48 @@
         </div>
     @endif
 
+    <!-- Create Modal -->
+    <div id="createModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 transform transition-all duration-200 scale-95 opacity-0" id="createModalContent">
+            <div class="p-6 border-b border-slate-200">
+                <h2 class="text-xl font-semibold text-slate-900">Request Permit</h2>
+            </div>
+            <form method="POST" action="{{ route('permits.store') }}" class="p-6">
+                @csrf
+                <div class="mb-4">
+                    <label for="type" class="staff-label">Permit Type</label>
+                    <select id="type" name="type" required class="staff-input">
+                        <option value="">Select type</option>
+                        <option value="leave">Leave</option>
+                        <option value="overtime">Overtime</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="start_date" class="staff-label">Start Date</label>
+                    <input type="date" id="start_date" name="start_date" required class="staff-input">
+                </div>
+
+                <div class="mb-4">
+                    <label for="end_date" class="staff-label">End Date (Optional)</label>
+                    <input type="date" id="end_date" name="end_date" class="staff-input">
+                    <p class="text-xs text-slate-500 mt-1">Leave blank for single-day permits</p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="reason" class="staff-label">Reason</label>
+                    <textarea id="reason" name="reason" rows="4" required maxlength="5000" class="staff-input" placeholder="Explain why you need this permit..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeCreateModal()" class="staff-btn-secondary">Cancel</button>
+                    <button type="submit" class="staff-btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Reject Modal -->
     <div id="rejectModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-200 scale-95 opacity-0" id="rejectModalContent">
@@ -83,7 +125,7 @@
                 <input type="hidden" name="_method" value="PATCH">
                 <div class="mb-4">
                     <label for="rejection_reason" class="staff-label">Rejection Reason</label>
-                    <textarea id="rejection_reason" name="rejection_reason" rows="3" required class="staff-input"></textarea>
+                    <textarea id="rejection_reason" name="rejection_reason" rows="3" required maxlength="5000" class="staff-input"></textarea>
                 </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" onclick="closeRejectModal()" class="staff-btn-secondary">Cancel</button>
@@ -94,6 +136,30 @@
     </div>
 
     <script>
+        function openCreateModal() {
+            const modal = document.getElementById('createModal');
+            const content = document.getElementById('createModalContent');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeCreateModal() {
+            const modal = document.getElementById('createModal');
+            const content = document.getElementById('createModalContent');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
         function openRejectModal(permitId) {
             const modal = document.getElementById('rejectModal');
             const content = document.getElementById('rejectModalContent');

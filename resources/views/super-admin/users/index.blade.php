@@ -36,7 +36,7 @@
     <!-- Search and Filter -->
     <form method="GET" action="{{ route('super-admin.users.index') }}" class="staff-card p-4 mb-6 flex flex-col sm:flex-row gap-4">
         <div class="flex-1">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search users by name or email..." class="staff-input">
+            <input type="text" name="search" value="{{ request('search') }}" maxlength="255" placeholder="Search users by name or email..." class="staff-input">
         </div>
         <div class="sm:w-48">
             <select name="role" class="staff-input">
@@ -130,17 +130,17 @@
                 <div class="space-y-5">
                     <div>
                         <label for="edit_name" class="staff-label">Name</label>
-                        <input id="edit_name" name="name" type="text" required class="staff-input">
+                        <input id="edit_name" name="name" type="text" required maxlength="255" class="staff-input">
                     </div>
                     <div>
                         <label for="edit_email" class="staff-label">Email</label>
-                        <input id="edit_email" name="email" type="email" required class="staff-input">
+                        <input id="edit_email" name="email" type="email" required maxlength="255" class="staff-input">
                     </div>
                     <div>
                         <label for="edit_password" class="staff-label">
                             New password <span class="font-normal text-slate-500">(leave blank to keep current)</span>
                         </label>
-                        <input id="edit_password" name="password" type="password" class="staff-input" autocomplete="new-password">
+                        <input id="edit_password" name="password" type="password" maxlength="255" class="staff-input" autocomplete="new-password">
                     </div>
                     <div>
                         <label for="edit_role" class="staff-label">Role</label>

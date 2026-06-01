@@ -27,11 +27,11 @@
     </div>
     <div>
         <label for="name" class="staff-label">Name</label>
-        <input id="name" name="name" type="text" required value="{{ old('name', $menuItem?->name) }}" class="staff-input max-w-md">
+        <input id="name" name="name" type="text" required maxlength="255" value="{{ old('name', $menuItem?->name) }}" class="staff-input max-w-md">
     </div>
     <div>
         <label for="description" class="staff-label">Description</label>
-        <textarea id="description" name="description" rows="2" class="staff-input max-w-md">{{ old('description', $menuItem?->description) }}</textarea>
+        <textarea id="description" name="description" rows="2" maxlength="5000" class="staff-input max-w-md">{{ old('description', $menuItem?->description) }}</textarea>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl">
         <div>
@@ -66,7 +66,7 @@
         @if(old('modifications'))
             @foreach(old('modifications') as $index => $mod)
                 <div class="flex items-center gap-2 modification-row">
-                    <input type="text" name="modifications[{{ $index }}][name]" value="{{ $mod['name'] }}" placeholder="Name (e.g. No Mayo)" required class="staff-input flex-1">
+                    <input type="text" name="modifications[{{ $index }}][name]" value="{{ $mod['name'] }}" placeholder="Name (e.g. No Mayo)" required maxlength="255" class="staff-input flex-1">
                     <input type="number" step="0.01" min="0" name="modifications[{{ $index }}][additional_price]" value="{{ $mod['additional_price'] }}" placeholder="+ Price ($)" required class="staff-input w-28">
                     <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-sm px-2 py-1 remove-mod text-xl font-bold">&times;</button>
                 </div>
@@ -74,7 +74,7 @@
         @elseif($menuItem?->modifications)
             @foreach($menuItem->modifications as $index => $mod)
                 <div class="flex items-center gap-2 modification-row">
-                    <input type="text" name="modifications[{{ $index }}][name]" value="{{ $mod->name }}" placeholder="Name (e.g. No Mayo)" required class="staff-input flex-1">
+                    <input type="text" name="modifications[{{ $index }}][name]" value="{{ $mod->name }}" placeholder="Name (e.g. No Mayo)" required maxlength="255" class="staff-input flex-1">
                     <input type="number" step="0.01" min="0" name="modifications[{{ $index }}][additional_price]" value="{{ $mod->additional_price }}" placeholder="+ Price ($)" required class="staff-input w-28">
                     <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-sm px-2 py-1 remove-mod text-xl font-bold">&times;</button>
                 </div>
@@ -93,7 +93,7 @@
         @if(old('flavors'))
             @foreach(old('flavors') as $index => $flavor)
                 <div class="flex items-center gap-2 flavor-row">
-                    <input type="text" name="flavors[{{ $index }}][name]" value="{{ $flavor['name'] }}" placeholder="Flavor name" required class="staff-input flex-1">
+                    <input type="text" name="flavors[{{ $index }}][name]" value="{{ $flavor['name'] }}" placeholder="Flavor name" required maxlength="255" class="staff-input flex-1">
                     <input type="number" step="0.01" min="0" name="flavors[{{ $index }}][additional_price]" value="{{ $flavor['additional_price'] }}" placeholder="+ Price ($)" required class="staff-input w-28">
                     <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-sm px-2 py-1 remove-flavor text-xl font-bold">&times;</button>
                 </div>
@@ -101,7 +101,7 @@
         @elseif($menuItem?->flavors)
             @foreach($menuItem->flavors as $index => $flavor)
                 <div class="flex items-center gap-2 flavor-row">
-                    <input type="text" name="flavors[{{ $index }}][name]" value="{{ $flavor->name }}" placeholder="Flavor name" required class="staff-input flex-1">
+                    <input type="text" name="flavors[{{ $index }}][name]" value="{{ $flavor->name }}" placeholder="Flavor name" required maxlength="255" class="staff-input flex-1">
                     <input type="number" step="0.01" min="0" name="flavors[{{ $index }}][additional_price]" value="{{ $flavor->additional_price }}" placeholder="+ Price ($)" required class="staff-input w-28">
                     <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-sm px-2 py-1 remove-flavor text-xl font-bold">&times;</button>
                 </div>
@@ -122,6 +122,7 @@
                 return $product->category ? $product->category->name : 'Uncategorized';
             });
             $existingIngredients = $menuItem?->ingredients?->pluck('pivot.quantity', 'id') ?? [];
+            $ingredientIndex = 0;
         @endphp
 
         @foreach($groupedProducts as $categoryName => $categoryProducts)
@@ -130,7 +131,7 @@
                 <div class="space-y-2">
                     @foreach($categoryProducts as $product)
                         <div class="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
-                            <input type="checkbox" name="ingredients[{{ $product->id }}][product_id]" value="{{ $product->id }}"
+                            <input type="checkbox" name="ingredients[{{ $ingredientIndex }}][product_id]" value="{{ $product->id }}"
                                 id="ingredient-{{ $product->id }}-{{ $prefix }}"
                                 @isset($menuItem)
                                     @if($menuItem->ingredients->contains($product->id)) checked @endif
@@ -140,7 +141,7 @@
                                 {{ $product->name }}
                                 <span class="text-xs text-slate-500">({{ $product->unit }})</span>
                             </label>
-                            <input type="number" step="0.01" min="0" name="ingredients[{{ $product->id }}][quantity]"
+                            <input type="number" step="0.01" min="0" name="ingredients[{{ $ingredientIndex }}][quantity]"
                                 placeholder="Qty"
                                 @isset($menuItem)
                                     @if($menuItem->ingredients->contains($product->id))
@@ -157,6 +158,7 @@
                                 @else
                                     disabled
                                 @endisset>
+                            @php $ingredientIndex++; @endphp
                         </div>
                     @endforeach
                 </div>

@@ -23,6 +23,7 @@ use App\Http\Controllers\SuperAdmin\RoleController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use App\Http\Controllers\Table\TableScanController;
 use App\Http\Controllers\KioskController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -41,6 +42,7 @@ Route::middleware('table.session')->prefix('table')->group(function () {
     Route::post('/cart/remove/{index}', [TableScanController::class, 'removeCartItem'])->name('table.cart.remove.index');
     Route::post('/order', [TableScanController::class, 'placeOrder'])->name('table.order');
     Route::post('/leave', [TableScanController::class, 'clearTable'])->name('table.leave');
+    Route::post('/promo/apply', [TableScanController::class, 'applyPromo'])->name('table.promo.apply');
 });
 
 // Kiosk flow (no login)
@@ -54,6 +56,7 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::post('/checkout', [KioskController::class, 'checkout'])->name('checkout');
     Route::post('/pay', [KioskController::class, 'pay'])->name('pay');
     Route::get('/success', [KioskController::class, 'success'])->name('success');
+    Route::post('/promo/apply', [KioskController::class, 'applyPromo'])->name('promo.apply');
 });
 
 // Staff login
@@ -63,6 +66,7 @@ Route::get('/login', [AdminAuthController::class, 'create']);
 
 Route::middleware('auth')->group(function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'destroy'])->name('admin.logout');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // Super Admin / Management
     Route::prefix('super-admin')->name('super-admin.')->group(function () {
@@ -281,7 +285,7 @@ Route::middleware('auth')->group(function () {
                 'tableCount' => \App\Models\CafeTable::count(),
                 'pendingOrders' => \App\Models\Order::where('status', 'pending')->count(),
             ]);
-        })->name('dashboard')->middleware('role:owner,manager');
+        })->name('dashboard')->middleware('role:owner,manager,admin,test');
 
         // Kitchen Dashboard (role-based, no permit required)
         Route::get('kitchen', [CurrentOrdersController::class, 'dashboard'])->name('kitchen.dashboard')->middleware('role:chef');
@@ -301,6 +305,7 @@ Route::middleware('auth')->group(function () {
             Route::middleware('permission:categories')->group(function () {
                 Route::get('menu-categories', [MenuCategoryController::class, 'index'])->name('menu-categories.index');
                 Route::post('menu-categories', [MenuCategoryController::class, 'store'])->name('menu-categories.store');
+                Route::put('menu-categories/{category}', [MenuCategoryController::class, 'update'])->name('menu-categories.update');
                 Route::post('menu-categories/reorder', [MenuCategoryController::class, 'reorder'])->name('menu-categories.reorder');
                 Route::patch('menu-categories/{category}/toggle', [MenuCategoryController::class, 'toggleVisibility'])->name('menu-categories.toggle');
                 Route::delete('menu-categories/{category}', [MenuCategoryController::class, 'destroy'])->name('menu-categories.destroy');
@@ -322,6 +327,7 @@ Route::middleware('auth')->group(function () {
             Route::post('orders/{order}/adjustments', [CashierOrderController::class, 'storeAdjustment'])->name('orders.adjustments.store')->middleware('permission:orders');
             Route::delete('orders/{order}/adjustments/{adjustment}', [CashierOrderController::class, 'destroyAdjustment'])->name('orders.adjustments.destroy')->middleware('permission:orders');
             Route::get('orders/{order}/cart-items', [CashierOrderController::class, 'getCartItems'])->name('orders.cart-items')->middleware('permission:orders');
+            Route::get('orders/table/{tableId}', [CashierOrderController::class, 'getOrderByTable'])->name('orders.table')->middleware('permission:orders');
         });
     });
 

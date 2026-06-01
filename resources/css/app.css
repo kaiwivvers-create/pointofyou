@@ -22,15 +22,15 @@
     }
 
     .staff-page-header {
-        @apply mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between;
+        @apply mb-4 sm:mb-8 flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-end sm:justify-between;
     }
 
     .staff-page-title {
-        @apply font-sans text-3xl font-semibold text-slate-900 tracking-tight;
+        @apply font-sans text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight;
     }
 
     .staff-page-subtitle {
-        @apply mt-1.5 text-slate-600 text-base;
+        @apply mt-1 text-xs sm:mt-1.5 text-slate-600 text-sm sm:text-base;
     }
 
     .staff-stat-card {
@@ -210,6 +210,7 @@
         min-height: 100vh;
         width: calc(100% - 500px);
         background-color: #ffffff;
+        overflow-y: auto;
     }
     
     .category-img {

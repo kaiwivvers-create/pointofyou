@@ -37,7 +37,7 @@
     <h2 class="font-sans text-xl font-semibold text-slate-900 mb-4">Active Orders</h2>
     <p class="text-sm text-slate-500 mb-6">Orders disappear when they are both <strong>Paid</strong> and <strong>Picked Up / Closed</strong>.</p>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         @forelse ($activeOrders as $order)
             @php
                 $isPaid = $order->status->value === 'paid';
@@ -45,73 +45,88 @@
                 $isFullyReady = $order->isFullyReady();
             @endphp
             
-            <div class="bg-white rounded-3xl shadow-sm border {{ $isPaid ? 'border-emerald-200' : 'border-amber-200' }} overflow-hidden flex flex-col relative group p-5">
-                <div class="p-5 border-b border-slate-100 flex justify-between items-start {{ $isPaid ? 'bg-emerald-50/50' : 'bg-amber-50/50' }}">
+            <div class="bg-white rounded-xl shadow-sm border {{ $isPaid ? 'border-emerald-200' : 'border-amber-200' }} overflow-hidden flex flex-col relative group p-2 sm:p-5">
+                <div class="p-2 sm:p-5 border-b border-slate-100 flex justify-between items-start {{ $isPaid ? 'bg-emerald-50/50' : 'bg-amber-50/50' }}">
                     <div>
-                        <h3 class="font-display text-xl font-bold text-slate-900">
+                        <h3 class="font-display text-sm sm:text-xl font-bold text-slate-900">
                             @if($order->order_type === 'dine_in' && $order->cafeTable)
                                 Table {{ $order->cafeTable->name }}
                             @else
                                 Takeout
                             @endif
                         </h3>
-                        <p class="text-xs font-medium text-slate-500 mt-1">
+                        <p class="text-[10px] sm:text-xs font-medium text-slate-500 mt-1">
                             Order #{{ $order->id }} &middot; {{ $order->created_at->diffForHumans() }}
                         </p>
                     </div>
-                    <div class="flex flex-col items-end gap-2">
-                        <p class="font-sans text-xl font-bold text-slate-900">${{ number_format($order->total, 2) }}</p>
-                        <div class="flex gap-2">
+                    <div class="flex flex-col items-end gap-1 sm:gap-2">
+                        <p class="font-sans text-sm sm:text-xl font-bold text-slate-900">${{ number_format($order->total, 2) }}</p>
+                        <div class="flex gap-1 sm:gap-2 flex-wrap justify-end">
                             <!-- Payment Status Badge -->
                             @if($isPaid)
-                                <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-wider">Paid</span>
+                                <span class="bg-emerald-100 text-emerald-800 text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-wider">Paid</span>
                             @else
-                                <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200 uppercase tracking-wider">Unpaid</span>
+                                <span class="bg-amber-100 text-amber-800 text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded border border-amber-200 uppercase tracking-wider">Unpaid</span>
                             @endif
 
                             <!-- Kitchen Status Badge -->
                             @if($isClosed)
-                                <span class="bg-stone-100 text-stone-600 text-[10px] font-bold px-2 py-0.5 rounded border border-stone-200 uppercase tracking-wider">Picked Up</span>
+                                <span class="bg-stone-100 text-stone-600 text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded border border-stone-200 uppercase tracking-wider">Picked Up</span>
                             @elseif($isFullyReady)
-                                <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 uppercase tracking-wider">Ready for Pickup</span>
+                                <span class="bg-indigo-100 text-indigo-700 text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded border border-indigo-200 uppercase tracking-wider">Ready</span>
                             @else
-                                <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 uppercase tracking-wider">Preparing</span>
+                                <span class="bg-blue-100 text-blue-700 text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded border border-blue-200 uppercase tracking-wider">Preparing</span>
                             @endif
                         </div>
                     </div>
                 </div>
 
-                <div class="p-5 flex-1 space-y-3">
-                    @foreach ($order->items as $line)
-                        <div class="flex justify-between gap-4 text-sm {{ $line->is_ready ? 'text-slate-400 line-through' : 'text-slate-700 font-medium' }}">
-                            <span>{{ $line->quantity }}× {{ $line->item_name }}</span>
-                            <span>${{ number_format($line->line_total, 2) }}</span>
-                        </div>
+                <div class="p-2 sm:p-5 flex-1 space-y-1 sm:space-y-3">
+                    <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="sm:hidden text-[10px] font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1 w-full">
+                        <svg class="size-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                        Show Items
+                    </button>
+                    <div class="space-y-1 sm:space-y-3 hidden sm:block">
+                        @foreach ($order->items as $line)
+                            <div class="flex justify-between gap-2 sm:gap-4 text-[10px] sm:text-sm {{ $line->is_ready ? 'text-slate-400 line-through' : 'text-slate-700 font-medium' }}">
+                                <span>{{ $line->quantity }}× {{ $line->item_name }}</span>
+                                <span>${{ number_format($line->line_total, 2) }}</span>
+                            </div>
                     @endforeach
                 </div>
                 
                     @if($order->adjustments->isNotEmpty())
                         <div class="pt-2 border-t border-slate-100 space-y-2">
-                            @foreach ($order->adjustments as $adjustment)
-                                <div class="flex justify-between gap-4 text-sm {{ $adjustment->type === 'discount' ? 'text-emerald-700' : 'text-slate-700' }}">
-                                    <span class="flex items-center gap-2">
-                                        <span>{{ $adjustment->label }}</span>
-                                        @if($adjustment->source === 'auto_supply')
-                                            <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Supply</span>
-                                        @endif
-                                    </span>
-                                    <span class="flex items-center gap-2">
-                                        <span>{{ $adjustment->type === 'discount' ? '-' : '+' }}${{ number_format($adjustment->amount, 2) }}</span>
-                                        @if($can('orders', 'edit') && $adjustment->source === 'manual')
-                                            <form method="POST" action="{{ route('cashier.orders.adjustments.destroy', [$order, $adjustment]) }}">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded border border-red-200 hover:border-red-300 transition-colors">Remove</button>
-                                            </form>
-                                        @endif
-                                    </span>
-                                </div>
-                            @endforeach
+                            <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="sm:hidden text-[10px] font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1 w-full">
+                                <svg class="size-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                                Show Adjustments
+                            </button>
+                            <div class="space-y-2 hidden sm:block">
+                                @foreach ($order->adjustments as $adjustment)
+                                    <div class="flex justify-between gap-2 sm:gap-4 text-[10px] sm:text-sm {{ $adjustment->type === 'discount' ? 'text-emerald-700' : 'text-slate-700' }}">
+                                        <span class="flex items-center gap-2">
+                                            <span>{{ $adjustment->label }}</span>
+                                            @if($adjustment->source === 'auto_supply')
+                                                <span class="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 px-1 sm:px-2 py-0.5 rounded">Supply</span>
+                                            @endif
+                                        </span>
+                                        <span class="flex items-center gap-2">
+                                            <span>{{ $adjustment->type === 'discount' ? '-' : '+' }}${{ number_format($adjustment->amount, 2) }}</span>
+                                            @if($can('orders', 'edit') && $adjustment->source === 'manual')
+                                                <form method="POST" action="{{ route('cashier.orders.adjustments.destroy', [$order, $adjustment]) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-[10px] sm:text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-1 sm:px-2 py-0.5 sm:py-1 rounded border border-red-200 hover:border-red-300 transition-colors">Remove</button>
+                                                </form>
+                                            @endif
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     @endif
 
@@ -474,7 +489,7 @@
 
         async function filterPromosByCart(orderId) {
             try {
-                const response = await fetch(`/cashier/orders/${orderId}/cart-items`);
+                const response = await fetch('{{ route('cashier.orders.cart-items', ':id') }}'.replace(':id', orderId));
                 const cartItems = await response.json();
                 
                 const productSelect = document.getElementById('adjustmentProduct');

@@ -355,6 +355,19 @@ class OrderController extends Controller
         return response()->json($cartItems);
     }
 
+    public function getOrderByTable($tableId): JsonResponse
+    {
+        $order = Order::where('cafe_table_id', $tableId)
+            ->where('is_closed', false)
+            ->with('items')
+            ->first();
+
+        return response()->json([
+            'success' => !!$order,
+            'order' => $order
+        ]);
+    }
+
     public function receipt(Order $order): View
     {
         $order->load(['items.menuItem', 'cafeTable', 'cashier', 'adjustments']);

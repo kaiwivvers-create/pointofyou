@@ -56,7 +56,7 @@
         }
     </style>
 </head>
-<body class="h-screen bg-[#faf6f0] selection:bg-amber-500 selection:text-white flex flex-col overflow-hidden">
+<body class="h-screen bg-[#faf6f0] selection:bg-amber-500 selection:text-white flex flex-col overflow-auto">
     @yield('content')
 </body>
 </html>

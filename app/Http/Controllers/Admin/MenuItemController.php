@@ -36,7 +36,7 @@ class MenuItemController extends Controller
             }
         }
 
-        $menuItems = $query->with(['modifications', 'flavors'])->orderBy('category')->orderBy('name')->paginate(15);
+        $menuItems = $query->with(['modifications', 'flavors', 'ingredients'])->orderBy('category')->orderBy('name')->paginate(15);
 
         return view('admin.menu.index', compact('menuItems'));
     }
@@ -52,16 +52,16 @@ class MenuItemController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'category' => ['required', 'string', 'max:50'],
+            'name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s\-.,\'@]+$/'],
+            'description' => ['nullable', 'string', 'max:5000', 'regex:/^[a-zA-Z0-9\s\-.,!?@]+$/'],
+            'category' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s\-.,]+$/'],
             'price' => ['required', 'numeric', 'min:0'],
             'is_available' => ['boolean'],
             'modifications' => ['nullable', 'array'],
-            'modifications.*.name' => ['required', 'string', 'max:255'],
+            'modifications.*.name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s\-.,\'@]+$/'],
             'modifications.*.additional_price' => ['required', 'numeric', 'min:0'],
             'flavors' => ['nullable', 'array'],
-            'flavors.*.name' => ['required', 'string', 'max:255'],
+            'flavors.*.name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s\-.,\'@]+$/'],
             'flavors.*.additional_price' => ['required', 'numeric', 'min:0'],
             'ingredients' => ['nullable', 'array'],
             'ingredients.*.product_id' => ['required', 'exists:products,id'],
@@ -135,16 +135,16 @@ class MenuItemController extends Controller
     public function update(Request $request, MenuItem $menu): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'category' => ['required', 'string', 'max:50'],
+            'name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s\-.,\'@]+$/'],
+            'description' => ['nullable', 'string', 'max:5000', 'regex:/^[a-zA-Z0-9\s\-.,!?@]+$/'],
+            'category' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s\-.,]+$/'],
             'price' => ['required', 'numeric', 'min:0'],
             'is_available' => ['boolean'],
             'modifications' => ['nullable', 'array'],
-            'modifications.*.name' => ['required', 'string', 'max:255'],
+            'modifications.*.name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s\-.,\'@]+$/'],
             'modifications.*.additional_price' => ['required', 'numeric', 'min:0'],
             'flavors' => ['nullable', 'array'],
-            'flavors.*.name' => ['required', 'string', 'max:255'],
+            'flavors.*.name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s\-.,\'@]+$/'],
             'flavors.*.additional_price' => ['required', 'numeric', 'min:0'],
             'ingredients' => ['nullable', 'array'],
             'ingredients.*.product_id' => ['required', 'exists:products,id'],

@@ -16,7 +16,7 @@
     
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Title (optional)</label>
-        <input type="text" name="title" value="{{ old('title', $promo->title ?? '') }}" placeholder="Promo title" autocomplete="off" class="staff-input">
+        <input type="text" name="title" value="{{ old('title', $promo->title ?? '') }}" placeholder="Promo title" autocomplete="off" maxlength="255" class="staff-input">
         @error('title', 'createPromo')
             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
         @enderror
@@ -24,10 +24,10 @@
             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
         @enderror
     </div>
-    
+
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Description (optional)</label>
-        <textarea name="description" rows="3" placeholder="Promo description" class="staff-input">{{ old('description', $promo->description ?? '') }}</textarea>
+        <textarea name="description" rows="3" placeholder="Promo description" maxlength="5000" class="staff-input">{{ old('description', $promo->description ?? '') }}</textarea>
         @error('description', 'createPromo')
             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
         @enderror

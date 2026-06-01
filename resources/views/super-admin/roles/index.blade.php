@@ -85,15 +85,15 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Role Name</label>
-                        <input type="text" name="name" required class="staff-input" placeholder="e.g., Assistant Manager">
+                        <input type="text" name="name" required maxlength="255" class="staff-input" placeholder="e.g., Assistant Manager">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Slug</label>
-                        <input type="text" name="slug" required class="staff-input" placeholder="e.g., assistant_manager">
+                        <input type="text" name="slug" required maxlength="255" class="staff-input" placeholder="e.g., assistant_manager">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea name="description" rows="2" class="staff-input" placeholder="Role description..."></textarea>
+                        <textarea name="description" rows="2" maxlength="5000" class="staff-input" placeholder="Role description..."></textarea>
                     </div>
                     <div class="flex items-center gap-2">
                         <input type="hidden" name="is_paid" value="0">
@@ -135,15 +135,15 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Role Name</label>
-                        <input type="text" name="name" required class="staff-input">
+                        <input type="text" name="name" required maxlength="255" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Slug</label>
-                        <input type="text" name="slug" required class="staff-input">
+                        <input type="text" name="slug" required maxlength="255" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea name="description" rows="2" class="staff-input"></textarea>
+                        <textarea name="description" rows="2" maxlength="5000" class="staff-input"></textarea>
                     </div>
                     <div class="flex items-center gap-2">
                         <input type="hidden" name="is_paid" value="0">

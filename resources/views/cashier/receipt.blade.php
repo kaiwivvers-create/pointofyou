@@ -1,6 +1,10 @@
+@php
+    $brandSettings = \App\Models\BrandSettings::getSettings();
+@endphp
+
 <div class="receipt-header">
-    <h2 class="text-lg font-bold">Point of You</h2>
-    <p class="text-sm text-slate-600">Cafe & Bakery</p>
+    <h2 class="text-lg font-bold">{{ $brandSettings->app_name ?? 'Point of You' }}</h2>
+    <p class="text-sm text-slate-600">{{ $brandSettings->landing_kicker ?? 'Cafe & Bakery' }}</p>
     <p class="text-xs text-slate-500 mt-2">Order #{{ $order->id }}</p>
     <p class="text-xs text-slate-500">{{ $order->paid_at ? $order->paid_at->format('M d, Y H:i') : now()->format('M d, Y H:i') }}</p>
     @if($order->cafeTable)
@@ -53,5 +57,5 @@
 
 <div class="mt-4 text-center text-xs text-slate-500">
     <p>Thank you for your order!</p>
-    <p class="mt-2">Powered by Point of You</p>
+    <p class="mt-2">Powered by {{ $brandSettings->app_name ?? 'Point of You' }}</p>
 </div>

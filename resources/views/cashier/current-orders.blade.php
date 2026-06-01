@@ -186,7 +186,7 @@
     function processPayment(paymentMethod) {
         if (!currentOrderId) return;
 
-        fetch(`/cashier/orders/${currentOrderId}/pay`, {
+        fetch('{{ route('cashier.orders.pay', ':id') }}'.replace(':id', currentOrderId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

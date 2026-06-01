@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Traits\LogsActivity;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,8 +12,7 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -90,6 +90,17 @@ class User extends Authenticatable
     public function dbRole()
     {
         return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function getDashboardRouteAttribute(): string
+    {
+        // Use database role's dashboard_route if available
+        if ($this->dbRole && $this->dbRole->dashboard_route) {
+            return $this->dbRole->dashboard_route;
+        }
+
+        // Fallback to enum-based dashboard route
+        return $this->role->dashboardRoute();
     }
 
     public function isStaffEmployee(): bool

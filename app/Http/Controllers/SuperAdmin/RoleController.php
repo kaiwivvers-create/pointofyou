@@ -23,9 +23,9 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:roles,slug',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'slug' => 'required|string|max:255|unique:roles,slug|regex:/^[a-z0-9_]+$/',
+            'description' => 'nullable|string|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'is_paid' => 'boolean',
             'base_salary' => 'nullable|numeric|min:0',
             'payment_frequency' => 'required|in:monthly,bi-weekly,weekly',
@@ -49,9 +49,9 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:roles,slug,' . $role->id,
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'slug' => 'required|string|max:255|unique:roles,slug,' . $role->id . '|regex:/^[a-z0-9_]+$/',
+            'description' => 'nullable|string|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'is_paid' => 'boolean',
             'base_salary' => 'nullable|numeric|min:0',
             'payment_frequency' => 'required|in:monthly,bi-weekly,weekly',

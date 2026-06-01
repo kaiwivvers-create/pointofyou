@@ -87,11 +87,11 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                        <input type="text" name="name" required class="staff-input">
+                        <input type="text" name="name" required maxlength="255" class="staff-input">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea name="description" rows="3" class="staff-input"></textarea>
+                        <textarea name="description" rows="3" maxlength="5000" class="staff-input"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Color</label>
