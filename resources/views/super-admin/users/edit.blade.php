@@ -10,15 +10,7 @@
         </div>
     </div>
 
-    @if ($errors->any())
-        <div class="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800 border border-red-200">
-            <ul class="list-disc list-inside space-y-1">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <x-flash />
 
     <form method="POST" action="{{ route('super-admin.users.update', $user) }}" class="staff-form-card max-w-md">
         @csrf

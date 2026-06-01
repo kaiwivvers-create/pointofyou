@@ -15,12 +15,16 @@ class Product extends Model
         'stock_quantity',
         'min_stock_level',
         'unit',
-        'description'
+        'description',
+        'consume_on_takeout',
+        'consume_per_item',
     ];
 
     protected $casts = [
         'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
+        'consume_on_takeout' => 'boolean',
+        'consume_per_item' => 'integer',
     ];
 
     public function category()
@@ -31,5 +35,12 @@ class Product extends Model
     public function stockMovements()
     {
         return $this->hasMany(StockMovement::class);
+    }
+
+    public function menuItems(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(MenuItem::class, 'menu_item_product')
+            ->withPivot('quantity')
+            ->withTimestamps();
     }
 }

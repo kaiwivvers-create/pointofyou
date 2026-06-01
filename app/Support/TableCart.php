@@ -14,13 +14,13 @@ class TableCart
         return $request->session()->get(self::SESSION_KEY, []);
     }
 
-    public static function add(Request $request, MenuItem $menuItem, int $quantity = 1, array $modifications = [], ?string $notes = ''): void
+    public static function add(Request $request, MenuItem $menuItem, int $quantity = 1, array $modifications = [], ?int $flavorId = null, ?string $notes = ''): void
     {
         $cart = self::items($request);
 
         $modsTotal = 0;
         $selectedMods = [];
-        
+
         if (!empty($modifications)) {
             $availableMods = $menuItem->modifications->keyBy('id');
             foreach ($modifications as $modId) {
@@ -35,15 +35,47 @@ class TableCart
             }
         }
 
-        // Add as individual item instead of grouping
+        // Handle flavor selection
+        $selectedFlavor = null;
+        $flavorTotal = 0;
+        if ($flavorId) {
+            $availableFlavors = $menuItem->flavors->keyBy('id');
+            if ($availableFlavors->has($flavorId)) {
+                $flavor = $availableFlavors->get($flavorId);
+                $selectedFlavor = [
+                    'id' => $flavor->id,
+                    'name' => $flavor->name,
+                    'additional_price' => $flavor->additional_price,
+                ];
+                $flavorTotal += $flavor->additional_price;
+            }
+        }
+
+        $signature = implode('|', [
+            $menuItem->id,
+            md5(json_encode(array_values($selectedMods))),
+            md5((string) $notes),
+            (string) $flavorId,
+        ]);
+
+        foreach ($cart as $index => $existingItem) {
+            if (($existingItem['signature'] ?? null) === $signature) {
+                $cart[$index]['quantity'] += $quantity;
+                $request->session()->put(self::SESSION_KEY, $cart);
+                return;
+            }
+        }
+
         $cart[] = [
             'menu_item_id' => $menuItem->id,
             'name' => $menuItem->name,
             'emoji' => $menuItem->emoji,
-            'unit_price' => (float) $menuItem->price + $modsTotal,
+            'unit_price' => (float) $menuItem->price + $modsTotal + $flavorTotal,
             'quantity' => $quantity,
             'modifications' => $selectedMods,
+            'flavor' => $selectedFlavor,
             'notes' => $notes,
+            'signature' => $signature,
         ];
 
         $request->session()->put(self::SESSION_KEY, $cart);

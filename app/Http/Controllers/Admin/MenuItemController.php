@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Flavor;
 use App\Models\MenuItem;
+use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -34,14 +36,17 @@ class MenuItemController extends Controller
             }
         }
 
-        $menuItems = $query->orderBy('category')->orderBy('name')->paginate(15);
+        $menuItems = $query->with(['modifications', 'flavors'])->orderBy('category')->orderBy('name')->paginate(15);
 
         return view('admin.menu.index', compact('menuItems'));
     }
 
     public function create(): View
     {
-        return view('admin.menu.create');
+        $products = Product::with('category')->whereHas('category', function($query) {
+            $query->where('type', 'ingredient');
+        })->orderBy('name')->get();
+        return view('admin.menu.create', compact('products'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -55,6 +60,12 @@ class MenuItemController extends Controller
             'modifications' => ['nullable', 'array'],
             'modifications.*.name' => ['required', 'string', 'max:255'],
             'modifications.*.additional_price' => ['required', 'numeric', 'min:0'],
+            'flavors' => ['nullable', 'array'],
+            'flavors.*.name' => ['required', 'string', 'max:255'],
+            'flavors.*.additional_price' => ['required', 'numeric', 'min:0'],
+            'ingredients' => ['nullable', 'array'],
+            'ingredients.*.product_id' => ['required', 'exists:products,id'],
+            'ingredients.*.quantity' => ['required', 'numeric', 'min:0'],
             'image' => ['nullable', 'image', 'max:5120'],
             'cropped_image' => ['nullable', 'string'],
         ]);
@@ -98,12 +109,27 @@ class MenuItemController extends Controller
             $menuItem->modifications()->createMany($validated['modifications']);
         }
 
+        if (!empty($validated['flavors'])) {
+            $menuItem->flavors()->createMany($validated['flavors']);
+        }
+
+        if (!empty($validated['ingredients'])) {
+            foreach ($validated['ingredients'] as $ingredient) {
+                $menuItem->ingredients()->attach($ingredient['product_id'], [
+                    'quantity' => $ingredient['quantity']
+                ]);
+            }
+        }
+
         return redirect()->route('admin.menu.index')->with('success', 'Menu item added.');
     }
 
     public function edit(MenuItem $menu): View
     {
-        return view('admin.menu.edit', ['menuItem' => $menu]);
+        $products = Product::with('category')->whereHas('category', function($query) {
+            $query->where('type', 'ingredient');
+        })->orderBy('name')->get();
+        return view('admin.menu.edit', ['menuItem' => $menu, 'products' => $products]);
     }
 
     public function update(Request $request, MenuItem $menu): RedirectResponse
@@ -117,6 +143,12 @@ class MenuItemController extends Controller
             'modifications' => ['nullable', 'array'],
             'modifications.*.name' => ['required', 'string', 'max:255'],
             'modifications.*.additional_price' => ['required', 'numeric', 'min:0'],
+            'flavors' => ['nullable', 'array'],
+            'flavors.*.name' => ['required', 'string', 'max:255'],
+            'flavors.*.additional_price' => ['required', 'numeric', 'min:0'],
+            'ingredients' => ['nullable', 'array'],
+            'ingredients.*.product_id' => ['required', 'exists:products,id'],
+            'ingredients.*.quantity' => ['required', 'numeric', 'min:0'],
             'image' => ['nullable', 'image', 'max:5120'],
             'cropped_image' => ['nullable', 'string'],
         ]);
@@ -166,6 +198,20 @@ class MenuItemController extends Controller
         $menu->modifications()->delete();
         if (!empty($validated['modifications'])) {
             $menu->modifications()->createMany($validated['modifications']);
+        }
+
+        $menu->flavors()->delete();
+        if (!empty($validated['flavors'])) {
+            $menu->flavors()->createMany($validated['flavors']);
+        }
+
+        $menu->ingredients()->detach();
+        if (!empty($validated['ingredients'])) {
+            foreach ($validated['ingredients'] as $ingredient) {
+                $menu->ingredients()->attach($ingredient['product_id'], [
+                    'quantity' => $ingredient['quantity']
+                ]);
+            }
         }
 
         return redirect()->route('admin.menu.index')->with('success', 'Menu item updated.');

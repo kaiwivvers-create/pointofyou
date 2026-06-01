@@ -16,8 +16,12 @@ class Order extends Model
         'total',
         'notes',
         'is_closed',
+        'closed_by',
+        'closed_at',
         'paid_by',
         'paid_at',
+        'payment_method',
+        'amount_paid',
     ];
 
     protected function casts(): array
@@ -26,7 +30,9 @@ class Order extends Model
             'status' => OrderStatus::class,
             'total' => 'decimal:2',
             'is_closed' => 'boolean',
+            'closed_at' => 'datetime',
             'paid_at' => 'datetime',
+            'amount_paid' => 'decimal:2',
         ];
     }
 
@@ -40,9 +46,19 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(OrderAdjustment::class);
+    }
+
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'closed_by');
     }
 
     public function isPending(): bool

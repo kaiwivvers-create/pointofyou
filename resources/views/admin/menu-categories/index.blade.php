@@ -11,25 +11,7 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="mb-6 rounded-lg bg-green-50 p-4 text-sm font-medium text-green-800 border border-green-200">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-6 rounded-lg bg-red-50 p-4 text-sm font-medium text-red-800 border border-red-200">
-            {{ session('error') }}
-        </div>
-    @endif
-    @if($errors->any())
-        <div class="mb-6 rounded-lg bg-red-50 p-4 text-sm font-medium text-red-800 border border-red-200">
-            <ul class="list-disc pl-4">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <x-flash />
 
     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm mb-8">
         <div class="bg-slate-50/80 px-4 py-3 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider flex justify-between">

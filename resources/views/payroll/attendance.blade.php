@@ -30,6 +30,78 @@
 
     <x-flash />
 
+    <!-- Today's Attendance Summary -->
+    <div class="staff-card p-6 mb-8">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">Today's Attendance</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div class="p-4 bg-emerald-50 rounded-lg">
+                <p class="text-sm text-slate-500 mb-1">Present</p>
+                <p class="text-2xl font-bold text-emerald-600">{{ $attendance->where('date', today())->where('status', 'present')->count() }}</p>
+            </div>
+            <div class="p-4 bg-yellow-50 rounded-lg">
+                <p class="text-sm text-slate-500 mb-1">Late</p>
+                <p class="text-2xl font-bold text-yellow-600">{{ $attendance->where('date', today())->where('status', 'late')->count() }}</p>
+            </div>
+            <div class="p-4 bg-red-50 rounded-lg">
+                <p class="text-sm text-slate-500 mb-1">Absent</p>
+                <p class="text-2xl font-bold text-red-600">{{ $attendance->where('date', today())->where('status', 'absent')->count() }}</p>
+            </div>
+            <div class="p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-slate-500 mb-1">On Leave</p>
+                <p class="text-2xl font-bold text-blue-600">{{ $attendance->where('date', today())->where('status', 'leave')->count() }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Attendance Logs -->
+    <div class="staff-card p-6 mb-8">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">Recent Attendance Logs</h2>
+        <div class="staff-table-wrap">
+            <div class="overflow-x-auto">
+                <table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>Check In</th>
+                            <th>Check Out</th>
+                            <th>Hours Worked</th>
+                            <th>Overtime</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($attendance->take(10) as $record)
+                            <tr>
+                                <td class="font-semibold text-slate-900">{{ $record->employee ? $record->employee->full_name : '-' }}</td>
+                                <td class="text-slate-600">{{ $record->date->format('M d, Y') }}</td>
+                                <td class="text-slate-900">{{ $record->check_in ? $record->check_in->format('H:i') : '-' }}</td>
+                                <td class="text-slate-900">{{ $record->check_out ? $record->check_out->format('H:i') : '-' }}</td>
+                                <td class="text-slate-900">{{ $record->hours_worked ?? '-' }}</td>
+                                <td class="text-slate-900">{{ $record->overtime_hours ?? '-' }}</td>
+                                <td>
+                                    @if ($record->status === 'present')
+                                        <span class="staff-badge-green">Present</span>
+                                    @elseif ($record->status === 'absent')
+                                        <span class="staff-badge-red">Absent</span>
+                                    @elseif ($record->status === 'late')
+                                        <span class="staff-badge-yellow">Late</span>
+                                    @else
+                                        <span class="staff-badge-blue">Leave</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="py-16 text-center text-slate-500">No attendance records yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div class="staff-tabs mb-6">
         <button onclick="window.location.href='{{ route('payroll.index') }}'" class="staff-tab {{ request()->routeIs('payroll.index') ? 'staff-tab-active' : '' }}">Employees</button>
         <button onclick="window.location.href='{{ route('payroll.salaries') }}'" class="staff-tab {{ request()->routeIs('payroll.salaries') ? 'staff-tab-active' : '' }}">Salaries</button>
@@ -67,7 +139,7 @@
                                 @elseif ($record->status === 'late')
                                     <span class="staff-badge-yellow">Late</span>
                                 @else
-                                    <span class="staff-badge-blue">Half Day</span>
+                                    <span class="staff-badge-blue">Leave</span>
                                 @endif
                             </td>
                         </tr>

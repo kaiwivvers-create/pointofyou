@@ -12,13 +12,14 @@ class PayrollController extends Controller
 {
     public function index()
     {
-        $employees = Employee::whereNotNull('user_id')
+        $employees = Employee::with(['user.dbRole', 'salaries'])
+            ->whereNotNull('user_id')
             ->whereHas('user', function ($query) {
                 $query->whereNotNull('role_id')
                       ->whereHas('dbRole', function ($query) {
                           $query->where('is_paid', true);
                       });
-            })->with('salaries')->paginate(20);
+            })->paginate(20);
         return view('payroll.index', compact('employees'));
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OperationalExpense;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -42,14 +43,51 @@ class ReportsController extends Controller
         }
         
         $orders = $query->get();
+        $expenses = $this->buildExpenseQuery($period, $startDate, $endDate)->get();
         
         $totalIncome = $orders->sum('total');
         $totalOrders = $orders->count();
         $averageOrderValue = $totalOrders > 0 ? $totalIncome / $totalOrders : 0;
-        
-        // For now, outcome is 0 - you can add expenses tracking later
-        $totalOutcome = 0;
+        $totalOutcome = $expenses->sum('amount');
         $netProfit = $totalIncome - $totalOutcome;
+
+        // Additional comprehensive statistics
+        $orderIds = $orders->pluck('id');
+        
+        // Items ordered count
+        $totalItemsOrdered = \App\Models\OrderItem::whereIn('order_id', $orderIds)->sum('quantity');
+        
+        // Most popular items
+        $popularItems = \App\Models\OrderItem::select('menu_item_id', \DB::raw('SUM(quantity) as total_quantity'))
+            ->whereIn('order_id', $orderIds)
+            ->with('menuItem')
+            ->groupBy('menu_item_id')
+            ->orderByDesc('total_quantity')
+            ->limit(10)
+            ->get();
+        
+        // Takeout supplies used
+        $takeoutBoxProduct = \App\Models\Product::where('name', 'Takeout Box')->first();
+        $takeoutSuppliesUsed = 0;
+        if ($takeoutBoxProduct) {
+            $takeoutSuppliesUsed = \App\Models\StockMovement::where('product_id', $takeoutBoxProduct->id)
+                ->where('type', 'out')
+                ->whereBetween('created_at', [$this->getStartDate($period, $startDate), $this->getEndDate($period, $endDate)])
+                ->sum('quantity');
+        }
+        
+        // Stock costs and purchases
+        $stockPurchases = \App\Models\StockMovement::where('type', 'in')
+            ->whereBetween('created_at', [$this->getStartDate($period, $startDate), $this->getEndDate($period, $endDate)])
+            ->get();
+        $totalStockCost = $stockPurchases->sum(function($movement) {
+            return $movement->quantity * $movement->unit_cost;
+        });
+        $totalStockQuantity = $stockPurchases->sum('quantity');
+        
+        // Payroll costs
+        $payrollCosts = \App\Models\SalaryPayment::whereBetween('payment_date', [$this->getStartDate($period, $startDate), $this->getEndDate($period, $endDate)])
+            ->sum('amount');
         
         // Chart data
         $chartData = $this->getChartData($chartPeriod);
@@ -67,7 +105,49 @@ class ReportsController extends Controller
             'chartPeriod' => $chartPeriod,
             'chartType' => $chartType,
             'chartData' => $chartData,
+            'totalItemsOrdered' => $totalItemsOrdered,
+            'popularItems' => $popularItems,
+            'takeoutSuppliesUsed' => $takeoutSuppliesUsed,
+            'totalStockCost' => $totalStockCost,
+            'totalStockQuantity' => $totalStockQuantity,
+            'payrollCosts' => $payrollCosts,
         ]);
+    }
+
+    private function getStartDate(string $period, ?string $startDate): string
+    {
+        switch ($period) {
+            case 'today':
+                return now()->startOfDay()->toDateTimeString();
+            case 'week':
+                return now()->startOfWeek()->toDateTimeString();
+            case 'month':
+                return now()->startOfMonth()->toDateTimeString();
+            case 'year':
+                return now()->startOfYear()->toDateTimeString();
+            case 'custom':
+                return $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay()->toDateTimeString() : now()->startOfDay()->toDateTimeString();
+            default:
+                return now()->startOfDay()->toDateTimeString();
+        }
+    }
+
+    private function getEndDate(string $period, ?string $endDate): string
+    {
+        switch ($period) {
+            case 'today':
+                return now()->endOfDay()->toDateTimeString();
+            case 'week':
+                return now()->endOfWeek()->toDateTimeString();
+            case 'month':
+                return now()->endOfMonth()->toDateTimeString();
+            case 'year':
+                return now()->endOfYear()->toDateTimeString();
+            case 'custom':
+                return $endDate ? \Carbon\Carbon::parse($endDate)->endOfDay()->toDateTimeString() : now()->endOfDay()->toDateTimeString();
+            default:
+                return now()->endOfDay()->toDateTimeString();
+        }
     }
     
     private function getChartData(string $period): array
@@ -75,19 +155,19 @@ class ReportsController extends Controller
         if ($period === 'year') {
             // Monthly data for current year - SQLite compatible
             $monthlyData = Order::where('status', 'paid')
-                ->whereRaw("strftime('%Y', paid_at) = ?", [now()->year])
-                ->selectRaw("strftime('%m', paid_at) as month, SUM(total) as total")
+                ->whereYear('paid_at', now()->year)
+                ->selectRaw("CAST(strftime('%m', paid_at) AS INTEGER) as month, SUM(total) as total")
                 ->groupBy('month')
                 ->orderBy('month')
                 ->get();
             
             $labels = [];
             $data = [];
+            $monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             for ($i = 1; $i <= 12; $i++) {
-                $monthNum = str_pad($i, 2, '0', STR_PAD_LEFT);
-                $monthData = $monthlyData->firstWhere('month', $monthNum);
-                $labels[] = now()->month($i)->format('M');
-                $data[] = $monthData ? $monthData->total : 0;
+                $monthData = $monthlyData->firstWhere('month', $i);
+                $labels[] = $monthLabels[$i - 1];
+                $data[] = $monthData ? (float) $monthData->total : 0;
             }
             
             return [
@@ -98,9 +178,9 @@ class ReportsController extends Controller
         } else {
             // Daily data for current month - SQLite compatible
             $dailyData = Order::where('status', 'paid')
-                ->whereRaw("strftime('%Y', paid_at) = ?", [now()->year])
-                ->whereRaw("strftime('%m', paid_at) = ?", [str_pad(now()->month, 2, '0', STR_PAD_LEFT)])
-                ->selectRaw("strftime('%d', paid_at) as day, SUM(total) as total")
+                ->whereYear('paid_at', now()->year)
+                ->whereMonth('paid_at', now()->month)
+                ->selectRaw("CAST(strftime('%d', paid_at) AS INTEGER) as day, SUM(total) as total")
                 ->groupBy('day')
                 ->orderBy('day')
                 ->get();
@@ -109,10 +189,9 @@ class ReportsController extends Controller
             $data = [];
             $daysInMonth = now()->daysInMonth;
             for ($i = 1; $i <= $daysInMonth; $i++) {
-                $dayNum = str_pad($i, 2, '0', STR_PAD_LEFT);
-                $dayData = $dailyData->firstWhere('day', $dayNum);
+                $dayData = $dailyData->firstWhere('day', $i);
                 $labels[] = $i;
-                $data[] = $dayData ? $dayData->total : 0;
+                $data[] = $dayData ? (float) $dayData->total : 0;
             }
             
             return [
@@ -178,6 +257,34 @@ class ReportsController extends Controller
         
         return response()->stream($callback, 200, $headers);
     }
+
+    private function buildExpenseQuery(string $period, ?string $startDate, ?string $endDate)
+    {
+        $query = OperationalExpense::query()->where('source', 'auto_stock_purchase');
+
+        switch ($period) {
+            case 'today':
+                $query->whereDate('expense_date', today());
+                break;
+            case 'week':
+                $query->whereBetween('expense_date', [now()->startOfWeek(), now()->endOfWeek()]);
+                break;
+            case 'month':
+                $query->whereYear('expense_date', now()->year)
+                      ->whereMonth('expense_date', now()->month);
+                break;
+            case 'year':
+                $query->whereYear('expense_date', now()->year);
+                break;
+            case 'custom':
+                if ($startDate && $endDate) {
+                    $query->whereBetween('expense_date', [$startDate, $endDate]);
+                }
+                break;
+        }
+
+        return $query;
+    }
     
     public function exportPdf(Request $request)
     {
@@ -219,7 +326,7 @@ class ReportsController extends Controller
         $totalIncome = $orders->sum('total');
         $totalOrders = $orders->count();
         $averageOrderValue = $totalOrders > 0 ? $totalIncome / $totalOrders : 0;
-        $totalOutcome = 0;
+        $totalOutcome = $this->buildExpenseQuery($period, $startDate, $endDate)->sum('amount');
         $netProfit = $totalIncome - $totalOutcome;
         
         return view('reports.print', [

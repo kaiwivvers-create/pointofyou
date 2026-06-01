@@ -8,6 +8,7 @@ enum UserRole: string
     case Owner = 'owner';
     case Manager = 'manager';
     case Admin = 'admin';
+    case Chef = 'chef';
     case Cashier = 'cashier';
 
     public function label(): string
@@ -17,6 +18,7 @@ enum UserRole: string
             self::Owner => 'Owner',
             self::Manager => 'Manager',
             self::Admin => 'Admin',
+            self::Chef => 'Chef',
             self::Cashier => 'Cashier',
         };
     }
@@ -28,6 +30,7 @@ enum UserRole: string
             self::Owner => 'owner.dashboard',
             self::Manager => 'manager.dashboard',
             self::Admin => 'admin.dashboard',
+            self::Chef => 'admin.kitchen.dashboard',
             self::Cashier => 'cashier.dashboard',
         };
     }

@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Promo;
+use App\Models\PromoRule;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PromoController extends Controller
 {
     public function index()
     {
-        $promos = Promo::ordered()->get();
+        $promos = Promo::ordered()->with('rules.buyItem', 'rules.getItem')->get();
         return view('admin.promos.index', compact('promos'));
     }
 
@@ -21,13 +23,20 @@ class PromoController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('createPromo', [
             'image' => 'required|image|max:5120',
             'cropped_image' => 'nullable|string',
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
-            'order' => 'integer',
+            'order' => ['required', 'integer', 'min:0', 'unique:promos,order'],
+            'discount_type' => 'nullable|in:percentage,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+            'rules' => 'nullable|array',
+            'rules.*.buy_item_id' => 'nullable|exists:menu_items,id',
+            'rules.*.get_item_id' => 'nullable|exists:menu_items,id',
+            'rules.*.buy_quantity' => 'nullable|integer|min:1',
+            'rules.*.get_quantity' => 'nullable|integer|min:1',
         ]);
 
         // Use cropped image if available, otherwise use original
@@ -43,10 +52,29 @@ class PromoController extends Controller
             $validated['image'] = $path;
         }
 
-        $validated['is_active'] = $request->has('is_active');
+        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
         $validated['order'] = $request->input('order', 0);
+        $validated['discount_type'] = $request->input('discount_type') ?: null;
+        $validated['discount_value'] = $request->input('discount_value') ?: null;
 
-        Promo::create($validated);
+        $rules = $validated['rules'] ?? [];
+        unset($validated['rules']);
+
+        $promo = Promo::create($validated);
+
+        // Create promo rules
+        foreach ($rules as $rule) {
+            if (!empty($rule['buy_item_id']) || !empty($rule['get_item_id'])) {
+                PromoRule::create([
+                    'promo_id' => $promo->id,
+                    'buy_item_id' => $rule['buy_item_id'] ?: null,
+                    'get_item_id' => $rule['get_item_id'] ?: null,
+                    'buy_quantity' => $rule['buy_quantity'] ?? 1,
+                    'get_quantity' => $rule['get_quantity'] ?? 1,
+                ]);
+            }
+        }
+
         return redirect()->route('admin.promos.index')->with('success', 'Promo created successfully');
     }
 
@@ -57,13 +85,20 @@ class PromoController extends Controller
 
     public function update(Request $request, Promo $promo)
     {
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('editPromo', [
             'image' => 'nullable|image|max:5120',
             'cropped_image' => 'nullable|string',
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
-            'order' => 'integer',
+            'order' => ['required', 'integer', 'min:0', Rule::unique('promos', 'order')->ignore($promo->id)],
+            'discount_type' => 'nullable|in:percentage,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+            'rules' => 'nullable|array',
+            'rules.*.buy_item_id' => 'nullable|exists:menu_items,id',
+            'rules.*.get_item_id' => 'nullable|exists:menu_items,id',
+            'rules.*.buy_quantity' => 'nullable|integer|min:1',
+            'rules.*.get_quantity' => 'nullable|integer|min:1',
         ]);
 
         // Use cropped image if available, otherwise use original
@@ -79,10 +114,31 @@ class PromoController extends Controller
             $validated['image'] = $path;
         }
 
-        $validated['is_active'] = $request->has('is_active');
+        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
         $validated['order'] = $request->input('order', $promo->order);
+        $validated['discount_type'] = $request->input('discount_type') ?: null;
+        $validated['discount_value'] = $request->input('discount_value') ?: null;
+
+        $rules = $validated['rules'] ?? [];
+        unset($validated['rules']);
 
         $promo->update($validated);
+
+        // Delete existing rules and recreate
+        $promo->rules()->delete();
+
+        foreach ($rules as $rule) {
+            if (!empty($rule['buy_item_id']) || !empty($rule['get_item_id'])) {
+                PromoRule::create([
+                    'promo_id' => $promo->id,
+                    'buy_item_id' => $rule['buy_item_id'] ?: null,
+                    'get_item_id' => $rule['get_item_id'] ?: null,
+                    'buy_quantity' => $rule['buy_quantity'] ?? 1,
+                    'get_quantity' => $rule['get_quantity'] ?? 1,
+                ]);
+            }
+        }
+
         return redirect()->route('admin.promos.index')->with('success', 'Promo updated successfully');
     }
 

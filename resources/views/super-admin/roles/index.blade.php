@@ -37,10 +37,10 @@
                 <thead>
                     <tr>
                         <th>Role Name</th>
+                        <th>Description</th>
                         <th>Paid</th>
                         <th>Base Salary</th>
                         <th>Frequency</th>
-                        <th>Permissions</th>
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
@@ -48,6 +48,7 @@
                     @foreach ($roles as $role)
                         <tr>
                             <td class="font-semibold text-slate-900">{{ $role->name }}</td>
+                            <td class="text-slate-600 max-w-xs truncate" title="{{ $role->description ?? '-' }}">{{ $role->description ?? '-' }}</td>
                             <td>
                                 @if ($role->is_paid)
                                     <span class="staff-badge-green">Yes</span>
@@ -57,12 +58,6 @@
                             </td>
                             <td>{{ $role->is_paid ? '$' . number_format($role->base_salary, 2) : '-' }}</td>
                             <td>{{ $role->is_paid ? ucfirst($role->payment_frequency) : '-' }}</td>
-                            <td class="text-xs text-slate-500">
-                                @if ($role->can_manage_inventory) Inv @endif
-                                @if ($role->can_manage_payroll) Pay @endif
-                                @if ($role->can_manage_expenses) Exp @endif
-                                @if ($role->can_view_reports) Rpt @endif
-                            </td>
                             <td class="text-right space-x-4">
                                 <button onclick="openEditModal({{ $role->toJson() }})" class="staff-link">Edit</button>
                                 <form method="POST" action="{{ route('super-admin.roles.destroy', $role) }}" class="inline" onsubmit="return confirm('Delete {{ $role->name }}? Users with this role will be unassigned.')">
@@ -119,36 +114,6 @@
                             </select>
                         </div>
                     </div>
-                    <div class="border-t border-slate-200 pt-4">
-                        <p class="text-sm font-medium text-slate-700 mb-3">Permissions</p>
-                        <div class="grid grid-cols-2 gap-3">
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="can_manage_inventory" value="0">
-                                <input type="checkbox" name="can_manage_inventory" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">Manage Inventory</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="can_manage_payroll" value="0">
-                                <input type="checkbox" name="can_manage_payroll" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">Manage Payroll</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="can_manage_expenses" value="0">
-                                <input type="checkbox" name="can_manage_expenses" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">Manage Expenses</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="can_view_reports" value="0">
-                                <input type="checkbox" name="can_view_reports" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">View Reports</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="is_admin" value="0">
-                                <input type="checkbox" name="is_admin" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">Admin Access</span>
-                            </label>
-                        </div>
-                    </div>
                 </div>
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
                     <button type="button" onclick="closeCreateModal()" class="staff-btn-secondary">Cancel</button>
@@ -199,40 +164,10 @@
                             </select>
                         </div>
                     </div>
-                    <div class="border-t border-slate-200 pt-4">
-                        <p class="text-sm font-medium text-slate-700 mb-3">Permissions</p>
-                        <div class="grid grid-cols-2 gap-3">
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="can_manage_inventory" value="0">
-                                <input type="checkbox" name="can_manage_inventory" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">Manage Inventory</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="can_manage_payroll" value="0">
-                                <input type="checkbox" name="can_manage_payroll" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">Manage Payroll</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="can_manage_expenses" value="0">
-                                <input type="checkbox" name="can_manage_expenses" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">Manage Expenses</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="can_view_reports" value="0">
-                                <input type="checkbox" name="can_view_reports" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">View Reports</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="is_admin" value="0">
-                                <input type="checkbox" name="is_admin" value="1" class="size-5 rounded border-slate-300 text-slate-900 focus:ring-slate-300">
-                                <span class="text-sm text-slate-600">Admin Access</span>
-                            </label>
-                        </div>
-                    </div>
                 </div>
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
                     <button type="button" onclick="closeEditModal()" class="staff-btn-secondary">Cancel</button>
-                    <button type="submit" class="staff-btn-primary">Update Role</button>
+                    <button type="submit" class="staff-btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -292,12 +227,6 @@
             document.getElementById('edit_is_paid').checked = role.is_paid;
             form.querySelector('[name="base_salary"]').value = role.base_salary || '';
             form.querySelector('[name="payment_frequency"]').value = role.payment_frequency || 'monthly';
-            form.querySelectorAll('[name="can_manage_inventory"][type="checkbox"]')[0].checked = role.can_manage_inventory;
-            form.querySelectorAll('[name="can_manage_payroll"][type="checkbox"]')[0].checked = role.can_manage_payroll;
-            form.querySelectorAll('[name="can_manage_expenses"][type="checkbox"]')[0].checked = role.can_manage_expenses;
-            form.querySelectorAll('[name="can_view_reports"][type="checkbox"]')[0].checked = role.can_view_reports;
-            form.querySelectorAll('[name="is_admin"][type="checkbox"]')[0].checked = role.is_admin;
-
             toggleEditWageFields();
 
             modal.classList.remove('hidden');

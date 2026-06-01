@@ -2,28 +2,32 @@
 
 @section('content')
 
+@php
+    $brandSettings = \App\Models\BrandSettings::getSettings();
+    $appName = $brandSettings->app_name ?? 'Golden Crumb';
+    $brandLogo = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : null;
+@endphp
+
 <div class="relative min-h-screen w-full flex flex-col justify-center">
-    <!-- Split Background (Absolute so it doesn't constrain content height) -->
-    <div class="absolute inset-0 z-0 flex flex-col">
-        <!-- Top Image (60%) -->
-        <div class="h-[60%] relative w-full overflow-hidden">
-            <img
-                src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1920&q=80"
-                alt="Bakery background"
-                class="w-full h-full object-cover"
-            >
-            <div class="absolute inset-0 bg-black/40"></div>
-        </div>
-        
-        <!-- Bottom Brown (40%) -->
-        <div class="flex-1 w-full bg-amber-800 border-t-8 border-amber-900 shadow-[inset_0_10px_20px_rgba(0,0,0,0.2)]"></div>
+    <!-- Full Background Image -->
+    <div class="absolute inset-0 z-0">
+        <img
+            src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1920&q=80"
+            alt="Bakery background"
+            class="w-full h-full object-cover"
+        >
+        <div class="absolute inset-0 bg-black/40"></div>
     </div>
-    
+
     <!-- Foreground Content (Naturally flows, no fixed heights to cause cramping) -->
     <div class="relative z-10 flex flex-col items-center justify-center w-full px-8 py-16 mt-10">
-        
+
+        @if($brandLogo)
+            <img src="{{ $brandLogo }}" alt="{{ $appName }}" class="w-32 h-32 md:w-40 md:h-40 object-contain mb-8 drop-shadow-2xl">
+        @endif
+
         <h1 class="font-display text-6xl md:text-8xl font-bold text-white tracking-tight drop-shadow-2xl text-center mb-16">
-            Golden Crumb
+            {{ $appName }}
         </h1>
         
         <!-- The Buttons -->

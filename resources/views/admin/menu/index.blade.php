@@ -129,7 +129,9 @@
             </div>
             <form method="POST" action="{{ route('admin.menu.store') }}" class="p-6" enctype="multipart/form-data">
                 @csrf
-                @include('admin.menu._form', ['modalPrefix' => 'add'])
+                @include('admin.menu._form', ['modalPrefix' => 'add', 'products' => \App\Models\Product::with('category')->whereHas('category', function($query) {
+                    $query->where('type', 'ingredient');
+                })->orderBy('name')->get()])
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
                     <button type="button" onclick="closeAddModal()" class="staff-btn-secondary">Cancel</button>
                     <button type="submit" class="staff-btn-primary">Save item</button>
@@ -144,10 +146,12 @@
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-xl font-semibold text-slate-900">Edit menu item</h2>
             </div>
-            <form id="editForm" method="POST" class="p-6" enctype="multipart/form-data">
+            <form id="editForm" method="POST" action="" class="p-6" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                @include('admin.menu._form', ['modalPrefix' => 'edit', 'menuItem' => null])
+                @include('admin.menu._form', ['modalPrefix' => 'edit', 'menuItem' => null, 'products' => \App\Models\Product::with('category')->whereHas('category', function($query) {
+                    $query->where('type', 'ingredient');
+                })->orderBy('name')->get()])
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
                     <button type="button" onclick="closeEditModal()" class="staff-btn-secondary">Cancel</button>
                     <button type="submit" class="staff-btn-primary">Update item</button>
@@ -208,16 +212,27 @@
             form.querySelector('[name="description"]').value = item.description || '';
             form.querySelector('[name="category"]').value = item.category;
             form.querySelector('[name="price"]').value = item.price;
-            form.querySelector('[name="is_available"]').checked = item.is_available;
+            form.querySelector('[name="is_available"][type="checkbox"]').checked = item.is_available;
 
             // Clear modifications
-            const modContainer = document.getElementById('modifications-container');
+            const modContainer = document.getElementById('modifications-container-edit');
             modContainer.innerHTML = '';
 
             // Load modifications if any
             if (item.modifications && item.modifications.length > 0) {
                 item.modifications.forEach((mod, index) => {
-                    addModificationRow(mod.name, mod.additional_price, mod.id);
+                    addModificationRow(mod.name, mod.additional_price, mod.id, 'edit');
+                });
+            }
+
+            // Clear flavors
+            const flavorContainer = document.getElementById('flavors-container-edit');
+            flavorContainer.innerHTML = '';
+
+            // Load flavors if any
+            if (item.flavors && item.flavors.length > 0) {
+                item.flavors.forEach((flavor, index) => {
+                    addFlavorRow(flavor.name, flavor.additional_price, flavor.id, 'edit');
                 });
             }
 
@@ -240,13 +255,27 @@
             }, 200);
         }
 
-        function addModificationRow(name = '', price = '', id = null) {
-            const container = document.getElementById('modifications-container');
+        function addModificationRow(name = '', price = '', id = null, prefix = 'add') {
+            const container = document.getElementById('modifications-container-' + prefix);
+            const modIndex = container.querySelectorAll('.modification-row').length;
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2 modification-row';
             div.innerHTML = `
-                <input type="text" name="modifications[${container.children.length}][name]" value="${name}" placeholder="Name (e.g. No Mayo)" required class="staff-input flex-1">
-                <input type="number" step="0.01" min="0" name="modifications[${container.children.length}][additional_price]" value="${price}" placeholder="+ Price ($)" required class="staff-input w-28">
+                <input type="text" name="modifications[${modIndex}][name]" value="${name}" placeholder="Name (e.g. No Mayo)" required class="staff-input flex-1">
+                <input type="number" step="0.01" min="0" name="modifications[${modIndex}][additional_price]" value="${price}" placeholder="+ Price ($)" required class="staff-input w-28">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-sm px-2 py-1 text-xl font-bold">&times;</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addFlavorRow(name = '', price = '', id = null, prefix = 'add') {
+            const container = document.getElementById('flavors-container-' + prefix);
+            const flavorIndex = container.querySelectorAll('.flavor-row').length;
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 flavor-row';
+            div.innerHTML = `
+                <input type="text" name="flavors[${flavorIndex}][name]" value="${name}" placeholder="Flavor name" required class="staff-input flex-1">
+                <input type="number" step="0.01" min="0" name="flavors[${flavorIndex}][additional_price]" value="${price}" placeholder="+ Price ($)" required class="staff-input w-28">
                 <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 text-sm px-2 py-1 text-xl font-bold">&times;</button>
             `;
             container.appendChild(div);
@@ -374,6 +403,25 @@
 
         document.getElementById('cropModal').addEventListener('click', function(e) {
             if (e.target === this) closeCropModal();
+        });
+
+        // Add modification button event listeners for both modals using event delegation
+        document.getElementById('addModal').addEventListener('click', function(e) {
+            if (e.target.closest('.add-mod-btn')) {
+                addModificationRow('', '', null, 'add');
+            }
+            if (e.target.closest('.add-flavor-btn')) {
+                addFlavorRow('', '', null, 'add');
+            }
+        });
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target.closest('.add-mod-btn')) {
+                addModificationRow('', '', null, 'edit');
+            }
+            if (e.target.closest('.add-flavor-btn')) {
+                addFlavorRow('', '', null, 'edit');
+            }
         });
     </script>
 @endsection

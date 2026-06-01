@@ -60,19 +60,15 @@ class UserController extends Controller
             'role' => $role ? \App\Enums\UserRole::tryFrom($role->slug) ?? \App\Enums\UserRole::Cashier : \App\Enums\UserRole::Cashier,
         ]);
 
-        // Create employee record for staff roles with is_paid true or staff roles
-        if ($role && ($role->is_paid || in_array($role->slug, ['cashier', 'admin', 'manager']))) {
-            $nameParts = explode(' ', $validated['name'], 2);
-            $firstName = $nameParts[0];
-            $lastName = $nameParts[1] ?? '';
-
+        // Create employee record for all users with a role_id
+        if ($role) {
             $employee = Employee::create([
                 'employee_id' => 'EMP-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
-                'first_name' => $firstName,
-                'last_name' => $lastName,
+                'full_name' => $validated['name'],
                 'email' => $validated['email'],
                 'position' => $role->name,
                 'base_salary' => $role->base_salary ?? 0,
+                'hire_date' => now(),
                 'status' => 'active',
             ]);
 
@@ -100,7 +96,15 @@ class UserController extends Controller
         $user->role_id = $validated['role'];
         
         $role = Role::find($validated['role']);
-        $user->role = $role ? \App\Enums\UserRole::tryFrom($role->slug) ?? \App\Enums\UserRole::Cashier : \App\Enums\UserRole::Cashier;
+        // Try to map to enum, if not found, use the role_id for custom roles
+        $enumRole = \App\Enums\UserRole::tryFrom($role->slug ?? '');
+        if ($enumRole) {
+            $user->role = $enumRole;
+        } else {
+            // For custom roles, we'll use the role_id primarily
+            // Keep the existing role enum or set to a default
+            $user->role = $user->role ?? \App\Enums\UserRole::Cashier;
+        }
 
         if (! empty($validated['password'])) {
             $user->password = $validated['password'];

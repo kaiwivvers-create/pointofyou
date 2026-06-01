@@ -47,17 +47,18 @@
         
         <div class="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar min-h-0">
             @php
-                // Group cart items by menu_item_id and modifications
+                // Group cart items by menu_item_id, modifications, and flavor
                 $groupedCart = [];
                 if (!empty($cart) && is_array($cart)) {
                     foreach($cart as $index => $cartItem) {
-                        $key = $cartItem['menu_item_id'] . '_' . md5(json_encode($cartItem['modifications'] ?? []));
+                        $key = $cartItem['signature'] ?? ($cartItem['menu_item_id'] . '_' . md5(json_encode($cartItem['modifications'] ?? [])) . '_' . md5($cartItem['notes'] ?? '') . '_' . ($cartItem['flavor']['id'] ?? ''));
                         if (!isset($groupedCart[$key])) {
                             $groupedCart[$key] = [
                                 'name' => $cartItem['name'],
                                 'menu_item_id' => $cartItem['menu_item_id'],
                                 'unit_price' => $cartItem['unit_price'],
                                 'modifications' => $cartItem['modifications'] ?? [],
+                                'flavor' => $cartItem['flavor'] ?? null,
                                 'items' => []
                             ];
                         }
@@ -85,6 +86,13 @@
                                 <span class="font-semibold text-stone-800">${{ number_format($totalPrice, 2) }}</span>
                             </div>
                             <div class="text-sm text-stone-500 font-medium">Qty: {{ $totalQty }}</div>
+                            @if(!empty($group['flavor']))
+                                <div class="mt-1 flex flex-wrap gap-1">
+                                    <div class="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-1 rounded border border-amber-200">
+                                        Flavor: {{ $group['flavor']['name'] }}
+                                    </div>
+                                </div>
+                            @endif
                             @if(!empty($group['modifications']))
                                 <div class="mt-1 flex flex-wrap gap-1">
                                     @foreach($group['modifications'] as $mod)
@@ -168,12 +176,9 @@
                 <span class="font-display text-4xl font-semibold text-amber-950">${{ number_format($cartTotal, 2) }}</span>
             </div>
             @if(count($cart) > 0)
-                <form method="POST" action="{{ route('kiosk.checkout') }}">
-                    @csrf
-                    <button type="submit" class="w-full bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold py-4 rounded-2xl text-xl shadow-lg shadow-amber-900/20 transition-all active:scale-97 flex items-center justify-center gap-2 cursor-pointer">
-                        Checkout <span>→</span>
-                    </button>
-                </form>
+                <button type="button" onclick="openCheckoutModal()" class="w-full bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold py-4 rounded-2xl text-xl shadow-lg shadow-amber-900/20 transition-all active:scale-97 flex items-center justify-center gap-2 cursor-pointer">
+                    Checkout <span>→</span>
+                </button>
             @else
                 <button disabled class="w-full bg-stone-200 text-stone-400 font-bold py-4 rounded-2xl text-xl cursor-not-allowed">
                     Checkout
@@ -189,6 +194,8 @@
                 {{ session('success') }}
             </div>--}}
         @endif
+
+        @include('partials.promo-carousel', ['promos' => $promos])
 
             @forelse($menuItems as $category => $items)
                 <div id="cat-{{ strtolower($category) }}" class="mb-14">
@@ -254,6 +261,17 @@
             <div class="p-6 overflow-y-auto hide-scrollbar flex-1 bg-white">
                 <p id="modalDesc" class="text-stone-600 mb-8 font-medium leading-relaxed text-lg"></p>
                 
+                <!-- Flavors -->
+                <div id="flavorsSection" class="hidden">
+                    <h3 class="font-display text-xl font-bold text-amber-950 mb-4 flex items-center gap-2">
+                        Choose Flavor
+                        <div class="flex-1 h-px bg-amber-100"></div>
+                    </h3>
+                    <div id="flavorsList" class="space-y-3 mb-8">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
                 <!-- Customizations -->
                 <div id="customizationsSection" class="hidden">
                     <h3 class="font-display text-xl font-bold text-amber-950 mb-4 flex items-center gap-2">
@@ -334,9 +352,148 @@
     </div>
 </div>
 
+<!-- Checkout Modal Backdrop -->
+<div id="checkoutModalBackdrop" class="kiosk-modal-backdrop" onclick="if(event.target === this) closeCheckoutModal()">
+    <div id="checkoutModalContent" class="kiosk-modal-content max-w-3xl max-h-[90vh] overflow-y-auto">
+        @php
+            $isTakeout = session('kiosk_order_type') === 'takeout';
+            $cart = session('kiosk_cart', []);
+            $cartTotal = collect($cart)->sum('line_total');
+            $paymentSettings = \App\Models\PaymentSettings::getSettings();
+        @endphp
+        <div class="p-4 sm:p-6 lg:p-8 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shrink-0">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-[0.25em] text-amber-700">Checkout</p>
+                <h1 class="font-display text-2xl sm:text-3xl font-semibold text-amber-950">Complete payment</h1>
+                <p class="text-sm text-stone-500 mt-1">{{ $isTakeout ? 'Takeout order' : 'Dine-in order' }}</p>
+            </div>
+            <div class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-amber-50 text-amber-800 font-bold border border-amber-200 text-sm sm:text-base">
+                {{ $isTakeout ? 'Takeout' : 'Table' }}
+            </div>
+        </div>
+
+        <div class="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 shrink-0">
+            <x-flash />
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
+            <div class="p-4 sm:p-6 lg:p-8 bg-[#fffaf3] border-b lg:border-b-0 lg:border-r border-amber-100">
+                <div class="bg-white rounded-2xl border border-amber-100 p-4 sm:p-5 shadow-sm mb-4 sm:mb-5">
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-stone-400 mb-2">Order Total</p>
+                    <p class="font-display text-4xl sm:text-5xl font-semibold text-amber-950">${{ number_format($cartTotal, 2) }}</p>
+                </div>
+
+                @if(! $isTakeout)
+                    <div class="mb-6">
+                        <label for="table_number" class="block text-sm font-bold text-stone-700 mb-2">Table number</label>
+                        <input type="text" id="table_number" name="table_number" form="kioskPaymentForm" required placeholder="e.g. 12"
+                            class="w-full px-4 py-4 bg-white border-2 border-amber-200/70 rounded-2xl focus:ring-0 focus:border-amber-500 font-medium text-stone-800 transition-colors placeholder:font-normal"
+                            autocomplete="off">
+                    </div>
+                @endif
+
+                <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                    <p class="text-sm font-semibold text-amber-900">After payment, you'll get an order number.</p>
+                    <p class="text-sm text-stone-600 mt-1">{{ $isTakeout ? 'Takeout pickup' : 'Table service' }} will show on the receipt screen.</p>
+                </div>
+
+                <div class="mt-4 sm:mt-6 flex gap-2 sm:gap-3">
+                    <button type="button" onclick="closeCheckoutModal()" class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-4 sm:py-5 px-6 rounded-2xl text-base sm:text-lg transition-colors flex items-center justify-center">
+                        Back
+                    </button>
+                    <button type="button" onclick="submitKioskPayment()" class="flex-[2] bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold py-4 sm:py-5 px-8 rounded-2xl text-base sm:text-lg shadow-lg shadow-amber-900/20 transition-transform active:scale-95">
+                        Pay now
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-6 lg:p-8 bg-white">
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-stone-400 mb-3 sm:mb-4">Payment method</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-5">
+                    <button type="button" onclick="selectMethod('qr')" id="btn-qr" class="payment-method-btn p-4 rounded-2xl border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50 transition-all text-center">
+                        <span class="block font-semibold text-slate-700">QR</span>
+                        <span class="text-xs text-stone-500 mt-1">Scan to pay</span>
+                    </button>
+                    <button type="button" onclick="selectMethod('card')" id="btn-card" class="payment-method-btn p-4 rounded-2xl border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50 transition-all text-center">
+                        <span class="block font-semibold text-slate-700">Card</span>
+                        <span class="text-xs text-stone-500 mt-1">Tap or insert</span>
+                    </button>
+                    <button type="button" onclick="selectMethod('transfer')" id="btn-transfer" class="payment-method-btn p-4 rounded-2xl border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50 transition-all text-center">
+                        <span class="block font-semibold text-slate-700">Transfer</span>
+                        <span class="text-xs text-stone-500 mt-1">Bank transfer</span>
+                    </button>
+                </div>
+
+                <div id="qr-form" class="payment-form hidden">
+                    <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 sm:p-5 text-center">
+                        <div class="w-36 h-36 sm:w-44 sm:h-44 mx-auto bg-white border-2 border-slate-200 rounded-2xl mb-3 sm:mb-4 overflow-auto flex items-center justify-center">
+                            @if($paymentSettings->qr_code_image)
+                                <img src="{{ asset('storage/' . $paymentSettings->qr_code_image) }}" alt="QR Code" class="object-contain">
+                            @else
+                                <svg class="size-10 sm:size-14 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h4v4H4V4zm8 0h4v4h-4V4zM4 12h4v4H4v-4zm8 8v-4h4v4h-4zm4-8h4v4h-4v-4zm0-8h4v4h-4V4zM8 8h8v8H8V8z" />
+                                </svg>
+                            @endif
+                        </div>
+                        <p class="text-sm text-stone-600">{{ $paymentSettings->qr_code_instructions ?? 'Scan the QR code to complete payment.' }}</p>
+                    </div>
+                </div>
+
+                <div id="card-form" class="payment-form hidden">
+                    <div class="bg-slate-50 rounded-2xl p-4 sm:p-5 text-center">
+                        <p class="text-sm text-slate-600">{{ $paymentSettings->card_instructions ?? 'Insert or tap your card.' }}</p>
+                    </div>
+                </div>
+
+                <div id="transfer-form" class="payment-form hidden">
+                    <div class="bg-slate-50 rounded-2xl p-4 sm:p-5">
+                        <p class="text-sm text-slate-600 mb-4">{{ $paymentSettings->transfer_instructions ?? 'Transfer to the account details below' }}</p>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Bank:</span>
+                                <span class="font-medium text-slate-900">{{ $paymentSettings->bank_name }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Account Number:</span>
+                                <span class="font-medium text-slate-900">{{ $paymentSettings->account_number }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Account Name:</span>
+                                <span class="font-medium text-slate-900">{{ $paymentSettings->account_name }}</span>
+                            </div>
+                            @if($paymentSettings->bank_address)
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Bank Address:</span>
+                                <span class="font-medium text-slate-900">{{ $paymentSettings->bank_address }}</span>
+                            </div>
+                            @endif
+                            @if($paymentSettings->swift_code)
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">SWIFT Code:</span>
+                                <span class="font-medium text-slate-900">{{ $paymentSettings->swift_code }}</span>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <form id="kioskPaymentForm" method="POST" action="{{ route('kiosk.pay') }}" class="mt-6">
+                    @csrf
+                    <input type="hidden" id="paymentMethod" name="payment_method" value="">
+                    <button type="submit" id="submitPayment" class="hidden"></button>
+                </form>
+
+                <p class="mt-4 text-xs text-stone-400">Cash is disabled on kiosk checkout.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let currentBasePrice = 0;
     let currentEditIndex = null;
+    let selectedMethod = null;
     
     function toggleDropdown(groupKey) {
         const dropdown = document.getElementById('dropdown-' + groupKey);
@@ -451,9 +608,34 @@
         document.getElementById('qtyInput').value = 1;
         document.getElementById('itemNotes').value = '';
         
+        const flavorSection = document.getElementById('flavorsSection');
+        const flavorList = document.getElementById('flavorsList');
+
+        if (item.flavors && item.flavors.length > 0) {
+            flavorSection.classList.remove('hidden');
+            let html = '';
+            item.flavors.forEach((flavor, index) => {
+                let priceText = parseFloat(flavor.additional_price) > 0 ? `<span class="text-amber-700 font-bold text-lg">+$${parseFloat(flavor.additional_price).toFixed(2)}</span>` : '';
+                html += `
+                <label class="flex items-center justify-between p-4 rounded-xl border-2 border-stone-100 hover:border-amber-200 cursor-pointer transition-all has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 group shadow-sm hover:shadow">
+                    <div class="flex items-center gap-4">
+                        <div class="relative flex items-center">
+                            <input type="radio" name="flavors" value="${flavor.id}" data-price="${flavor.additional_price}" onchange="updateModalTotal()" ${index === 0 ? 'checked' : ''} class="peer w-6 h-6 border-stone-300 text-amber-600 focus:ring-amber-500 transition-all cursor-pointer">
+                        </div>
+                        <span class="font-bold text-stone-700 group-hover:text-stone-900 text-lg">${flavor.name}</span>
+                    </div>
+                    ${priceText}
+                </label>`;
+            });
+            flavorList.innerHTML = html;
+        } else {
+            flavorSection.classList.add('hidden');
+            flavorList.innerHTML = '';
+        }
+
         const custSection = document.getElementById('customizationsSection');
         const custList = document.getElementById('customizationsList');
-        
+
         if (item.modifications && item.modifications.length > 0) {
             custSection.classList.remove('hidden');
             let html = '';
@@ -475,7 +657,7 @@
             custSection.classList.add('hidden');
             custList.innerHTML = '';
         }
-        
+
         updateModalTotal();
 
         const backdrop = document.getElementById('itemModalBackdrop');
@@ -498,6 +680,14 @@
     
     function updateModalTotal() {
         let total = currentBasePrice;
+        
+        // Add flavor price
+        const flavorRadio = document.querySelector('#flavorsList input[type="radio"]:checked');
+        if (flavorRadio) {
+            total += parseFloat(flavorRadio.dataset.price || 0);
+        }
+        
+        // Add modification prices
         const checkboxes = document.querySelectorAll('#customizationsList input[type="checkbox"]:checked');
         checkboxes.forEach(cb => {
             total += parseFloat(cb.dataset.price || 0);
@@ -509,74 +699,71 @@
         document.getElementById('modalTotalBtn').innerText = `($${total.toFixed(2)})`;
     }
 
-    // Promo Banner Carousel & Drag Functionality
-    const promoBanner = document.getElementById('promoBanner');
-    const promoContent = document.getElementById('promoContent');
-    let isDown = false;
-    let startX;
-    let scrollLeft;
-    let autoScrollInterval;
-    let currentIndex = 0;
-
-    if (promoBanner && promoContent) {
-        const slides = promoContent.querySelectorAll('.promo-slide');
-        const totalSlides = slides.length;
-
-        // Auto-scroll every 3 seconds
-        function startAutoScroll() {
-            autoScrollInterval = setInterval(() => {
-                if (!isDown) {
-                    currentIndex = (currentIndex + 1) % totalSlides;
-                    const slideWidth = promoBanner.offsetWidth;
-                    promoBanner.scrollTo({
-                        left: currentIndex * slideWidth,
-                        behavior: 'smooth'
-                    });
-                }
-            }, 3000);
-        }
-
-        function stopAutoScroll() {
-            clearInterval(autoScrollInterval);
-        }
-
-        startAutoScroll();
-
-        // Drag functionality
-        promoBanner.addEventListener('mousedown', (e) => {
-            isDown = true;
-            promoContent.classList.add('dragging');
-            startX = e.pageX - promoBanner.offsetLeft;
-            scrollLeft = promoBanner.scrollLeft;
-            stopAutoScroll();
-        });
-
-        promoBanner.addEventListener('mouseleave', () => {
-            isDown = false;
-            promoContent.classList.remove('dragging');
-            startAutoScroll();
-        });
-
-        promoBanner.addEventListener('mouseup', () => {
-            isDown = false;
-            promoContent.classList.remove('dragging');
-            startAutoScroll();
-        });
-
-        promoBanner.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - promoBanner.offsetLeft;
-            const walk = (x - startX) * 2;
-            promoBanner.scrollLeft = scrollLeft - walk;
-        });
-
-        // Update current index on scroll
-        promoBanner.addEventListener('scroll', () => {
-            const slideWidth = promoBanner.offsetWidth;
-            currentIndex = Math.round(promoBanner.scrollLeft / slideWidth);
-        });
+    function openCheckoutModal() {
+        const backdrop = document.getElementById('checkoutModalBackdrop');
+        backdrop.classList.add('show');
+        selectMethod('qr');
     }
+
+    function closeCheckoutModal() {
+        const backdrop = document.getElementById('checkoutModalBackdrop');
+        backdrop.classList.remove('show');
+        selectedMethod = null;
+    }
+
+    function selectMethod(method) {
+        selectedMethod = method;
+        document.getElementById('paymentMethod').value = method;
+
+        document.querySelectorAll('.payment-method-btn').forEach(btn => {
+            btn.classList.remove('border-amber-500', 'bg-amber-50');
+            btn.classList.add('border-slate-200');
+        });
+
+        document.getElementById('btn-' + method).classList.add('border-amber-500', 'bg-amber-50');
+        document.getElementById('btn-' + method).classList.remove('border-slate-200');
+
+        document.querySelectorAll('.payment-form').forEach(form => form.classList.add('hidden'));
+        document.getElementById(method + '-form').classList.remove('hidden');
+    }
+
+    async function submitKioskPayment() {
+        const form = document.getElementById('kioskPaymentForm');
+        const formData = new FormData(form);
+
+        const tableNumberInput = document.getElementById('table_number');
+        if (tableNumberInput) {
+            formData.append('table_number', tableNumberInput.value);
+        }
+
+        if (!selectedMethod) {
+            alert('Select a payment method first.');
+            return;
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.message || 'Payment failed. Please try again.');
+                return;
+            }
+
+            window.location.href = data.redirect_url || '/kiosk/success';
+        } catch (error) {
+            console.error(error);
+            alert('Payment failed. Please try again.');
+        }
+    }
+
 </script>
 @endsection
-

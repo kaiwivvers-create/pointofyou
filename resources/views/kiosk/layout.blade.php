@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kiosk - {{ config('app.name') }}</title>
     @php
         $brandSettings = \App\Models\BrandSettings::getSettings();
         $favicon = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : asset('favicon.ico');
+        $appName = $brandSettings->app_name ?? config('app.name');
     @endphp
+    <title>Kiosk - {{ $appName }}</title>
     <link rel="icon" type="image/x-icon" href="{{ $favicon }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=fredoka:400,500,600,700|nunito:400,500,600,700" rel="stylesheet">
@@ -49,9 +50,13 @@
         .item-card:active {
             transform: scale(0.97);
         }
+        .dragging {
+            cursor: grabbing !important;
+            user-select: none;
+        }
     </style>
 </head>
-<body class="min-h-screen bg-[#faf6f0] selection:bg-amber-500 selection:text-white flex flex-col">
+<body class="h-screen bg-[#faf6f0] selection:bg-amber-500 selection:text-white flex flex-col overflow-hidden">
     @yield('content')
 </body>
 </html>

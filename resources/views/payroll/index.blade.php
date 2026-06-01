@@ -57,7 +57,7 @@
                             <td class="font-semibold text-slate-900">{{ $employee->full_name }}</td>
                             <td class="text-slate-600">{{ $employee->email }}</td>
                             <td class="text-slate-900">{{ $employee->position }}</td>
-                            <td class="text-slate-900">${{ number_format($employee->base_salary, 2) }}</td>
+                            <td class="text-slate-900">${{ number_format($employee->user->dbRole->base_salary ?? $employee->base_salary, 2) }}</td>
                             <td>
                                 @if ($employee->status === 'active')
                                     <span class="staff-badge-green">Active</span>

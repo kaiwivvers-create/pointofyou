@@ -51,16 +51,18 @@
 
         <div class="hide-scrollbar" style="position:absolute;top:80px;left:0;right:0;bottom:140px;overflow-y:auto;padding:1rem;">
             @php
-                // Group cart items by menu_item_id
+                // Group cart items by menu_item_id, modifications, and flavor
                 $groupedCart = [];
                 if (!empty($cart) && is_array($cart)) {
                     foreach($cart as $index => $cartItem) {
-                        $key = $cartItem['menu_item_id'];
+                        $key = $cartItem['signature'] ?? ($cartItem['menu_item_id'] . '_' . md5(json_encode($cartItem['modifications'] ?? [])) . '_' . md5($cartItem['notes'] ?? '') . '_' . ($cartItem['flavor']['id'] ?? ''));
                         if (!isset($groupedCart[$key])) {
                             $groupedCart[$key] = [
                                 'name' => $cartItem['name'],
                                 'menu_item_id' => $cartItem['menu_item_id'],
                                 'unit_price' => $cartItem['unit_price'],
+                                'modifications' => $cartItem['modifications'] ?? [],
+                                'flavor' => $cartItem['flavor'] ?? null,
                                 'items' => []
                             ];
                         }
@@ -88,6 +90,22 @@
                             <span class="font-semibold text-stone-800">${{ number_format($totalPrice, 2) }}</span>
                         </div>
                         <div class="text-sm text-stone-500 font-medium">Qty: {{ $totalQty }}</div>
+                        @if(!empty($group['flavor']))
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                <div class="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-1 rounded border border-amber-200">
+                                    Flavor: {{ $group['flavor']['name'] }}
+                                </div>
+                            </div>
+                        @endif
+                        @if(!empty($group['modifications']))
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                @foreach($group['modifications'] as $mod)
+                                    <div class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100">
+                                        + {{ $mod['name'] }}
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                     <div class="flex items-center gap-2">
                         @if($hasMultipleItems)
@@ -183,6 +201,8 @@
             </div>
         @endif
 
+        @include('partials.promo-carousel', ['promos' => $promos])
+
             @forelse($itemsByCategory as $category => $items)
                 <div id="cat-{{ strtolower($category) }}" class="mb-14">
                     <h2 class="font-display text-3xl font-bold text-amber-950 mb-6 capitalize flex items-center gap-4">
@@ -242,6 +262,17 @@
 
             <div class="p-6 overflow-y-auto hide-scrollbar flex-1 bg-white">
                 <p id="modalDesc" class="text-stone-600 mb-8 font-medium leading-relaxed text-lg"></p>
+
+                <!-- Flavors -->
+                <div id="flavorsSection" class="hidden">
+                    <h3 class="font-display text-xl font-bold text-amber-950 mb-4 flex items-center gap-2">
+                        Choose Flavor
+                        <div class="flex-1 h-px bg-amber-100"></div>
+                    </h3>
+                    <div id="flavorsList" class="space-y-3 mb-8">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
 
                 <!-- Customizations -->
                 <div id="customizationsSection" class="hidden">
@@ -338,6 +369,31 @@
         document.getElementById('qtyInput').value = 1;
         document.getElementById('itemNotes').value = '';
 
+        const flavorSection = document.getElementById('flavorsSection');
+        const flavorList = document.getElementById('flavorsList');
+
+        if (item.flavors && item.flavors.length > 0) {
+            flavorSection.classList.remove('hidden');
+            let html = '';
+            item.flavors.forEach((flavor, index) => {
+                let priceText = parseFloat(flavor.additional_price) > 0 ? `<span class="text-amber-700 font-bold text-lg">+$${parseFloat(flavor.additional_price).toFixed(2)}</span>` : '';
+                html += `
+                <label class="flex items-center justify-between p-4 rounded-xl border-2 border-stone-100 hover:border-amber-200 cursor-pointer transition-all has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 group shadow-sm hover:shadow">
+                    <div class="flex items-center gap-4">
+                        <div class="relative flex items-center">
+                            <input type="radio" name="flavors" value="${flavor.id}" data-price="${flavor.additional_price}" onchange="updateModalTotal()" ${index === 0 ? 'checked' : ''} class="peer w-6 h-6 border-stone-300 text-amber-600 focus:ring-amber-500 transition-all cursor-pointer">
+                        </div>
+                        <span class="font-bold text-stone-700 group-hover:text-stone-900 text-lg">${flavor.name}</span>
+                    </div>
+                    ${priceText}
+                </label>`;
+            });
+            flavorList.innerHTML = html;
+        } else {
+            flavorSection.classList.add('hidden');
+            flavorList.innerHTML = '';
+        }
+
         const custSection = document.getElementById('customizationsSection');
         const custList = document.getElementById('customizationsList');
 
@@ -385,6 +441,14 @@
 
     function updateModalTotal() {
         let total = currentBasePrice;
+
+        // Add flavor price
+        const flavorRadio = document.querySelector('#flavorsList input[type="radio"]:checked');
+        if (flavorRadio) {
+            total += parseFloat(flavorRadio.dataset.price || 0);
+        }
+
+        // Add modification prices
         const checkboxes = document.querySelectorAll('#customizationsList input[type="checkbox"]:checked');
         checkboxes.forEach(cb => {
             total += parseFloat(cb.dataset.price || 0);
@@ -497,73 +561,5 @@
         form.submit();
     }
 
-    // Promo Banner Carousel & Drag Functionality
-    const promoBanner = document.getElementById('promoBanner');
-    const promoContent = document.getElementById('promoContent');
-    let isDown = false;
-    let startX;
-    let scrollLeft;
-    let autoScrollInterval;
-    let currentIndex = 0;
-
-    if (promoBanner && promoContent) {
-        const slides = promoContent.querySelectorAll('.promo-slide');
-        const totalSlides = slides.length;
-
-        // Auto-scroll every 3 seconds
-        function startAutoScroll() {
-            autoScrollInterval = setInterval(() => {
-                if (!isDown) {
-                    currentIndex = (currentIndex + 1) % totalSlides;
-                    const slideWidth = promoBanner.offsetWidth;
-                    promoBanner.scrollTo({
-                        left: currentIndex * slideWidth,
-                        behavior: 'smooth'
-                    });
-                }
-            }, 3000);
-        }
-
-        function stopAutoScroll() {
-            clearInterval(autoScrollInterval);
-        }
-
-        startAutoScroll();
-
-        // Drag functionality
-        promoBanner.addEventListener('mousedown', (e) => {
-            isDown = true;
-            promoContent.classList.add('dragging');
-            startX = e.pageX - promoBanner.offsetLeft;
-            scrollLeft = promoBanner.scrollLeft;
-            stopAutoScroll();
-        });
-
-        promoBanner.addEventListener('mouseleave', () => {
-            isDown = false;
-            promoContent.classList.remove('dragging');
-            startAutoScroll();
-        });
-
-        promoBanner.addEventListener('mouseup', () => {
-            isDown = false;
-            promoContent.classList.remove('dragging');
-            startAutoScroll();
-        });
-
-        promoBanner.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - promoBanner.offsetLeft;
-            const walk = (x - startX) * 2;
-            promoBanner.scrollLeft = scrollLeft - walk;
-        });
-
-        // Update current index on scroll
-        promoBanner.addEventListener('scroll', () => {
-            const slideWidth = promoBanner.offsetWidth;
-            currentIndex = Math.round(promoBanner.scrollLeft / slideWidth);
-        });
-    }
 </script>
 @endsection

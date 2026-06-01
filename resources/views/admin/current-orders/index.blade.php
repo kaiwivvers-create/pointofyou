@@ -18,18 +18,7 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="bg-emerald-50 text-emerald-700 p-4 rounded-xl font-medium border border-emerald-100 flex items-center gap-3">
-            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="bg-red-50 text-red-700 p-4 rounded-xl font-medium border border-red-100 flex items-center gap-3">
-            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            {{ session('error') }}
-        </div>
-    @endif
+    <x-flash />
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($activeOrders as $order)
@@ -54,6 +43,13 @@
                             <p class="text-xs font-medium text-slate-500 mt-1">
                                 Order #{{ $order->id }} &middot; {{ $order->created_at->diffForHumans() }}
                             </p>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            @if($order->isFullyReady())
+                                <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 uppercase tracking-wider">Ready</span>
+                            @else
+                                <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 uppercase tracking-wider">Preparing</span>
+                            @endif
                         </div>
                     </div>
                 </div>

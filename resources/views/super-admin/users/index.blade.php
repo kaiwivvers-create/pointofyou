@@ -72,7 +72,7 @@
                         <tr>
                             <td class="font-semibold text-slate-900">{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
-                            <td><span class="staff-badge-amber">{{ $user->role->label() }}</span></td>
+                            <td><span class="staff-badge-amber">{{ $user->dbRole->name ?? $user->role->label() }}</span></td>
                             <td class="text-right space-x-4">
                                 @if ($can('users', 'edit'))
                                     <button onclick="openEditModal({{ $user->toJson() }})" class="staff-link">Edit</button>
@@ -109,7 +109,7 @@
             </div>
             <form method="POST" action="{{ route('super-admin.users.store') }}" class="p-6">
                 @csrf
-                @include('super-admin.users._form', ['roles' => $roles])
+                @include('super-admin.users._form', ['roles' => $roles, 'user' => null])
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
                     <button type="button" onclick="closeCreateModal()" class="staff-btn-secondary">Cancel</button>
                     <button type="submit" class="staff-btn-primary">Create user</button>
@@ -124,10 +124,34 @@
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-xl font-semibold text-slate-900">Edit staff user</h2>
             </div>
-            <form id="editForm" method="POST" class="p-6">
+            <form id="editForm" method="POST" action="{{ route('super-admin.users.update', ':id') }}" class="p-6">
                 @csrf
                 @method('PUT')
-                @include('super-admin.users._form', ['roles' => $roles, 'user' => null])
+                <div class="space-y-5">
+                    <div>
+                        <label for="edit_name" class="staff-label">Name</label>
+                        <input id="edit_name" name="name" type="text" required class="staff-input">
+                    </div>
+                    <div>
+                        <label for="edit_email" class="staff-label">Email</label>
+                        <input id="edit_email" name="email" type="email" required class="staff-input">
+                    </div>
+                    <div>
+                        <label for="edit_password" class="staff-label">
+                            New password <span class="font-normal text-slate-500">(leave blank to keep current)</span>
+                        </label>
+                        <input id="edit_password" name="password" type="password" class="staff-input" autocomplete="new-password">
+                    </div>
+                    <div>
+                        <label for="edit_role" class="staff-label">Role</label>
+                        <select id="edit_role" name="role" required class="staff-input">
+                            <option value="">Select a role</option>
+                            @foreach ($roles as $role)
+                                <option value="{{ $role->id }}">{{ $role->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
                     <button type="button" onclick="resetPassword()" class="staff-btn-secondary">Reset Password</button>
                     <button type="button" onclick="closeEditModal()" class="staff-btn-secondary">Cancel</button>
@@ -145,7 +169,24 @@
             const content = document.getElementById('createModalContent');
             const form = modal.querySelector('form');
             
+            if (!modal || !content || !form) {
+                console.error('Modal elements not found');
+                return;
+            }
+            
+            // Reset form and clear all values
             form.reset();
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const passwordConfirmInput = document.getElementById('password_confirmation');
+            const roleInput = document.getElementById('role');
+            
+            if (nameInput) nameInput.value = '';
+            if (emailInput) emailInput.value = '';
+            if (passwordInput) passwordInput.value = '';
+            if (passwordConfirmInput) passwordConfirmInput.value = '';
+            if (roleInput) roleInput.value = '';
             
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -170,11 +211,11 @@
             const modal = document.getElementById('editModal');
             const content = document.getElementById('editModalContent');
             const form = document.getElementById('editForm');
-            form.action = '/super-admin/users/' + user.id;
-            form.querySelector('[name="name"]').value = user.name;
-            form.querySelector('[name="email"]').value = user.email;
-            form.querySelector('[name="password"]').value = '';
-            form.querySelector('[name="role"]').value = user.role_id;
+            form.action = form.action.replace(':id', user.id);
+            document.getElementById('edit_name').value = user.name;
+            document.getElementById('edit_email').value = user.email;
+            document.getElementById('edit_password').value = '';
+            document.getElementById('edit_role').value = user.role_id;
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');

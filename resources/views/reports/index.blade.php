@@ -132,10 +132,64 @@
         </div>
     </div>
 
-    <!-- Average Order Value -->
+    <!-- Additional Statistics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="staff-card p-6">
+            <p class="text-sm text-slate-500 mb-1">Items Ordered</p>
+            <p class="text-2xl font-bold text-slate-900">{{ $totalItemsOrdered }}</p>
+        </div>
+        <div class="staff-card p-6">
+            <p class="text-sm text-slate-500 mb-1">Takeout Supplies Used</p>
+            <p class="text-2xl font-bold text-slate-900">{{ $takeoutSuppliesUsed }}</p>
+        </div>
+        <div class="staff-card p-6">
+            <p class="text-sm text-slate-500 mb-1">Stock Cost</p>
+            <p class="text-2xl font-bold text-red-600">${{ number_format($totalStockCost, 2) }}</p>
+        </div>
+        <div class="staff-card p-6">
+            <p class="text-sm text-slate-500 mb-1">Stock Purchased</p>
+            <p class="text-2xl font-bold text-slate-900">{{ $totalStockQuantity }} units</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+        <div class="staff-card p-6">
+            <p class="text-sm text-slate-500 mb-1">Payroll Costs</p>
+            <p class="text-2xl font-bold text-red-600">${{ number_format($payrollCosts, 2) }}</p>
+        </div>
+        <div class="staff-card p-6">
+            <p class="text-sm text-slate-500 mb-1">Average Order Value</p>
+            <p class="text-2xl font-bold text-slate-900">${{ number_format($averageOrderValue, 2) }}</p>
+        </div>
+    </div>
+
+    <!-- Popular Items -->
     <div class="staff-card p-6 mb-6">
-        <p class="text-sm text-slate-500 mb-1">Average Order Value</p>
-        <p class="text-2xl font-bold text-slate-900">${{ number_format($averageOrderValue, 2) }}</p>
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">Most Popular Items</h2>
+        <div class="staff-table-wrap">
+            <div class="overflow-x-auto">
+                <table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-right">Quantity Ordered</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($popularItems as $item)
+                            <tr>
+                                <td class="font-semibold text-slate-900">{{ $item->menuItem?->name ?? 'Unknown' }}</td>
+                                <td class="text-right font-semibold text-emerald-600">{{ $item->total_quantity }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="2" class="py-8 text-center text-slate-500">No items ordered in this period</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Recent Orders -->
@@ -200,7 +254,7 @@
             const ctx = document.getElementById('incomeChart').getContext('2d');
             const chartPeriod = '{{ $chartPeriod }}';
             const chartType = '{{ $chartType }}';
-            const chartData = {{ json_encode($chartData) }};
+            const chartData = @js($chartData);
             
             if (chart) {
                 chart.destroy();

@@ -9,8 +9,10 @@ use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Promo;
+use App\Services\OrderInventoryService;
 use App\Enums\OrderStatus;
 use App\Support\TableCart;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -49,6 +51,8 @@ class TableScanController extends Controller
         $allItems = MenuItem::query()
             ->where('is_available', true)
             ->orderBy('name')
+            ->with('modifications')
+            ->with('flavors')
             ->get()
             ->groupBy('category');
 
@@ -69,6 +73,32 @@ class TableScanController extends Controller
         ]);
     }
 
+    private function unavailableCartItems(Request $request): array
+    {
+        $cart = TableCart::items($request);
+        $menuItemIds = collect($cart)->pluck('menu_item_id')->unique()->values();
+        if ($menuItemIds->isEmpty()) {
+            return [];
+        }
+
+        $availableItems = MenuItem::query()
+            ->whereIn('id', $menuItemIds)
+            ->pluck('is_available', 'id');
+
+        $unavailable = [];
+
+        foreach ($cart as $item) {
+            $menuItemId = $item['menu_item_id'] ?? null;
+            $isAvailable = $menuItemId ? ($availableItems[$menuItemId] ?? false) : false;
+
+            if (! $isAvailable) {
+                $unavailable[] = $item['name'] ?? 'One of your items';
+            }
+        }
+
+        return array_values(array_unique($unavailable));
+    }
+
     public function addToCart(Request $request, MenuItem $menuItem): RedirectResponse
     {
         if (! $menuItem->is_available) {
@@ -79,14 +109,16 @@ class TableScanController extends Controller
             'quantity' => 'required|integer|min:1',
             'modifications' => 'nullable|array',
             'modifications.*' => 'exists:menu_item_modifications,id',
+            'flavor' => 'nullable|exists:flavors,id',
             'notes' => 'nullable|string|max:255',
         ]);
 
         $quantity = $request->integer('quantity');
         $modifications = $request->input('modifications', []);
+        $flavorId = $request->input('flavor');
         $notes = $request->input('notes', '');
 
-        TableCart::add($request, $menuItem, $quantity, $modifications, $notes);
+        TableCart::add($request, $menuItem, $quantity, $modifications, $flavorId, $notes);
 
         return back()->with('success', "Added {$menuItem->name} to your order.");
     }
@@ -133,6 +165,12 @@ class TableScanController extends Controller
     public function placeOrder(Request $request): RedirectResponse
     {
         $cart = TableCart::items($request);
+        $inventoryService = app(OrderInventoryService::class);
+
+        $unavailableItems = $this->unavailableCartItems($request);
+        if (! empty($unavailableItems)) {
+            return back()->with('error', 'These items are no longer available: ' . implode(', ', $unavailableItems));
+        }
 
         if (empty($cart)) {
             return back()->with('error', 'Your cart is empty.');
@@ -140,25 +178,38 @@ class TableScanController extends Controller
 
         $tableId = $request->session()->get('cafe_table_id');
 
-        $order = Order::create([
-            'cafe_table_id' => $tableId,
-            'status' => OrderStatus::Pending,
-            'total' => TableCart::total($request),
-        ]);
+        try {
+            $order = DB::transaction(function () use ($tableId, $cart, $request, $inventoryService) {
+                $order = Order::create([
+                    'cafe_table_id' => $tableId,
+                    'status' => OrderStatus::Pending,
+                    'total' => 0,
+                    'order_type' => 'dine_in',
+                ]);
 
-        foreach ($cart as $line) {
-            $lineTotal = $line['unit_price'] * $line['quantity'];
+                foreach ($cart as $line) {
+                    $lineTotal = $line['unit_price'] * $line['quantity'];
 
-            OrderItem::create([
-                'order_id' => $order->id,
-                'menu_item_id' => $line['menu_item_id'],
-                'item_name' => $line['name'],
-                'quantity' => $line['quantity'],
-                'unit_price' => $line['unit_price'],
-                'line_total' => $lineTotal,
-                'modifications' => $line['modifications'] ?? [],
-                'notes' => $line['notes'] ?? null,
-            ]);
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'menu_item_id' => $line['menu_item_id'],
+                        'item_name' => $line['name'],
+                        'quantity' => $line['quantity'],
+                        'unit_price' => $line['unit_price'],
+                        'line_total' => $lineTotal,
+                        'modifications' => $line['modifications'] ?? [],
+                        'notes' => $line['notes'] ?? null,
+                    ]);
+                }
+
+                $inventoryService->applyMenuItemIngredients($order);
+                $inventoryService->applyTakeoutSupplies($order);
+                $inventoryService->recalculateOrderTotal($order);
+
+                return $order;
+            });
+        } catch (\RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
 
         TableCart::clear($request);

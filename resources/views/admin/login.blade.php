@@ -35,11 +35,7 @@
                 <h1 class="font-display text-2xl font-semibold text-stone-900 text-center mb-2">Welcome back</h1>
                 <p class="text-stone-500 text-center text-sm mb-8">Sign in to manage the bakery</p>
 
-                @if ($errors->any())
-                    <div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-100" role="alert">
-                        {{ $errors->first() }}
-                    </div>
-                @endif
+                <x-flash />
 
                 <form method="POST" action="{{ route('admin.login.store') }}" class="space-y-5">
                     @csrf

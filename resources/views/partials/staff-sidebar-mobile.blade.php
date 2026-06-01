@@ -20,8 +20,12 @@
         ['permission' => 'promos', 'route' => 'admin.promos.index', 'label' => 'Promos', 'match' => 'admin.promos.*'],
         ['permission' => 'tables', 'route' => 'admin.tables.index', 'label' => 'Tables', 'match' => 'admin.tables.*'],
         ['permission' => 'kitchen', 'route' => 'admin.current-orders.index', 'label' => 'Kitchen', 'match' => 'admin.current-orders.*'],
+        ['permission' => 'kitchen', 'route' => 'admin.pickup-station.index', 'label' => 'Pickup Station', 'match' => 'admin.pickup-station.*'],
         ['permission' => 'orders', 'route' => 'cashier.dashboard', 'label' => 'Pay', 'match' => 'cashier.*'],
-        ['permission' => 'inventory', 'route' => 'inventory.index', 'label' => 'Inventory', 'match' => 'inventory.*'],
+        ['permission' => 'inventory', 'route' => 'inventory.index', 'label' => 'Inventory', 'match' => 'inventory.index|inventory.categories|inventory.stock-movements|inventory.bulk-purchases.history'],
+        ['permission' => 'inventory', 'route' => 'inventory.supplies', 'label' => 'Supplies', 'match' => 'inventory.supplies'],
+        ['permission' => 'inventory', 'route' => 'inventory.stock-categories', 'label' => 'Stock Categories', 'match' => 'inventory.stock-categories'],
+        ['permission' => 'inventory', 'route' => 'inventory.bulk-purchases.history', 'label' => 'Bulk History', 'match' => 'inventory.bulk-purchases.history'],
         ['permission' => 'payroll', 'route' => 'payroll.index', 'label' => 'Payroll', 'match' => 'payroll.*'],
         ['permission' => 'expenses', 'route' => 'expenses.index', 'label' => 'Expenses', 'match' => 'expenses.*'],
         ['permission' => 'reports', 'route' => 'reports.index', 'label' => 'Reports', 'match' => 'reports.*'],
@@ -37,14 +41,24 @@
 
 <div class="flex gap-2 min-w-max pb-1">
     @foreach ($links as $link)
+        @php
+            $matches = explode('|', $link['match']);
+            $isActive = false;
+            foreach ($matches as $match) {
+                if (request()->routeIs($match)) {
+                    $isActive = true;
+                    break;
+                }
+            }
+        @endphp
         <a
             href="{{ route($link['route']) }}"
             @class([
                 'shrink-0 rounded-lg px-4 py-2 text-xs font-semibold transition-colors',
-                'bg-slate-900 text-white shadow-sm' => request()->routeIs($link['match']) || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard'])),
-                'bg-slate-100 text-slate-700 hover:bg-slate-200' => !(request()->routeIs($link['match']) || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard']))),
+                'bg-slate-900 text-white shadow-sm' => $isActive || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard'])),
+                'bg-slate-100 text-slate-700 hover:bg-slate-200' => !($isActive || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard']))),
             ])
-            style="{{ (request()->routeIs($link['match']) || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard']))) ? 'background-color: ' . ($brandSettings->primary_font_color ?? '#78350f') : '' }}"
+            style="{{ ($isActive || (str_contains($link['match'], '*.dashboard') && in_array(request()->route()->getName(), ['super-admin.dashboard', 'owner.dashboard', 'manager.dashboard', 'admin.dashboard']))) ? 'background-color: ' . ($brandSettings->primary_font_color ?? '#78350f') : '' }}"
         >{{ $link['label'] }}</a>
     @endforeach
 </div>

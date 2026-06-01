@@ -24,11 +24,9 @@
     <div class="staff-page-header">
         <div>
             <h1 class="staff-page-title">Expenses</h1>
-            <p class="staff-page-subtitle">Track and manage operational expenses.</p>
+            <p class="staff-page-subtitle">Automatic expense history from stock purchases.</p>
         </div>
-        @if ($can('expenses', 'edit'))
-            <button onclick="openAddExpenseModal()" class="staff-btn-primary">Add Expense</button>
-        @endif
+        <a href="{{ route('expenses.export.csv', request()->all()) }}" class="staff-btn-secondary">Export CSV</a>
     </div>
 
     <x-flash />
@@ -38,6 +36,40 @@
         <button onclick="window.location.href='{{ route('expenses.categories') }}'" class="staff-tab {{ request()->routeIs('expenses.categories') ? 'staff-tab-active' : '' }}">Categories</button>
     </div>
 
+    <form method="GET" class="mb-6 grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">From</label>
+            <input type="date" name="date_from" value="{{ request('date_from') }}" class="staff-input">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">To</label>
+            <input type="date" name="date_to" value="{{ request('date_to') }}" class="staff-input">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Item Type</label>
+            <select name="item_type" class="staff-input">
+                <option value="">All</option>
+                <option value="inventory" @selected(request('item_type') === 'inventory')>Inventory</option>
+                <option value="supply" @selected(request('item_type') === 'supply')>Supply</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Sort By</label>
+            <select name="sort_by" class="staff-input">
+                <option value="date" @selected(request('sort_by', 'date') === 'date')>Date</option>
+                <option value="amount" @selected(request('sort_by') === 'amount')>Amount</option>
+                <option value="title" @selected(request('sort_by') === 'title')>Title</option>
+            </select>
+        </div>
+        <div class="flex items-end gap-3">
+            <select name="sort_direction" class="staff-input flex-1">
+                <option value="desc" @selected(request('sort_direction', 'desc') === 'desc')>High to Low</option>
+                <option value="asc" @selected(request('sort_direction') === 'asc')>Low to High</option>
+            </select>
+            <button type="submit" class="staff-btn-primary">Filter</button>
+        </div>
+    </form>
+
     <div class="staff-table-wrap">
         <div class="overflow-x-auto">
             <table class="staff-table">
@@ -45,11 +77,12 @@
                     <tr>
                         <th>Title</th>
                         <th>Category</th>
+                        <th>Item Type</th>
+                        <th>Qty</th>
                         <th>Amount</th>
                         <th>Date</th>
                         <th>Reference</th>
                         <th>Status</th>
-                        <th class="text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,34 +90,18 @@
                         <tr>
                             <td class="font-semibold text-slate-900">{{ $expense->title }}</td>
                             <td>{{ $expense->category ? $expense->category->name : '-' }}</td>
+                            <td class="text-slate-600">{{ $expense->item_type ? ucfirst($expense->item_type) : '-' }}</td>
+                            <td class="font-semibold text-slate-900">{{ $expense->quantity }}</td>
                             <td class="font-semibold text-slate-900">${{ number_format($expense->amount, 2) }}</td>
                             <td class="text-slate-600">{{ $expense->expense_date->format('M d, Y') }}</td>
                             <td class="text-slate-600">{{ $expense->reference ?? '-' }}</td>
                             <td>
-                                @if ($expense->status === 'approved')
-                                    <span class="staff-badge-green">Approved</span>
-                                @elseif ($expense->status === 'rejected')
-                                    <span class="staff-badge-red">Rejected</span>
-                                @else
-                                    <span class="staff-badge-yellow">Pending</span>
-                                @endif
-                            </td>
-                            <td class="text-right space-x-4">
-                                @if ($can('expenses', 'edit') && $expense->status === 'pending')
-                                    <form method="POST" action="{{ route('expenses.approve', $expense) }}" class="inline" onsubmit="return confirm('Approve this expense?')">
-                                        @csrf
-                                        <button type="submit" class="staff-link">Approve</button>
-                                    </form>
-                                    <form method="POST" action="{{ route('expenses.reject', $expense) }}" class="inline" onsubmit="return confirm('Reject this expense?')">
-                                        @csrf
-                                        <button type="submit" class="staff-link-danger">Reject</button>
-                                    </form>
-                                @endif
+                                <span class="staff-badge-green">Automatic</span>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-16 text-center text-slate-500">No expenses recorded yet.</td>
+                            <td colspan="8" class="py-16 text-center text-slate-500">No expenses recorded yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -98,81 +115,4 @@
         </div>
     @endif
 
-    <!-- Add Expense Modal -->
-    <div id="addExpenseModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
-        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-200 scale-95 opacity-0" id="addExpenseModalContent">
-            <div class="p-6 border-b border-slate-200">
-                <h2 class="text-xl font-semibold text-slate-900">Add Expense</h2>
-                <p class="text-sm text-slate-500 mt-1">Record a new operational expense.</p>
-            </div>
-            <form method="POST" action="{{ route('expenses.store') }}" class="p-6">
-                @csrf
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Title</label>
-                        <input type="text" name="title" required class="staff-input">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                        <select name="expense_category_id" required class="staff-input">
-                            <option value="">Select Category</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category->id }}">{{ $category->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Amount</label>
-                            <input type="number" step="0.01" name="amount" required class="staff-input">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Date</label>
-                            <input type="date" name="expense_date" required class="staff-input">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Reference</label>
-                        <input type="text" name="reference" class="staff-input">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea name="description" rows="3" class="staff-input"></textarea>
-                    </div>
-                </div>
-                <div class="mt-8 flex flex-wrap gap-3 justify-end">
-                    <button type="button" onclick="closeAddExpenseModal()" class="staff-btn-secondary">Cancel</button>
-                    <button type="submit" class="staff-btn-primary">Save Expense</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        function openAddExpenseModal() {
-            const modal = document.getElementById('addExpenseModal');
-            const content = document.getElementById('addExpenseModalContent');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
-
-        function closeAddExpenseModal() {
-            const modal = document.getElementById('addExpenseModal');
-            const content = document.getElementById('addExpenseModalContent');
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 200);
-        }
-
-        document.getElementById('addExpenseModal').addEventListener('click', function(e) {
-            if (e.target === this) closeAddExpenseModal();
-        });
-    </script>
 @endsection

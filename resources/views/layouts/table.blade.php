@@ -49,9 +49,16 @@
         .item-card:active {
             transform: scale(0.97);
         }
+        .dragging {
+            cursor: grabbing !important;
+            user-select: none;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-[#faf6f0] selection:bg-amber-500 selection:text-white flex flex-col">
+    <div class="px-4 pt-4 md:px-6">
+        <x-flash />
+    </div>
     @yield('content')
 </body>
 </html>
