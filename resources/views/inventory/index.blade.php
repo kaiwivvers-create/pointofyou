@@ -101,6 +101,69 @@
         </div>
     </div>
 
+    @if(isset($gifts) && $gifts->isNotEmpty())
+        <h2 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Gifts</h2>
+        <div class="staff-table-wrap">
+            <div class="overflow-x-auto">
+                <table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>SKU</th>
+                            <th>Description</th>
+                            <th>Cost</th>
+                            <th>Purchase Price</th>
+                            <th>Stock</th>
+                            <th>Order</th>
+                            <th>Active</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($gifts as $gift)
+                            <tr>
+                                <td class="font-semibold text-slate-900">{{ $gift->name }}</td>
+                                <td class="text-slate-600">{{ $gift->sku ?? '-' }}</td>
+                                <td class="text-slate-600">{{ $gift->description ?? '-' }}</td>
+                                <td class="text-slate-900">${{ number_format($gift->cost, 2) }}</td>
+                                <td class="text-slate-900">${{ number_format($gift->purchase_price ?? 0, 2) }}</td>
+                                <td>
+                                    <span class="{{ $gift->stock_quantity <= 5 ? 'text-red-600 font-semibold' : 'text-slate-900' }}">
+                                        {{ $gift->stock_quantity }}
+                                    </span>
+                                    @if ($gift->stock_quantity <= 5)
+                                        <span class="text-xs text-red-500 ml-1">(Low)</span>
+                                    @endif
+                                </td>
+                                <td class="text-slate-600">{{ $gift->order }}</td>
+                                <td>
+                                    @if($gift->is_active)
+                                        <span class="text-green-600 font-semibold">Yes</span>
+                                    @else
+                                        <span class="text-red-600 font-semibold">No</span>
+                                    @endif
+                                </td>
+                                <td class="text-right space-x-4">
+                                    @if ($canEditInventory)
+                                        <button onclick="openGiftEditModal({{ $gift->toJson() }})" class="staff-link">Edit</button>
+                                        <button onclick="openGiftStockMovementModal({{ $gift->toJson() }})" class="staff-link">Add Stock</button>
+                                        <form action="{{ route('admin.gifts.destroy', $gift) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this gift?')" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="staff-link text-red-600">Delete</button>
+                                        </form>
+                                    @else
+                                        <a href="{{ route('admin.gifts.index') }}" class="staff-link">View</a>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     @if ($products->hasPages())
         <div class="mt-6 flex justify-center">
             {{ $products->links() }}
@@ -236,6 +299,94 @@
         </div>
     </div>
 
+    <!-- Gift Stock Movement Modal -->
+    <div id="giftStockMovementModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-200 scale-95 opacity-0" id="giftStockMovementModalContent">
+            <div class="p-6 border-b border-slate-200">
+                <h2 class="text-xl font-semibold text-slate-900">Add Gift Stock</h2>
+                <p class="text-sm text-slate-500 mt-1">Record stock in, out, or adjustment for gifts.</p>
+            </div>
+            <form method="POST" action="{{ url('/inventory/gifts/stock-movement') }}" class="p-6">
+                @csrf
+                <input type="hidden" name="gift_id" id="giftMovementGiftId">
+                <input type="hidden" name="_method" value="POST">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Gift</label>
+                        <input type="text" id="giftMovementGiftName" readonly class="staff-input bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                        <select name="type" required class="staff-input">
+                            <option value="in">Stock In</option>
+                            <option value="out">Stock Out</option>
+                            <option value="adjustment">Adjustment</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
+                        <input type="number" name="quantity" required class="staff-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Reference</label>
+                        <input type="text" name="reference" maxlength="255" class="staff-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="2" maxlength="1000" class="staff-input"></textarea>
+                    </div>
+                </div>
+                <div class="mt-8 flex flex-wrap gap-3 justify-end">
+                    <button type="button" onclick="closeGiftStockMovementModal()" class="staff-btn-secondary">Cancel</button>
+                    <button type="submit" class="staff-btn-primary">Record Movement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gift Edit Modal -->
+    <div id="giftEditModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-200 scale-95 opacity-0" id="giftEditModalContent">
+            <div class="p-6 border-b border-slate-200">
+                <h2 class="text-xl font-semibold text-slate-900">Edit Gift</h2>
+                <p class="text-sm text-slate-500 mt-1">Update gift details in inventory.</p>
+            </div>
+            <form method="POST" action="{{ url('/inventory/gifts/inventory-update') }}" class="p-6">
+                @csrf
+                <input type="hidden" name="_method" value="PUT">
+                <input type="hidden" name="gift_id" id="giftEditGiftId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">SKU</label>
+                        <input type="text" name="sku" id="giftEditSku" required maxlength="100" class="staff-input">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Cost</label>
+                            <input type="number" step="0.01" name="cost" id="giftEditCost" required class="staff-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Purchase Price</label>
+                            <input type="number" step="0.01" name="purchase_price" id="giftEditPurchasePrice" class="staff-input">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Stock Quantity</label>
+                        <input type="number" name="stock_quantity" id="giftEditStock" required class="staff-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Order</label>
+                        <input type="number" name="order" id="giftEditOrder" required class="staff-input">
+                    </div>
+                </div>
+                <div class="mt-8 flex flex-wrap gap-3 justify-end">
+                    <button type="button" onclick="closeGiftEditModal()" class="staff-btn-secondary">Cancel</button>
+                    <button type="submit" class="staff-btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Stock Movement Modal -->
     <div id="stockMovementModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-200 scale-95 opacity-0" id="stockMovementModalContent">
@@ -334,6 +485,58 @@
         function closeStockMovementModal() {
             const modal = document.getElementById('stockMovementModal');
             const content = document.getElementById('stockMovementModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        function openGiftStockMovementModal(gift) {
+            const modal = document.getElementById('giftStockMovementModal');
+            const content = document.getElementById('giftStockMovementModalContent');
+            document.getElementById('giftMovementGiftId').value = gift.id;
+            document.getElementById('giftMovementGiftName').value = gift.name;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeGiftStockMovementModal() {
+            const modal = document.getElementById('giftStockMovementModal');
+            const content = document.getElementById('giftStockMovementModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        function openGiftEditModal(gift) {
+            const modal = document.getElementById('giftEditModal');
+            const content = document.getElementById('giftEditModalContent');
+            document.getElementById('giftEditGiftId').value = gift.id;
+            document.getElementById('giftEditSku').value = gift.sku || '';
+            document.getElementById('giftEditCost').value = gift.cost;
+            document.getElementById('giftEditPurchasePrice').value = gift.purchase_price || '';
+            document.getElementById('giftEditStock').value = gift.stock_quantity;
+            document.getElementById('giftEditOrder').value = gift.order;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeGiftEditModal() {
+            const modal = document.getElementById('giftEditModal');
+            const content = document.getElementById('giftEditModalContent');
             content.classList.remove('scale-100', 'opacity-100');
             content.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {

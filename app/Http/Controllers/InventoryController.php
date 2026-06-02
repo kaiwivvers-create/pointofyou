@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\InventoryCategory;
 use App\Models\MenuCategory;
 use App\Models\Product;
+use App\Models\Gift;
 use App\Models\StockMovement;
 use App\Services\PurchaseExpenseService;
 use Illuminate\Http\Request;
@@ -23,9 +24,10 @@ class InventoryController extends Controller
     public function index()
     {
         $products = Product::with('category')->paginate(20);
+        $gifts = Gift::orderBy('name')->get();
         $bulkProducts = Product::orderBy('name')->get(['id', 'name', 'stock_quantity', 'purchase_price']);
         $categories = InventoryCategory::where('type', 'ingredient')->orderBy('name')->get();
-        return view('inventory.index', compact('products', 'categories', 'bulkProducts'));
+        return view('inventory.index', compact('products', 'gifts', 'categories', 'bulkProducts'));
     }
 
     public function supplies()

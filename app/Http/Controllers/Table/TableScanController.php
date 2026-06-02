@@ -9,6 +9,7 @@ use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Promo;
+use App\Models\Packet;
 use App\Services\OrderInventoryService;
 use App\Enums\OrderStatus;
 use App\Support\TableCart;
@@ -60,6 +61,12 @@ class TableScanController extends Controller
         $items = $orderedCategories->mapWithKeys(function ($cat) use ($allItems) {
             return [$cat => $allItems->get($cat, collect())];
         })->filter(fn($items) => $items->isNotEmpty());
+
+        // Add packets as a special category
+        $packets = Packet::where('is_active', true)->orderBy('order')->get();
+        if ($packets->isNotEmpty()) {
+            $items['packets'] = $packets;
+        }
 
         $promos = Promo::active()->ordered()->get();
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MenuCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MenuCategoryController extends Controller
 {
@@ -38,12 +39,27 @@ class MenuCategoryController extends Controller
         $validated = $request->validate([
             'name'  => 'required|string|max:64|unique:menu_categories,name,' . $category->id . '|regex:/^[a-z0-9_]+$/',
             'label' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s\-.,\'@]+$/',
+            'cropped_image' => 'nullable|string',
         ]);
 
         $category->update([
             'name'  => strtolower($validated['name']),
             'label' => $validated['label'],
         ]);
+
+        // Handle cropped image
+        if ($request->filled('cropped_image')) {
+            $imageData = $request->input('cropped_image');
+            $imageData = preg_replace('/^data:image\/\w+;base64,/', '', $imageData);
+            $imageData = base64_decode($imageData);
+            
+            $filename = 'category-icon-' . $category->id . '-' . time() . '.jpg';
+            $path = 'category-icons/' . $filename;
+            
+            Storage::disk('public')->put($path, $imageData);
+            
+            $category->update(['icon_url' => Storage::disk('public')->url($path)]);
+        }
 
         return back()->with('success', 'Category "' . $validated['label'] . '" updated.');
     }

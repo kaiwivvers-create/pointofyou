@@ -35,7 +35,7 @@
                     </div>
                     
                     <div class="flex items-center gap-4">
-                        <button onclick="openEditModal({{ $category->id }}, '{{ $category->name }}', '{{ $category->label }}')" class="text-slate-400 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors" title="Edit Category">
+                        <button onclick="openEditModal({{ $category->id }}, '{{ $category->name }}', '{{ $category->label }}', '{{ $category->icon_url ?? '' }}')" class="text-slate-400 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors" title="Edit Category">
                             <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
@@ -127,6 +127,24 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">System Tag (Lowercase, no spaces)</label>
                     <input type="text" name="name" id="editName" required maxlength="100" pattern="^[a-z0-9_]+$" title="Only lowercase letters, numbers, and underscores" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] font-mono text-sm">
                 </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Icon Image</label>
+                    <input type="file" id="edit-image" name="image" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)]" accept="image/*" onchange="handleCategoryImageUpload(this)">
+                    
+                    <div id="categoryImagePreview" class="mt-3 hidden">
+                        <img id="previewImg-category" src="" alt="Preview" class="w-16 h-16 object-cover rounded-lg border border-slate-200">
+                    </div>
+                    
+                    <div id="categoryCropButtonContainer" class="mt-2 hidden">
+                        <button type="button" onclick="openCategoryCropModal()" class="staff-btn-secondary text-sm">Crop Image</button>
+                    </div>
+                    
+                    <input type="hidden" id="croppedCategoryImageData" name="cropped_image">
+                    
+                    <div id="edit-current-icon" class="mt-2 hidden">
+                        <p class="text-sm text-slate-600">Current: <img id="current-icon-image" src="" alt="" class="inline-block w-12 h-12 object-cover rounded border border-slate-200"></p>
+                    </div>
+                </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" onclick="closeEditModal()" class="staff-btn-secondary">Cancel</button>
                     <button type="submit" class="staff-btn-primary">Update Category</button>
@@ -134,13 +152,40 @@
             </form>
         </div>
     </div>
+
+    <!-- Crop Modal -->
+    <div id="categoryCropModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[10000] transition-opacity duration-200">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 transform transition-all duration-200 scale-95 opacity-0" id="categoryCropModalContent">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-slate-900">Crop Icon Image</h2>
+                <button onclick="closeCategoryCropModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="bg-slate-100 rounded-lg overflow-hidden" style="max-height: 400px;">
+                    <img id="categoryCropImage" src="" alt="Crop" class="max-w-full">
+                </div>
+            </div>
+            <div class="p-6 border-t border-slate-200 flex justify-end gap-3">
+                <button type="button" onclick="closeCategoryCropModal()" class="staff-btn-secondary">Cancel</button>
+                <button type="button" onclick="applyCategoryCrop()" class="staff-btn-primary">Apply Crop</button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css">
 <script>
-    function openEditModal(id, name, label) {
+    let categoryCropper = null;
+
+    function openEditModal(id, name, label, iconUrl) {
         const modal = document.getElementById('editModal');
         const content = document.getElementById('editModalContent');
         const form = document.getElementById('editForm');
@@ -149,6 +194,16 @@
         document.getElementById('editName').value = name;
         document.getElementById('editLabel').value = label;
         form.action = '{{ route('admin.menu-categories.update', ':id') }}'.replace(':id', id);
+        
+        // Show current icon if exists
+        const currentIconDiv = document.getElementById('edit-current-icon');
+        const currentIconImg = document.getElementById('current-icon-image');
+        if (iconUrl) {
+            currentIconImg.src = iconUrl.startsWith('http') ? iconUrl : '{{ asset('storage/') }}' + iconUrl;
+            currentIconDiv.classList.remove('hidden');
+        } else {
+            currentIconDiv.classList.add('hidden');
+        }
         
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -168,6 +223,103 @@
             modal.classList.remove('flex');
             modal.classList.add('hidden');
         }, 200);
+    }
+
+    function handleCategoryImageUpload(input) {
+        const previewDiv = document.getElementById('categoryImagePreview');
+        const previewImg = document.getElementById('previewImg-category');
+        const cropButtonContainer = document.getElementById('categoryCropButtonContainer');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewDiv.classList.remove('hidden');
+                cropButtonContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function openCategoryCropModal() {
+        const fileInput = document.getElementById('edit-image');
+        const cropModal = document.getElementById('categoryCropModal');
+        const cropContent = document.getElementById('categoryCropModalContent');
+        const cropImage = document.getElementById('categoryCropImage');
+        
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            cropImage.src = e.target.result;
+            cropModal.classList.remove('hidden');
+            cropModal.classList.add('flex');
+            
+            cropImage.onload = function() {
+                setTimeout(() => {
+                    cropContent.classList.remove('scale-95', 'opacity-0');
+                    cropContent.classList.add('scale-100', 'opacity-100');
+                    
+                    if (categoryCropper) {
+                        categoryCropper.destroy();
+                    }
+                    categoryCropper = new Cropper(cropImage, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        autoCropArea: 0.8,
+                        movable: true,
+                        zoomable: true,
+                        scalable: true,
+                        rotatable: true,
+                        responsive: true,
+                        restore: false,
+                        checkCrossOrigin: false,
+                        dragMode: 'move',
+                    });
+                }, 100);
+            };
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+
+    function closeCategoryCropModal() {
+        const modal = document.getElementById('categoryCropModal');
+        const content = document.getElementById('categoryCropModalContent');
+        
+        if (categoryCropper) {
+            categoryCropper.destroy();
+            categoryCropper = null;
+        }
+        
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    function applyCategoryCrop() {
+        if (!categoryCropper) {
+            return;
+        }
+        
+        const canvas = categoryCropper.getCroppedCanvas({
+            width: 120,
+            height: 120,
+        });
+        
+        if (canvas) {
+            const croppedImageData = canvas.toDataURL('image/jpeg', 0.8);
+            document.getElementById('croppedCategoryImageData').value = croppedImageData;
+            
+            const previewImg = document.getElementById('previewImg-category');
+            previewImg.src = croppedImageData;
+        }
+        
+        closeCategoryCropModal();
     }
 
     document.addEventListener('DOMContentLoaded', function () {

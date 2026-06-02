@@ -91,35 +91,19 @@
     </div>
 
     <div class="border-t border-slate-200 pt-4 mt-4">
-        <h3 class="text-sm font-semibold text-slate-900 mb-3">Discount</h3>
+        <h3 class="text-sm font-semibold text-slate-900 mb-3">Fixed Price</h3>
         
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Discount Type</label>
-                <select name="discount_type" class="staff-input">
-                    <option value="">No Discount</option>
-                    <option value="percentage" {{ old('discount_type', $promo->discount_type ?? '') == 'percentage' ? 'selected' : '' }}>Percentage</option>
-                    <option value="fixed" {{ old('discount_type', $promo->discount_type ?? '') == 'fixed' ? 'selected' : '' }}>Fixed Amount</option>
-                </select>
-                @error('discount_type', 'createPromo')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                @enderror
-                @error('discount_type', 'editPromo')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Discount Value</label>
-                <input type="number" name="discount_value" value="{{ old('discount_value', $promo->discount_value ?? '') }}" step="0.01" min="0" class="staff-input" placeholder="0.00">
-                @error('discount_value', 'createPromo')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                @enderror
-                @error('discount_value', 'editPromo')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Price</label>
+            <input type="number" name="discount_value" value="{{ old('discount_value', $promo->discount_value ?? '') }}" step="0.01" min="0" class="staff-input" placeholder="0.00">
+            @error('discount_value', 'createPromo')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            @enderror
+            @error('discount_value', 'editPromo')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+            @enderror
         </div>
+        <input type="hidden" name="discount_type" value="fixed">
     </div>
     
     <div class="flex items-center gap-4 mt-4">

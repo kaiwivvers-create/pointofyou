@@ -212,7 +212,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach($items as $item)
                             @php
-                                $img = $item->image ? asset('storage/' . $item->image) : 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80';
+                                $imagePath = $item->image;
+                                // Ensure path starts with storage/
+                                if ($imagePath && !str_starts_with($imagePath, 'storage/')) {
+                                    $imagePath = 'storage/' . $imagePath;
+                                }
+                                $img = $imagePath ? asset($imagePath) : 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80';
                                 if($category === 'drinks' && !$item->image) $img = 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=600&q=80';
                             @endphp
                             <button onclick="openItemModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
@@ -389,9 +394,12 @@
         document.getElementById('modalImg').src = imgSrc;
         document.getElementById('modalTitle').innerText = item.name;
         document.getElementById('modalDesc').innerText = item.description || '';
-        document.getElementById('modalPrice').innerText = '$' + parseFloat(item.price).toFixed(2);
+        
+        // Handle both regular menu items (price) and packets (fixed_price)
+        const price = item.price || item.fixed_price || 0;
+        document.getElementById('modalPrice').innerText = '$' + parseFloat(price).toFixed(2);
 
-        currentBasePrice = parseFloat(item.price);
+        currentBasePrice = parseFloat(price);
         document.getElementById('qtyInput').value = 1;
         document.getElementById('itemNotes').value = '';
 
@@ -612,7 +620,7 @@
         if (promo.discount_value) {
             rulesHtml += `
                 <div class="bg-green-50 rounded-xl p-4 border border-green-200">
-                    <p class="font-semibold text-green-950">${promo.discount_value}% Discount</p>
+                    <p class="font-semibold text-green-950">For $${promo.discount_value}</p>
                 </div>
             `;
         }
@@ -656,7 +664,7 @@
                 }
                 if (promo.discount_value) {
                     promoText += promoText ? ', ' : '';
-                    promoText += `Get ${promo.discount_value}% Discount`;
+                    promoText += `For $${promo.discount_value}`;
                 }
 
                 if (promoText) {
@@ -675,7 +683,7 @@
             }
             rulesHtml += `
                 <div class="bg-green-50 rounded-xl p-4 border border-green-200">
-                    <p class="font-semibold text-green-950">${promo.discount_value}% Discount</p>
+                    <p class="font-semibold text-green-950">For $${promo.discount_value}</p>
                 </div>
             `;
         }

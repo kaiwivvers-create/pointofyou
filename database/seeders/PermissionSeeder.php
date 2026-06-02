@@ -13,7 +13,7 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $roles = ['owner', 'manager', 'admin', 'cashier', 'chef'];
-        $permissions = ['menu', 'tables', 'users', 'orders', 'reports', 'inventory', 'payroll', 'expenses', 'brand_settings', 'payment_settings', 'current_orders', 'pickup_station', 'categories', 'promos', 'permissions', 'roles', 'activity_logs', 'database_management', 'database_export', 'database_import', 'backup_download', 'backup_delete', 'cache_clear', 'application_optimize', 'database_migrate', 'database_seed', 'permits', 'staff_schedules'];
+        $permissions = ['menu', 'tables', 'users', 'orders', 'reports', 'inventory', 'payroll', 'expenses', 'brand_settings', 'payment_settings', 'current_orders', 'pickup_station', 'categories', 'promos', 'gifts', 'packets', 'permissions', 'roles', 'activity_logs', 'database_management', 'database_export', 'database_import', 'backup_download', 'backup_delete', 'cache_clear', 'application_optimize', 'database_migrate', 'database_seed', 'permits', 'staff_schedules'];
         
         foreach ($roles as $role) {
             foreach ($permissions as $permission) {
@@ -46,9 +46,9 @@ class PermissionSeeder extends Seeder
             return false;
         }
         
-        // Manager can see menu, tables, orders, inventory, payroll, expenses, categories, promos, current_orders, pickup_station, permits, staff_schedules
+        // Manager can see menu, tables, orders, inventory, payroll, expenses, categories, promos, gifts, packets, current_orders, pickup_station, permits, staff_schedules
         if ($role === 'manager') {
-            return in_array($permission, ['menu', 'tables', 'orders', 'inventory', 'payroll', 'expenses', 'categories', 'promos', 'current_orders', 'pickup_station', 'permits', 'staff_schedules']);
+            return in_array($permission, ['menu', 'tables', 'orders', 'inventory', 'payroll', 'expenses', 'categories', 'promos', 'gifts', 'packets', 'current_orders', 'pickup_station', 'permits', 'staff_schedules']);
         }
         
         // Admin can see menu, tables, inventory
@@ -81,9 +81,9 @@ class PermissionSeeder extends Seeder
             return false;
         }
         
-        // Manager can edit menu, tables, orders, inventory, payroll, expenses, categories, promos, current_orders, pickup_station, permits, staff_schedules
+        // Manager can edit menu, tables, orders, inventory, payroll, expenses, categories, promos, gifts, packets, current_orders, pickup_station, permits, staff_schedules
         if ($role === 'manager') {
-            return in_array($permission, ['menu', 'tables', 'orders', 'inventory', 'payroll', 'expenses', 'categories', 'promos', 'current_orders', 'pickup_station', 'permits', 'staff_schedules']);
+            return in_array($permission, ['menu', 'tables', 'orders', 'inventory', 'payroll', 'expenses', 'categories', 'promos', 'gifts', 'packets', 'current_orders', 'pickup_station', 'permits', 'staff_schedules']);
         }
         
         // Admin can edit menu, tables, inventory

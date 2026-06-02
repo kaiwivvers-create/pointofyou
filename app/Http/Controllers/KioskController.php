@@ -8,6 +8,7 @@ use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Promo;
+use App\Models\Packet;
 use App\Services\OrderInventoryService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -52,6 +53,12 @@ class KioskController extends Controller
         $menuItems = $orderedCategories->mapWithKeys(function ($cat) use ($allItems) {
             return [$cat => $allItems->get($cat, collect())];
         })->filter(fn($items) => $items->isNotEmpty());
+
+        // Add packets as a special category
+        $packets = Packet::where('is_active', true)->orderBy('order')->get();
+        if ($packets->isNotEmpty()) {
+            $menuItems['packets'] = $packets;
+        }
 
         $cart = Session::get('kiosk_cart', []);
         $cartTotal = collect($cart)->sum('line_total');

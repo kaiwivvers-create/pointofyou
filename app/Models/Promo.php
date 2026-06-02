@@ -17,6 +17,9 @@ class Promo extends Model
         'order',
         'discount_type',
         'discount_value',
+        'buy_item_id',
+        'get_item_id',
+        'gift_id',
     ];
 
     protected $casts = [
@@ -42,6 +45,11 @@ class Promo extends Model
     public function getItem()
     {
         return $this->belongsTo(MenuItem::class, 'get_item_id');
+    }
+
+    public function gift()
+    {
+        return $this->belongsTo(Gift::class, 'gift_id');
     }
 
     public function rules()

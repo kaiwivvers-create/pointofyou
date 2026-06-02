@@ -30,7 +30,7 @@
                     }
                 }
                 if ($promo->discount_value) {
-                    $promoDetailsText .= ($promoDetailsText ? ', ' : '') . 'Get ' . $promo->discount_value . '% Discount';
+                    $promoDetailsText .= ($promoDetailsText ? ', ' : '') . 'For $' . $promo->discount_value;
                 }
             @endphp
             <div class="relative overflow-hidden rounded-[2rem] border border-amber-200/70 bg-white shadow-[0_20px_50px_rgba(120,53,15,0.08)] cursor-pointer hover:shadow-[0_25px_60px_rgba(120,53,15,0.12)] transition-shadow"
@@ -95,7 +95,7 @@
                                     }
                                 }
                                 if ($promo->discount_value) {
-                                    $promoDetailsText .= ($promoDetailsText ? ', ' : '') . 'Get ' . $promo->discount_value . '% Discount';
+                                    $promoDetailsText .= ($promoDetailsText ? ', ' : '') . 'For $' . $promo->discount_value;
                                 }
                             @endphp
                             <article class="promo-slide min-w-full flex-shrink-0 cursor-pointer"

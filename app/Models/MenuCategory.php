@@ -45,8 +45,9 @@ class MenuCategory extends Model
      */
     public function getIconUrlAttribute(): string
     {
-        if ($this->icon_url) {
-            return $this->icon_url;
+        $iconUrl = $this->attributes['icon_url'] ?? null;
+        if ($iconUrl) {
+            return $iconUrl;
         }
 
         return $this->defaultIcon($this->name);

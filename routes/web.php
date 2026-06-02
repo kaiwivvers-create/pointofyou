@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\CafeTableController;
 use App\Http\Controllers\Admin\PromoController;
+use App\Http\Controllers\Admin\GiftController;
+use App\Http\Controllers\Admin\PacketController;
 use App\Http\Controllers\Admin\MenuCategoryController;
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\CurrentOrdersController;
@@ -299,6 +301,8 @@ Route::middleware('auth')->group(function () {
         Route::middleware('permit')->group(function () {
             Route::resource('menu', MenuItemController::class)->except(['show'])->middleware('permission:menu');
             Route::resource('promos', PromoController::class)->except(['show'])->middleware('permission:promos');
+            Route::resource('gifts', GiftController::class)->except(['show'])->middleware('permission:gifts');
+            Route::resource('packets', PacketController::class)->except(['show'])->middleware('permission:packets');
             Route::get('tables', [CafeTableController::class, 'index'])->name('tables.index')->middleware('permission:tables');
 
             // Menu Category Manager
@@ -357,6 +361,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/categories/{category}', [InventoryController::class, 'destroyCategory'])->name('categories.destroy');
         Route::post('/stock-movements', [InventoryController::class, 'storeStockMovement'])->name('stock-movements.store');
         Route::post('/bulk-purchases', [InventoryController::class, 'storeBulkPurchase'])->name('bulk-purchases.store');
+        
+        // Gift inventory routes
+        Route::post('/gifts/stock-movement', [GiftController::class, 'stockMovement'])->name('gifts.stock-movement');
+        Route::put('/gifts/inventory-update', [GiftController::class, 'inventoryUpdate'])->name('gifts.inventory-update');
     });
 
     Route::middleware('permit')->middleware('permission:payroll')->prefix('payroll')->name('payroll.')->group(function () {
