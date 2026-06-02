@@ -47,6 +47,7 @@ class ProfileController extends Controller
             // Create or update employee record
             if (!$user->employee) {
                 $employee = new \App\Models\Employee();
+                $employee->employee_id = 'EMP-' . str_pad($user->id, 4, '0', STR_PAD_LEFT);
                 $employee->user_id = $user->id;
                 $employee->profile_picture = $path;
                 $employee->save();
@@ -67,6 +68,7 @@ class ProfileController extends Controller
             // Create or update employee record
             if (!$user->employee) {
                 $employee = new \App\Models\Employee();
+                $employee->employee_id = 'EMP-' . str_pad($user->id, 4, '0', STR_PAD_LEFT);
                 $employee->user_id = $user->id;
                 $employee->profile_picture = $path;
                 $employee->save();
