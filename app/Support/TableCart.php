@@ -81,6 +81,13 @@ class TableCart
         $request->session()->put(self::SESSION_KEY, $cart);
     }
 
+    public static function addCustomItem(Request $request, array $cartItem): void
+    {
+        $cart = self::items($request);
+        $cart[] = $cartItem;
+        $request->session()->put(self::SESSION_KEY, $cart);
+    }
+
     public static function updateQuantity(Request $request, int $menuItemId, int $quantity): void
     {
         $cart = self::items($request);

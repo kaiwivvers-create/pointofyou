@@ -40,16 +40,6 @@ class PromoController extends Controller
             'rules.*.get_quantity' => 'nullable|integer|min:1',
         ]);
 
-        // Custom validation: if there's a get item, there must be a buy item
-        $rules = $validated['rules'] ?? [];
-        foreach ($rules as $rule) {
-            if (!empty($rule['get_item_id']) && empty($rule['buy_item_id'])) {
-                return back()->withInput()->withErrors([
-                    'rules' => 'You cannot have a "get" item without a "buy" item. Please select a buy item first.',
-                ], 'createPromo');
-            }
-        }
-
         // Use cropped image if available, otherwise use original
         if ($request->filled('cropped_image')) {
             $imageData = preg_replace('#^data:image/\w+;base64,#i', '', $request->cropped_image);
@@ -114,16 +104,6 @@ class PromoController extends Controller
             'rules.*.get_quantity' => 'nullable|integer|min:1',
         ]);
 
-        // Custom validation: if there's a get item, there must be a buy item
-        $rules = $validated['rules'] ?? [];
-        foreach ($rules as $rule) {
-            if (!empty($rule['get_item_id']) && empty($rule['buy_item_id'])) {
-                return back()->withInput()->withErrors([
-                    'rules' => 'You cannot have a "get" item without a "buy" item. Please select a buy item first.',
-                ], 'editPromo');
-            }
-        }
-
         // Use cropped image if available, otherwise use original
         if ($request->filled('cropped_image')) {
             $imageData = preg_replace('#^data:image/\w+;base64,#i', '', $request->cropped_image);
@@ -170,5 +150,20 @@ class PromoController extends Controller
     {
         $promo->delete();
         return redirect()->route('admin.promos.index')->with('success', 'Promo deleted successfully');
+    }
+
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*.id' => 'required|exists:promos,id',
+            'order.*.order' => 'required|integer|min:0',
+        ]);
+
+        foreach ($request->order as $item) {
+            Promo::where('id', $item['id'])->update(['order' => $item['order']]);
+        }
+
+        return response()->json(['success' => true]);
     }
 }

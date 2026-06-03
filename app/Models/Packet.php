@@ -36,6 +36,13 @@ class Packet extends Model
     public function items()
     {
         return $this->belongsToMany(MenuItem::class, 'packet_items')
+            ->withPivot('quantity', 'gift_id')
+            ->withTimestamps();
+    }
+
+    public function gifts()
+    {
+        return $this->belongsToMany(Gift::class, 'packet_items', 'packet_id', 'gift_id')
             ->withPivot('quantity')
             ->withTimestamps();
     }

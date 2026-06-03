@@ -51,45 +51,58 @@
             @endphp
             @foreach ($rules as $index => $rule)
                 <div class="promo-rule-row grid grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-lg" data-index="{{ $index }}">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Buy Item</label>
-                        <select name="rules[{{ $index }}][buy_item_id]" class="staff-input">
-                            <option value="">Select item to buy</option>
-                            @foreach (\App\Models\MenuItem::where('is_available', true)->orderBy('name')->get() as $item)
-                                <option value="{{ $item->id }}" {{ ($rule['buy_item_id'] ?? '') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @php
+                        $hasBuyItem = !empty($rule['buy_item_id']);
+                        $hasGetItem = !empty($rule['get_item_id']) || !empty($rule['gift_id']);
+                    @endphp
+                    @if($hasBuyItem)
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Buy Item</label>
+                            <select name="rules[{{ $index }}][buy_item_id]" class="staff-input">
+                                <option value="">Select item to buy</option>
+                                @foreach (\App\Models\MenuItem::where('is_available', true)->orderBy('name')->get() as $item)
+                                    <option value="{{ $item->id }}" {{ ($rule['buy_item_id'] ?? '') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Buy Quantity</label>
+                            <input type="number" name="rules[{{ $index }}][buy_quantity]" value="{{ $rule['buy_quantity'] ?? 1 }}" min="1" class="staff-input">
+                        </div>
+                    @else
+                        <input type="hidden" name="rules[{{ $index }}][buy_item_id]" value="">
+                        <input type="hidden" name="rules[{{ $index }}][buy_quantity]" value="1">
+                    @endif
                     
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Buy Quantity</label>
-                        <input type="number" name="rules[{{ $index }}][buy_quantity]" value="{{ $rule['buy_quantity'] ?? 1 }}" min="1" class="staff-input">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
-                        <select name="rules[{{ $index }}][get_item_id]" class="staff-input">
-                            <option value="">Select item to get</option>
-                            @foreach (\App\Models\MenuItem::where('is_available', true)->orderBy('name')->get() as $item)
-                                <option value="{{ $item->id }}" {{ ($rule['get_item_id'] ?? '') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Or Get Gift/Toy</label>
-                        <select name="rules[{{ $index }}][gift_id]" class="staff-input">
-                            <option value="">Select gift/toy to get</option>
-                            @foreach (\App\Models\Gift::where('is_active', true)->orderBy('name')->get() as $gift)
-                                <option value="{{ $gift->id }}" {{ ($rule['gift_id'] ?? '') == $gift->id ? 'selected' : '' }}>{{ $gift->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
-                        <input type="number" name="rules[{{ $index }}][get_quantity]" value="{{ $rule['get_quantity'] ?? 1 }}" min="1" class="staff-input">
-                    </div>
+                    @if($hasGetItem)
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
+                            <select name="rules[{{ $index }}][get_item_id]" class="staff-input">
+                                <option value="">Select item to get</option>
+                                @foreach (\App\Models\MenuItem::where('is_available', true)->orderBy('name')->get() as $item)
+                                    <option value="{{ $item->id }}" {{ ($rule['get_item_id'] ?? '') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Or Get Gift/Toy</label>
+                            <select name="rules[{{ $index }}][gift_id]" class="staff-input">
+                                <option value="">Select gift/toy to get</option>
+                                @foreach (\App\Models\Gift::where('is_active', true)->orderBy('name')->get() as $gift)
+                                    <option value="{{ $gift->id }}" {{ ($rule['gift_id'] ?? '') == $gift->id ? 'selected' : '' }}>{{ $gift->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
+                            <input type="number" name="rules[{{ $index }}][get_quantity]" value="{{ $rule['get_quantity'] ?? 1 }}" min="1" class="staff-input">
+                        </div>
+                    @else
+                        <input type="hidden" name="rules[{{ $index }}][get_item_id]" value="">
+                        <input type="hidden" name="rules[{{ $index }}][gift_id]" value="">
+                        <input type="hidden" name="rules[{{ $index }}][get_quantity]" value="1">
+                    @endif
+                    <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-700 text-sm col-span-2">Remove</button>
                 </div>
             @endforeach
         </div>

@@ -15,6 +15,8 @@ class MenuItem extends Model
         'category',
         'price',
         'emoji',
+        'image',
+        'barcode',
         'is_available',
         'is_promo',
         'promo_type',

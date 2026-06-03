@@ -44,6 +44,14 @@
                                     <h4 class="font-bold text-slate-900 text-sm"><span class="text-amber-600 mr-1">{{ $item->quantity }}x</span> {{ $item->item_name }}</h4>
                                 </div>
                                 
+                                @if($item->flavor)
+                                    <div class="mt-1">
+                                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                                            Flavor: {{ $item->flavor['name'] ?? '' }}
+                                        </span>
+                                    </div>
+                                @endif
+                                
                                 @if(!empty($item->modifications))
                                     <div class="mt-1 flex flex-wrap gap-1">
                                         @foreach($item->modifications as $mod)
@@ -70,9 +78,19 @@
                         <span class="font-semibold text-slate-900">Total:</span>
                         <span class="text-2xl font-bold text-emerald-600">${{ number_format($order->total, 2) }}</span>
                     </div>
-                    <button onclick="openPaymentModal({{ $order->id }}, {{ $order->total }})" class="w-full py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
-                        Pay Order
-                    </button>
+                    <div class="flex gap-2">
+                        @if($order->order_type === 'dine_in')
+                        <button onclick="openPaymentModal({{ $order->id }}, {{ $order->total }})" class="flex-1 py-3 rounded-xl font-bold bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+                            Pay Now
+                        </button>
+                        <button class="flex-1 py-3 rounded-xl font-bold bg-slate-600 text-white hover:bg-slate-700 transition-colors">
+                            Add Item
+                        </button>
+                        @endif
+                        <button onclick="markAsPickedUp({{ $order->id }})" class="flex-1 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
+                            Pick Up
+                        </button>
+                    </div>
                 </div>
             </div>
         @empty

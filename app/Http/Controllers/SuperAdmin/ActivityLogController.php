@@ -60,15 +60,25 @@ class ActivityLogController extends Controller
                 return back()->with('error', 'Cannot revert this log entry. Missing required data.');
             }
 
-            $model = $modelType::withTrashed()->find($modelId);
+            // Check if model uses SoftDeletes before calling withTrashed
+            $model = class_exists($modelType) ? new $modelType() : null;
+            if ($model && in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($model))) {
+                $model = $modelType::withTrashed()->find($modelId);
+            } else {
+                $model = $modelType::find($modelId);
+            }
 
             if (!$model) {
                 return back()->with('error', 'Model not found.');
             }
 
             if ($activityLog->action === 'deleted') {
-                $model->restore();
-                $this->logActivity('restored', $model, null, $oldValues);
+                if (method_exists($model, 'restore')) {
+                    $model->restore();
+                    $this->logActivity('restored', $model, null, $oldValues);
+                } else {
+                    return back()->with('error', 'This model does not support restore (no SoftDeletes).');
+                }
             } elseif ($activityLog->action === 'updated') {
                 $model->update($oldValues);
                 $this->logActivity('reverted', $model, $model->getAttributes(), $oldValues);
@@ -92,8 +102,44 @@ class ActivityLogController extends Controller
 
     public function destroyPermanently(ActivityLog $activityLog)
     {
-        $activityLog->forceDelete();
-        return back()->with('success', 'Activity log permanently deleted.');
+        // Only allow permanent deletion if the log is for a deleted item
+        if ($activityLog->action !== 'deleted') {
+            return back()->with('error', 'Can only permanently delete logs for deleted items.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $modelType = $activityLog->model_type;
+            $modelId = $activityLog->model_id;
+
+            if (!$modelType || !$modelId) {
+                return back()->with('error', 'Cannot permanently delete. Missing model data.');
+            }
+
+            // Check if model uses SoftDeletes and is trashed
+            $model = class_exists($modelType) ? new $modelType() : null;
+            if ($model && in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($model))) {
+                $trashedModel = $modelType::withTrashed()->find($modelId);
+                if ($trashedModel && $trashedModel->trashed()) {
+                    // Permanently delete the model
+                    $trashedModel->forceDelete();
+                } else {
+                    return back()->with('error', 'Model is not deleted (not in trash).');
+                }
+            } else {
+                return back()->with('error', 'This model does not support soft delete.');
+            }
+
+            // Also delete the activity log
+            $activityLog->forceDelete();
+
+            DB::commit();
+            return back()->with('success', 'Item and log permanently deleted.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to permanently delete: ' . $e->getMessage());
+        }
     }
 
     private function logActivity($action, $model, $oldValues = null, $newValues = null)
@@ -107,7 +153,7 @@ class ActivityLogController extends Controller
             'old_values' => $oldValues,
             'new_values' => $newValues,
             'metadata' => [
-                'reverted_from_log_id' => request()->route('activityLog'),
+                'reverted_from_log_id' => request()->route('activityLog')?->id,
             ],
         ]);
     }

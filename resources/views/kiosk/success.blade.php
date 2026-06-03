@@ -12,8 +12,8 @@
             @endfor
         </div>
 
-        <div class="z-10 bg-[#faf6f0] rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-8 lg:p-12 max-w-lg w-full text-center shadow-2xl relative border border-amber-200/60 my-4 sm:my-6 overflow-auto max-h-[90vh]">
-            <div class="absolute -top-8 sm:-top-10 lg:-top-12 left-1/2 -translate-x-1/2 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-green-600 rounded-full border-4 sm:border-6 lg:border-8 border-amber-900 flex items-center justify-center text-white text-2xl sm:text-3xl lg:text-4xl shadow-lg">
+        <div class="z-10 bg-[#faf6f0] rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-10 lg:p-16 max-w-lg w-full text-center shadow-2xl relative border border-amber-200/60 my-6 sm:my-8 overflow-auto max-h-[90vh]">
+            <div class="absolute -top-10 sm:-top-12 lg:-top-16 left-1/2 -translate-x-1/2 w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 bg-green-600 rounded-full border-4 sm:border-6 lg:border-8 border-amber-900 flex items-center justify-center text-white text-3xl sm:text-4xl lg:text-5xl shadow-lg">
                 ✓
             </div>
 

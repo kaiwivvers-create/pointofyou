@@ -18,6 +18,7 @@
         ['permission' => 'menu', 'route' => 'admin.menu.index', 'label' => 'Menu', 'match' => 'admin.menu.*'],
         ['permission' => 'categories', 'route' => 'admin.menu-categories.index', 'label' => 'Categories', 'match' => 'admin.menu-categories.*'],
         ['permission' => 'promos', 'route' => 'admin.promos.index', 'label' => 'Promos', 'match' => 'admin.promos.*'],
+        ['permission' => 'gifts', 'route' => 'admin.barcodes.index', 'label' => 'Barcodes', 'match' => 'admin.barcodes.*'],
         ['permission' => 'tables', 'route' => 'admin.tables.index', 'label' => 'Tables', 'match' => 'admin.tables.*'],
         ['permission' => 'kitchen', 'route' => 'admin.current-orders.index', 'label' => 'Kitchen', 'match' => 'admin.current-orders.*'],
         ['permission' => 'kitchen', 'route' => 'admin.pickup-station.index', 'label' => 'Pickup Station', 'match' => 'admin.pickup-station.*'],

@@ -26,7 +26,25 @@
 
     <!-- Left Sidebar: Categories -->
     <aside class="kiosk-sidebar-left hide-scrollbar">
-        @foreach(\App\Models\MenuCategory::visible()->get() as $category)
+        @if($itemsByCategory->has('packets'))
+            <button onclick="document.getElementById('cat-packets')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
+                class="category-btn flex flex-col items-center gap-2 p-2 w-24 rounded-2xl transition-all hover:bg-amber-50 hover:scale-105 group focus:outline-none cursor-pointer">
+                <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-100 shadow-sm group-hover:border-amber-500 transition-colors">
+                    <img src="https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=120&auto=format&fit=crop&q=80" class="category-img" alt="Packets">
+                </div>
+                <span class="text-[11px] font-bold text-stone-600 uppercase tracking-wider group-hover:text-amber-800">Packets</span>
+            </button>
+        @endif
+        @if($promos->isNotEmpty())
+            <button onclick="document.querySelector('.promo-carousel')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
+                class="category-btn flex flex-col items-center gap-2 p-2 w-24 rounded-2xl transition-all hover:bg-amber-50 hover:scale-105 group focus:outline-none cursor-pointer">
+                <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-100 shadow-sm group-hover:border-amber-500 transition-colors">
+                    <img src="https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&auto=format&fit=crop&q=80" class="category-img" alt="Promos">
+                </div>
+                <span class="text-[11px] font-bold text-stone-600 uppercase tracking-wider group-hover:text-amber-800">Promos</span>
+            </button>
+        @endif
+        @foreach(\App\Models\MenuCategory::visible()->whereNotIn('name', ['promos', 'packets'])->get() as $category)
             <button onclick="document.getElementById('cat-{{ $category->name }}')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
                 class="category-btn flex flex-col items-center gap-2 p-2 w-24 rounded-2xl transition-all hover:bg-amber-50 hover:scale-105 group focus:outline-none cursor-pointer">
                 <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-100 shadow-sm group-hover:border-amber-500 transition-colors">
@@ -63,6 +81,9 @@
                                 'unit_price' => $cartItem['unit_price'],
                                 'modifications' => $cartItem['modifications'] ?? [],
                                 'flavor' => $cartItem['flavor'] ?? null,
+                                'is_packet' => $cartItem['is_packet'] ?? false,
+                                'packet_id' => $cartItem['packet_id'] ?? null,
+                                'packet_contents' => $cartItem['packet_contents'] ?? null,
                                 'items' => []
                             ];
                         }
@@ -90,13 +111,7 @@
                             <span class="font-semibold text-stone-800">${{ number_format($totalPrice, 2) }}</span>
                         </div>
                         <div class="text-sm text-stone-500 font-medium">Qty: {{ $totalQty }}</div>
-                        @if(!empty($group['flavor']))
-                            <div class="mt-1 flex flex-wrap gap-1">
-                                <div class="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-1 rounded border border-amber-200">
-                                    Flavor: {{ $group['flavor']['name'] }}
-                                </div>
-                            </div>
-                        @endif
+
                         @if(!empty($group['modifications']))
                             <div class="mt-1 flex flex-wrap gap-1">
                                 @foreach($group['modifications'] as $mod)
@@ -104,6 +119,23 @@
                                         + {{ $mod['name'] }}
                                     </div>
                                 @endforeach
+                            </div>
+                        @endif
+                        @if(isset($group['is_packet']) && $group['is_packet'])
+                            <div class="mt-2 text-xs text-stone-600 bg-stone-50 p-2 rounded-lg border border-stone-200">
+                                <span class="font-semibold">Packet contents:</span>
+                                <div class="mt-1 space-y-1">
+                                    @if(isset($group['packet_contents']) && is_array($group['packet_contents']))
+                                        @foreach($group['packet_contents'] as $content)
+                                            <div class="flex justify-between">
+                                                <span>{{ $content['name'] }}</span>
+                                                <span class="text-stone-500">x{{ $content['quantity'] ?? 1 }}</span>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <span class="text-stone-500 italic">See details in modal</span>
+                                    @endif
+                                </div>
                             </div>
                         @endif
                     </div>
@@ -124,10 +156,23 @@
                     </div>
                 </div>
                 
-                @if(!$hasMultipleItems && !empty($group['items'][0]['notes']))
-                    <div class="px-4 pb-4 pt-0">
+                @if(!$hasMultipleItems && (!empty($group['flavor']) || !empty($group['items'][0]['notes'])))
+                    <div class="px-4 pb-4 pt-0 space-y-2">
+                        @if(!empty($group['flavor']))
+                            <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                Flavor: {{ $group['flavor']['name'] }}
+                            </div>
+                        @endif
+                        @if(!empty($group['items'][0]['notes']))
+                            <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                "{{ $group['items'][0]['notes'] }}"
+                            </div>
+                        @endif
+                    </div>
+                @elseif($hasMultipleItems && !empty($group['flavor']))
+                    <div class="px-4 pb-2 pt-0">
                         <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
-                            "{{ $group['items'][0]['notes'] }}"
+                            Flavor: {{ $group['flavor']['name'] }}
                         </div>
                     </div>
                 @endif
@@ -206,13 +251,14 @@
             @forelse($itemsByCategory as $category => $items)
                 <div id="cat-{{ strtolower($category) }}" class="mb-14">
                     <h2 class="font-display text-3xl font-bold text-amber-950 mb-6 capitalize flex items-center gap-4">
-                        {{ $category }}
+                        {{ $category === 'packets' ? 'Packets' : $category }}
                     </h2>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach($items as $item)
                             @php
-                                $imagePath = $item->image;
+                                $isPacket = $category === 'packets';
+                                $imagePath = $isPacket ? $item->image : $item->image;
                                 // Ensure path starts with storage/
                                 if ($imagePath && !str_starts_with($imagePath, 'storage/')) {
                                     $imagePath = 'storage/' . $imagePath;
@@ -220,22 +266,41 @@
                                 $img = $imagePath ? asset($imagePath) : 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80';
                                 if($category === 'drinks' && !$item->image) $img = 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=600&q=80';
                             @endphp
-                            <button onclick="openItemModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
-                                <div class="w-full h-48 bg-stone-100 overflow-hidden relative">
-                                    <img src="{{ $img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="{{ $item->name }}">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                </div>
-                                <div class="p-5 flex flex-col flex-1 w-full">
-                                    <div class="flex justify-between items-start gap-2 mb-2">
-                                        <h3 class="font-display text-xl font-bold text-amber-950 leading-tight">{{ $item->name }}</h3>
+                            @if($isPacket)
+                                <button onclick="openPacketModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
+                                    <div class="w-full h-48 bg-stone-100 overflow-hidden relative">
+                                        <img src="{{ $img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="{{ $item->name }}">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     </div>
-                                    <p class="text-sm text-stone-500 line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
-                                    <div class="mt-auto flex items-center justify-between w-full">
-                                        <span class="text-xl font-bold text-amber-800">{{ $item->formattedPrice() }}</span>
-                                        <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors">+</div>
+                                    <div class="p-5 flex flex-col flex-1 w-full">
+                                        <div class="flex justify-between items-start gap-2 mb-2">
+                                            <h3 class="font-display text-xl font-bold text-amber-950 leading-tight">{{ $item->name }}</h3>
+                                        </div>
+                                        <p class="text-sm text-stone-500 line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
+                                        <div class="mt-auto flex items-center justify-between w-full">
+                                            <span class="text-xl font-bold text-amber-800">${{ number_format($item->fixed_price, 2) }}</span>
+                                            <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors">+</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </button>
+                                </button>
+                            @else
+                                <button onclick="openItemModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
+                                    <div class="w-full h-48 bg-stone-100 overflow-hidden relative">
+                                        <img src="{{ $img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="{{ $item->name }}">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    </div>
+                                    <div class="p-5 flex flex-col flex-1 w-full">
+                                        <div class="flex justify-between items-start gap-2 mb-2">
+                                            <h3 class="font-display text-xl font-bold text-amber-950 leading-tight">{{ $item->name }}</h3>
+                                        </div>
+                                        <p class="text-sm text-stone-500 line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
+                                        <div class="mt-auto flex items-center justify-between w-full">
+                                            <span class="text-xl font-bold text-amber-800">{{ $item->formattedPrice() }}</span>
+                                            <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors">+</div>
+                                        </div>
+                                    </div>
+                                </button>
+                            @endif
                         @endforeach
                     </div>
                 </div>
@@ -311,6 +376,60 @@
             <div class="p-6 bg-white border-t border-amber-100 shrink-0">
                 <button type="submit" class="w-full bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold py-5 rounded-2xl text-xl shadow-xl shadow-amber-900/20 transition-transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
                     Add to Order <span id="modalTotalBtn" class="ml-2 font-normal opacity-90"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Packet Modal Backdrop -->
+<div id="packetModalBackdrop" class="kiosk-modal-backdrop" onclick="if(event.target === this) closePacketModal()">
+    <div id="packetModalContent" class="kiosk-modal-content">
+        <form id="packetForm" method="POST" action="" class="flex flex-col h-full max-h-[90vh]">
+            @csrf
+            <div class="p-6 border-b border-amber-100 shrink-0">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <img id="packetModalImg" src="" class="w-full h-48 object-cover rounded-2xl mb-4" alt="">
+                        <h2 id="packetModalTitle" class="font-display text-2xl font-bold text-amber-950"></h2>
+                        <p id="packetModalDesc" class="text-stone-600 mt-2 font-medium"></p>
+                    </div>
+                    <button type="button" onclick="closePacketModal()" class="w-8 h-8 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center text-sm hover:bg-red-500 hover:text-white transition-colors cursor-pointer">×</button>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto hide-scrollbar flex-1 bg-white">
+                <!-- Packet Contents -->
+                <div id="packetContentsSection" class="mb-8">
+                    <h3 class="font-display text-xl font-bold text-amber-950 mb-4 flex items-center gap-2">
+                        Packet Contents
+                        <div class="flex-1 h-px bg-amber-100"></div>
+                    </h3>
+                    <div id="packetContentsList" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-6">
+                    <span class="font-bold text-stone-700 text-lg">Price</span>
+                    <span id="packetModalPrice" class="font-display text-3xl font-bold text-amber-800"></span>
+                </div>
+
+                <!-- Quantity -->
+                <div class="flex items-center justify-between bg-[#faf6f0] p-5 rounded-2xl border border-amber-200/50">
+                    <span class="font-bold text-stone-700 text-lg">Quantity</span>
+                    <div class="flex items-center gap-4 bg-white rounded-xl shadow-sm p-1.5 border border-amber-100">
+                        <button type="button" onclick="updatePacketQty(-1)" class="w-12 h-12 flex items-center justify-center text-2xl font-bold text-amber-700 hover:bg-amber-50 rounded-lg rounded-r-none transition-colors cursor-pointer">-</button>
+                        <input type="number" id="packetQtyInput" name="quantity" value="1" min="1" max="20" class="w-12 text-center font-bold text-2xl text-stone-800 p-0 border-none focus:ring-0 appearance-none bg-transparent" readonly>
+                        <button type="button" onclick="updatePacketQty(1)" class="w-12 h-12 flex items-center justify-center text-2xl font-bold text-amber-700 hover:bg-amber-50 rounded-lg rounded-l-none transition-colors cursor-pointer">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-6 bg-white border-t border-amber-100 shrink-0">
+                <button type="submit" class="w-full bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold py-5 rounded-2xl text-xl shadow-xl shadow-amber-900/20 transition-transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                    Add to Order
                 </button>
             </div>
         </form>
@@ -462,6 +581,52 @@
     function closeItemModal() {
         const backdrop = document.getElementById('itemModalBackdrop');
         backdrop.classList.remove('show');
+    }
+
+    function openPacketModal(packet, imgSrc) {
+        document.getElementById('packetForm').action = `/table/packet/${packet.id}`;
+        document.getElementById('packetModalImg').src = imgSrc;
+        document.getElementById('packetModalTitle').innerText = packet.name;
+        document.getElementById('packetModalDesc').innerText = packet.description || '';
+        
+        // Handle packets (fixed_price)
+        const price = packet.fixed_price || 0;
+        document.getElementById('packetModalPrice').innerText = '$' + parseFloat(price).toFixed(2);
+        
+        document.getElementById('packetQtyInput').value = 1;
+        
+        // Show packet contents
+        const packetContentsSection = document.getElementById('packetContentsSection');
+        const packetContentsList = document.getElementById('packetContentsList');
+        
+        if (packet.items && packet.items.length > 0) {
+            packetContentsSection.classList.remove('hidden');
+            let html = '';
+            packet.items.forEach(packetItem => {
+                const qty = packetItem.pivot ? packetItem.pivot.quantity : 1;
+                html += `<div class="text-sm text-stone-600 p-3 bg-stone-50 rounded-lg border border-stone-200">${packetItem.name} x${qty}</div>`;
+            });
+            packetContentsList.innerHTML = html;
+        } else {
+            packetContentsSection.classList.add('hidden');
+            packetContentsList.innerHTML = '<div class="text-sm text-stone-500 italic">No items in this packet</div>';
+        }
+        
+        const backdrop = document.getElementById('packetModalBackdrop');
+        backdrop.classList.add('show');
+    }
+
+    function closePacketModal() {
+        const backdrop = document.getElementById('packetModalBackdrop');
+        backdrop.classList.remove('show');
+    }
+
+    function updatePacketQty(change) {
+        const input = document.getElementById('packetQtyInput');
+        let val = parseInt(input.value) + change;
+        if (val < 1) val = 1;
+        if (val > 20) val = 20;
+        input.value = val;
     }
 
     function updateQty(change) {

@@ -39,6 +39,7 @@ Route::get('/table/scan/{token}', [TableScanController::class, 'scan'])->name('t
 Route::middleware('table.session')->prefix('table')->group(function () {
     Route::get('/menu', [TableScanController::class, 'menu'])->name('table.menu');
     Route::post('/cart/{menuItem}', [TableScanController::class, 'addToCart'])->name('table.cart.add');
+    Route::post('/packet/{packet}', [TableScanController::class, 'addPacketToCart'])->name('table.packet.add');
     Route::patch('/cart', [TableScanController::class, 'updateCart'])->name('table.cart.update');
     Route::patch('/cart/update/{index}', [TableScanController::class, 'updateCartItem'])->name('table.cart.update.index');
     Route::post('/cart/remove/{index}', [TableScanController::class, 'removeCartItem'])->name('table.cart.remove.index');
@@ -53,6 +54,7 @@ Route::prefix('kiosk')->name('kiosk.')->group(function () {
     Route::post('/type', [KioskController::class, 'setType'])->name('type');
     Route::get('/menu', [KioskController::class, 'menu'])->name('menu');
     Route::post('/cart/{menuItem}', [KioskController::class, 'addToCart'])->name('cart.add');
+    Route::post('/packet/{packet}/add', [KioskController::class, 'addPacketToCart'])->name('packet.add');
     Route::patch('/cart/update/{cartIndex}', [KioskController::class, 'updateCartItem'])->name('cart.update');
     Route::post('/cart/remove/{cartIndex}', [KioskController::class, 'removeFromCart'])->name('cart.remove');
     Route::post('/checkout', [KioskController::class, 'checkout'])->name('checkout');
@@ -295,14 +297,25 @@ Route::middleware('auth')->group(function () {
         // Current Orders and Pickup Station (role-based for chef, permission-based for others)
         Route::get('current-orders', [CurrentOrdersController::class, 'index'])->name('current-orders.index')->middleware('permission:current_orders')->middleware('role:chef,owner,manager,super_admin');
         Route::patch('current-orders/items/{orderItem}/toggle-ready', [CurrentOrdersController::class, 'toggleReady'])->name('current-orders.toggle-ready')->middleware('permission:current_orders');
+        Route::post('current-orders/{order}/pay', [CurrentOrdersController::class, 'pay'])->name('current-orders.pay')->middleware('permission:current_orders')->middleware('role:chef,owner,manager,super_admin');
+        Route::post('current-orders/{order}/pickup', [CurrentOrdersController::class, 'markPickedUp'])->name('current-orders.pickup')->middleware('permission:current_orders')->middleware('role:chef,owner,manager,super_admin');
+        Route::post('current-orders/{order}/close', [CurrentOrdersController::class, 'markClosed'])->name('current-orders.close')->middleware('permission:current_orders')->middleware('role:chef,owner,manager,super_admin');
+        Route::post('current-orders/{order}/add-item', [CurrentOrdersController::class, 'addItem'])->name('current-orders.add-item')->middleware('permission:current_orders')->middleware('role:chef,owner,manager,super_admin');
         Route::get('pickup-station', [\App\Http\Controllers\Admin\PickupStationController::class, 'index'])->name('pickup-station.index')->middleware('permission:pickup_station');
         Route::post('pickup-station/orders/{order}/close', [\App\Http\Controllers\Admin\PickupStationController::class, 'markClosed'])->name('pickup-station.close')->middleware('permission:pickup_station');
 
         Route::middleware('permit')->group(function () {
             Route::resource('menu', MenuItemController::class)->except(['show'])->middleware('permission:menu');
             Route::resource('promos', PromoController::class)->except(['show'])->middleware('permission:promos');
+            Route::post('promos/reorder', [PromoController::class, 'reorder'])->name('promos.reorder')->middleware('permission:promos');
+            // Barcode Manager
+            Route::get('barcodes', [\App\Http\Controllers\Admin\BarcodeController::class, 'index'])->name('barcodes.index')->middleware('permission:gifts');
+            Route::post('barcodes/update', [\App\Http\Controllers\Admin\BarcodeController::class, 'update'])->name('barcodes.update')->middleware('permission:gifts');
+
+            // Gifts
             Route::resource('gifts', GiftController::class)->except(['show'])->middleware('permission:gifts');
             Route::resource('packets', PacketController::class)->except(['show'])->middleware('permission:packets');
+            Route::post('packets/reorder', [PacketController::class, 'reorder'])->name('packets.reorder')->middleware('permission:packets');
             Route::get('tables', [CafeTableController::class, 'index'])->name('tables.index')->middleware('permission:tables');
 
             // Menu Category Manager

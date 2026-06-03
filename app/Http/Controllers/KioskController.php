@@ -44,8 +44,8 @@ class KioskController extends Controller
             return redirect()->route('kiosk.welcome');
         }
 
-        // Load visible categories in saved order
-        $orderedCategories = MenuCategory::visible()->pluck('name');
+        // Load visible categories in saved order (excluding promos and packets)
+        $orderedCategories = MenuCategory::visible()->whereNotIn('name', ['promos', 'packets'])->pluck('name');
 
         $allItems = MenuItem::where('is_available', true)->orderBy('name')->with('modifications')->with('flavors')->get()->groupBy('category');
 
@@ -54,10 +54,16 @@ class KioskController extends Controller
             return [$cat => $allItems->get($cat, collect())];
         })->filter(fn($items) => $items->isNotEmpty());
 
-        // Add packets as a special category
-        $packets = Packet::where('is_active', true)->orderBy('order')->get();
+        // Add packets items at the beginning (right under promos carousel)
+        $packets = Packet::where('is_active', true)->orderBy('order')->with('items')->get();
         if ($packets->isNotEmpty()) {
-            $menuItems['packets'] = $packets;
+            $menuItems = collect(['packets' => $packets->map(function($packet) {
+                $packet->items = $packet->items->map(function($item) {
+                    $item->pivot = $item->pivot;
+                    return $item;
+                });
+                return $packet;
+            })])->merge($menuItems);
         }
 
         $cart = Session::get('kiosk_cart', []);
@@ -81,6 +87,10 @@ class KioskController extends Controller
         $unavailable = [];
 
         foreach ($cart as $item) {
+            if (isset($item['is_packet']) && $item['is_packet']) {
+                continue;
+            }
+
             $menuItemId = $item['menu_item_id'] ?? null;
             $isAvailable = $menuItemId ? ($availableItems[$menuItemId] ?? false) : false;
 
@@ -174,6 +184,64 @@ class KioskController extends Controller
         return redirect()->back()->with('success', 'Item added to cart.');
     }
 
+    public function addPacketToCart(Request $request, Packet $packet)
+    {
+        if (! $packet->is_active) {
+            return back()->with('error', 'That packet is not available right now.');
+        }
+
+        $request->validate([
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $quantity = $request->integer('quantity');
+        $unitPrice = $packet->fixed_price;
+        $lineTotal = $unitPrice * $quantity;
+        $signature = 'packet_' . $packet->id;
+
+        // Build packet contents for display
+        $packetContents = [];
+        if ($packet->items) {
+            foreach ($packet->items as $item) {
+                $packetContents[] = [
+                    'name' => $item->name,
+                    'quantity' => $item->pivot->quantity ?? 1
+                ];
+            }
+        }
+
+        $cartItem = [
+            'menu_item_id' => null, // Packets don't have menu_item_id
+            'is_packet' => true,
+            'packet_id' => $packet->id,
+            'name' => $packet->name,
+            'emoji' => null,
+            'quantity' => $quantity,
+            'unit_price' => $unitPrice,
+            'line_total' => $lineTotal,
+            'modifications' => [],
+            'flavor' => null,
+            'notes' => null,
+            'signature' => $signature,
+            'packet_contents' => $packetContents,
+        ];
+
+        $cart = Session::get('kiosk_cart', []);
+        foreach ($cart as $index => $existingItem) {
+            if (($existingItem['signature'] ?? null) === $signature) {
+                $cart[$index]['quantity'] += $quantity;
+                $cart[$index]['line_total'] = $cart[$index]['unit_price'] * $cart[$index]['quantity'];
+                Session::put('kiosk_cart', $cart);
+                return redirect()->back()->with('success', 'Packet added to cart.');
+            }
+        }
+
+        $cart[] = $cartItem;
+        Session::put('kiosk_cart', $cart);
+
+        return redirect()->back()->with('success', 'Packet added to cart.');
+    }
+
     public function removeFromCart($cartIndex)
     {
         $cart = Session::get('kiosk_cart', []);
@@ -230,8 +298,12 @@ class KioskController extends Controller
         }
 
         $request->validate([
-            'table_number' => 'nullable|string',
+            'table_number' => 'required_if:order_type,dine_in|string',
         ]);
+
+        if ($orderType === 'dine_in' && empty($request->input('table_number'))) {
+            return back()->with('error', 'Please enter a table number for dine-in orders.');
+        }
 
         try {
             $order = DB::transaction(function () use ($request, $orderType, $cart, $inventoryService) {
@@ -254,22 +326,47 @@ class KioskController extends Controller
                 $order = Order::create([
                     'cafe_table_id' => $tableId,
                     'order_type' => $orderType,
-                    'status' => 'pending',
+                    'status' => 'paid',
                     'total' => 0,
                     'paid_at' => now(),
+                    'paid_by' => null, // Kiosk payment
+                    'payment_method' => $request->input('payment_method', 'qr'),
                 ]);
 
                 foreach ($cart as $item) {
-                    OrderItem::create([
-                        'order_id' => $order->id,
-                        'menu_item_id' => $item['menu_item_id'],
-                        'item_name' => $item['name'],
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $item['unit_price'],
-                        'line_total' => $item['line_total'],
-                        'modifications' => $item['modifications'] ?? [],
-                        'notes' => $item['notes'] ?? null,
-                    ]);
+                    // Handle packets - expand them into individual menu items
+                    if (isset($item['is_packet']) && $item['is_packet'] && isset($item['packet_id'])) {
+                        $packet = Packet::find($item['packet_id']);
+                        if ($packet && $packet->items) {
+                            foreach ($packet->items as $packetItem) {
+                                $quantity = ($packetItem->pivot->quantity ?? 1) * $item['quantity'];
+                                $unitPrice = $packetItem->price ?? 0;
+                                $lineTotal = $unitPrice * $quantity;
+                                OrderItem::create([
+                                    'order_id' => $order->id,
+                                    'menu_item_id' => $packetItem->id,
+                                    'item_name' => $packetItem->name,
+                                    'quantity' => $quantity,
+                                    'unit_price' => $unitPrice,
+                                    'line_total' => $lineTotal,
+                                    'modifications' => [],
+                                    'notes' => 'Part of packet: ' . $packet->name,
+                                ]);
+                            }
+                        }
+                    } else {
+                        // Regular menu item
+                        OrderItem::create([
+                            'order_id' => $order->id,
+                            'menu_item_id' => $item['menu_item_id'],
+                            'item_name' => $item['name'],
+                            'quantity' => $item['quantity'],
+                            'unit_price' => $item['unit_price'],
+                            'line_total' => $item['line_total'],
+                            'modifications' => $item['modifications'] ?? [],
+                            'notes' => $item['notes'] ?? null,
+                        ]);
+                    }
                 }
 
                 $inventoryService->applyMenuItemIngredients($order);

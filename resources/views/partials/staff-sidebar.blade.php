@@ -206,6 +206,14 @@
                             'active' => request()->routeIs('admin.tables.*'),
                         ])
                     @endif
+                    @if ($can('gifts'))
+                        @include('partials.staff-nav-link', [
+                            'href' => route('admin.barcodes.index'),
+                            'label' => 'Barcode Manager',
+                            'icon' => '<svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm13-1h3a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1V4a1 1 0 011-1zM4 17a1 1 0 01-1-1v-3a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4zm13-1h3a1 1 0 011-1v-3a1 1 0 01-1-1h-3a1 1 0 01-1 1v3a1 1 0 011 1z"></path></svg>',
+                            'active' => request()->routeIs('admin.barcodes.*'),
+                        ])
+                    @endif
                 </div>
             </div>
         @endif

@@ -22,7 +22,25 @@
 
     <!-- Left Sidebar: Categories -->
     <aside class="kiosk-sidebar-left hide-scrollbar">
-        @foreach(\App\Models\MenuCategory::visible()->get() as $category)
+        @if($menuItems->has('packets'))
+            <button onclick="document.getElementById('cat-packets')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
+                class="category-btn flex flex-col items-center gap-2 p-2 w-24 rounded-2xl transition-all hover:bg-amber-50 hover:scale-105 group focus:outline-none cursor-pointer">
+                <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-100 shadow-sm group-hover:border-amber-500 transition-colors">
+                    <img src="https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=120&auto=format&fit=crop&q=80" class="category-img" alt="Packets">
+                </div>
+                <span class="text-[11px] font-bold text-stone-600 uppercase tracking-wider group-hover:text-amber-800">Packets</span>
+            </button>
+        @endif
+        @if($promos->isNotEmpty())
+            <button onclick="document.querySelector('.promo-carousel')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
+                class="category-btn flex flex-col items-center gap-2 p-2 w-24 rounded-2xl transition-all hover:bg-amber-50 hover:scale-105 group focus:outline-none cursor-pointer">
+                <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-100 shadow-sm group-hover:border-amber-500 transition-colors">
+                    <img src="https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&auto=format&fit=crop&q=80" class="category-img" alt="Promos">
+                </div>
+                <span class="text-[11px] font-bold text-stone-600 uppercase tracking-wider group-hover:text-amber-800">Promos</span>
+            </button>
+        @endif
+        @foreach(\App\Models\MenuCategory::visible()->whereNotIn('name', ['promos', 'packets'])->get() as $category)
             <button onclick="document.getElementById('cat-{{ $category->name }}')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
                 class="category-btn flex flex-col items-center gap-2 p-2 w-24 rounded-2xl transition-all hover:bg-amber-50 hover:scale-105 group focus:outline-none cursor-pointer">
                 <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-100 shadow-sm group-hover:border-amber-500 transition-colors">
@@ -59,6 +77,9 @@
                                 'unit_price' => $cartItem['unit_price'],
                                 'modifications' => $cartItem['modifications'] ?? [],
                                 'flavor' => $cartItem['flavor'] ?? null,
+                                'is_packet' => $cartItem['is_packet'] ?? false,
+                                'packet_id' => $cartItem['packet_id'] ?? null,
+                                'packet_contents' => $cartItem['packet_contents'] ?? null,
                                 'items' => []
                             ];
                         }
@@ -78,7 +99,7 @@
                     $totalPrice = collect($group['items'])->sum('line_total');
                     $hasMultipleItems = count($group['items']) > 1;
                 @endphp
-                <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden relative">
                     <div class="p-4 flex items-center gap-4 hover:border-amber-300 transition-colors">
                         <div class="flex-1">
                             <div class="flex justify-between items-center">
@@ -86,13 +107,7 @@
                                 <span class="font-semibold text-stone-800">${{ number_format($totalPrice, 2) }}</span>
                             </div>
                             <div class="text-sm text-stone-500 font-medium">Qty: {{ $totalQty }}</div>
-                            @if(!empty($group['flavor']))
-                                <div class="mt-1 flex flex-wrap gap-1">
-                                    <div class="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-1 rounded border border-amber-200">
-                                        Flavor: {{ $group['flavor']['name'] }}
-                                    </div>
-                                </div>
-                            @endif
+
                             @if(!empty($group['modifications']))
                                 <div class="mt-1 flex flex-wrap gap-1">
                                     @foreach($group['modifications'] as $mod)
@@ -102,8 +117,25 @@
                                     @endforeach
                                 </div>
                             @endif
+                            @if(isset($group['is_packet']) && $group['is_packet'])
+                                <div class="mt-2 text-xs text-stone-600 bg-stone-50 p-2 rounded-lg border border-stone-200">
+                                    <span class="font-semibold">Packet contents:</span>
+                                    <div class="mt-1 space-y-1">
+                                        @if(isset($group['packet_contents']) && is_array($group['packet_contents']))
+                                            @foreach($group['packet_contents'] as $content)
+                                                <div class="flex justify-between">
+                                                    <span>{{ $content['name'] }}</span>
+                                                    <span class="text-stone-500">x{{ $content['quantity'] ?? 1 }}</span>
+                                                </div>
+                                            @endforeach
+                                        @else
+                                            <span class="text-stone-500 italic">See details in modal</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 shrink-0">
                             @if($hasMultipleItems)
                                 <button onclick="toggleDropdown('{{$groupKey}}')" class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm hover:bg-amber-200 transition-colors border border-amber-200 cursor-pointer">
                                     <svg id="icon-{{$groupKey}}" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -111,7 +143,7 @@
                                     </svg>
                                 </button>
                             @else
-                                <button onclick="openEditModal({{ $group['items'][0]['index'] }}, '{{ addslashes($group['name']) }}', {{ $group['items'][0]['quantity'] }}, {{ $group['unit_price'] }}, '{{ addslashes($group['items'][0]['notes'] ?? '') }}', {{ !empty($group['modifications']) ? 'true' : 'false' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
+                                <button onclick="openEditModal({{ $group['items'][0]['index'] }}, '{{ addslashes($group['name']) }}', {{ $group['items'][0]['quantity'] }}, {{ $group['unit_price'] }}, '{{ addslashes($group['items'][0]['notes'] ?? '') }}', {{ !empty($group['modifications']) ? 'true' : 'false' }}, {{ !empty($group['flavor']) ? json_encode($group['flavor']) : 'null' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
                             @endif
                             <form method="POST" action="{{ route('kiosk.cart.remove', $group['items'][0]['index']) }}">
                                 @csrf
@@ -120,10 +152,23 @@
                         </div>
                     </div>
                     
-                    @if(!$hasMultipleItems && !empty($group['items'][0]['notes']))
-                        <div class="px-4 pb-4 pt-0">
+                    @if(!$hasMultipleItems && (!empty($group['flavor']) || !empty($group['items'][0]['notes'])))
+                        <div class="px-4 pb-4 pt-0 space-y-2">
+                            @if(!empty($group['flavor']))
+                                <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                    Flavor: {{ $group['flavor']['name'] }}
+                                </div>
+                            @endif
+                            @if(!empty($group['items'][0]['notes']))
+                                <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                    "{{ $group['items'][0]['notes'] }}"
+                                </div>
+                            @endif
+                        </div>
+                    @elseif($hasMultipleItems && !empty($group['flavor']))
+                        <div class="px-4 pb-2 pt-0">
                             <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
-                                "{{ $group['items'][0]['notes'] }}"
+                                Flavor: {{ $group['flavor']['name'] }}
                             </div>
                         </div>
                     @endif
@@ -141,7 +186,7 @@
                                                 <span class="text-sm font-semibold text-stone-800">${{ number_format($item['line_total'], 2) }}</span>
                                             </div>
                                             <div class="flex items-center gap-2">
-                                                <button onclick="openEditModal({{ $item['index'] }}, '{{ addslashes($group['name']) }}', {{ $item['quantity'] }}, {{ $group['unit_price'] }}, '{{ addslashes($item['notes'] ?? '') }}', {{ !empty($group['modifications']) ? 'true' : 'false' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
+                                                <button onclick="openEditModal({{ $item['index'] }}, '{{ addslashes($group['name']) }}', {{ $item['quantity'] }}, {{ $group['unit_price'] }}, '{{ addslashes($item['notes'] ?? '') }}', {{ !empty($group['modifications']) ? 'true' : 'false' }}, {{ !empty($group['flavor']) ? json_encode($group['flavor']) : 'null' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
                                                 <form method="POST" action="{{ route('kiosk.cart.remove', $item['index']) }}" class="inline">
                                                     @csrf
                                                     <button type="submit" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg font-medium hover:bg-red-200 transition-colors cursor-pointer">Remove</button>
@@ -206,6 +251,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach($items as $item)
                             @php
+                                $isPacket = $category === 'packets';
                                 $imagePath = $item->image;
                                 // Ensure path starts with storage/
                                 if ($imagePath && !str_starts_with($imagePath, 'storage/')) {
@@ -216,22 +262,41 @@
                                 if($category === 'pastry' && !$item->image) $img = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&q=80';
                                 if($category === 'promo' && !$item->image) $img = 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&q=80';
                             @endphp
-                            <button onclick="openItemModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
-                                <div class="w-full h-48 bg-stone-100 overflow-hidden relative">
-                                    <img src="{{ $img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="{{ $item->name }}">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                </div>
-                                <div class="p-5 flex flex-col flex-1 w-full">
-                                    <div class="flex justify-between items-start gap-2 mb-2">
-                                        <h3 class="font-display text-xl font-bold text-amber-950 leading-tight">{{ $item->name }}</h3>
+                            @if($isPacket)
+                                <button onclick="openPacketModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
+                                    <div class="w-full h-48 bg-stone-100 overflow-hidden relative">
+                                        <img src="{{ $img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="{{ $item->name }}">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     </div>
-                                    <p class="text-sm text-stone-500 line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
-                                    <div class="mt-auto flex items-center justify-between w-full">
-                                        <span class="text-xl font-bold text-amber-800">{{ $item->formattedPrice() }}</span>
-                                        <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors">+</div>
+                                    <div class="p-5 flex flex-col flex-1 w-full">
+                                        <div class="flex justify-between items-start gap-2 mb-2">
+                                            <h3 class="font-display text-xl font-bold text-amber-950 leading-tight">{{ $item->name }}</h3>
+                                        </div>
+                                        <p class="text-sm text-stone-500 line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
+                                        <div class="mt-auto flex items-center justify-between w-full">
+                                            <span class="text-xl font-bold text-amber-800">${{ number_format($item->fixed_price, 2) }}</span>
+                                            <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors">+</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </button>
+                                </button>
+                            @else
+                                <button onclick="openItemModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
+                                    <div class="w-full h-48 bg-stone-100 overflow-hidden relative">
+                                        <img src="{{ $img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="{{ $item->name }}">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    </div>
+                                    <div class="p-5 flex flex-col flex-1 w-full">
+                                        <div class="flex justify-between items-start gap-2 mb-2">
+                                            <h3 class="font-display text-xl font-bold text-amber-950 leading-tight">{{ $item->name }}</h3>
+                                        </div>
+                                        <p class="text-sm text-stone-500 line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
+                                        <div class="mt-auto flex items-center justify-between w-full">
+                                            <span class="text-xl font-bold text-amber-800">{{ $item->formattedPrice() }}</span>
+                                            <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors">+</div>
+                                        </div>
+                                    </div>
+                                </button>
+                            @endif
                         @endforeach
                     </div>
                 </div>
@@ -266,6 +331,18 @@
             <div class="p-6 overflow-y-auto hide-scrollbar flex-1 bg-white">
                 <p id="modalDesc" class="text-stone-600 mb-8 font-medium leading-relaxed text-lg"></p>
                 
+                <!-- Packet Contents -->
+                <div id="packetContentsSection" class="mb-8">
+                    <h3 class="font-display text-xl font-bold text-amber-950 mb-4 flex items-center gap-2">
+                        Packet Contents
+                        <div class="flex-1 h-px bg-amber-100"></div>
+                    </h3>
+                    <div id="packetContentsList" class="space-y-2">
+                        <!-- Populated by JS -->
+                        <div class="text-sm text-stone-600 p-3 bg-stone-50 rounded-lg border border-stone-200">Loading...</div>
+                    </div>
+                </div>
+
                 <!-- Flavors -->
                 <div id="flavorsSection" class="hidden">
                     <h3 class="font-display text-xl font-bold text-amber-950 mb-4 flex items-center gap-2">
@@ -539,7 +616,7 @@
         }
     }
     
-    function openEditModal(index, name, quantity, unitPrice, notes = '', hasModifications = false) {
+    function openEditModal(index, name, quantity, unitPrice, notes = '', hasModifications = false, flavor = null) {
         currentEditIndex = index;
         document.getElementById('editModalTitle').innerText = name;
         document.getElementById('editQtyInput').value = quantity;
@@ -642,6 +719,10 @@
         document.getElementById('qtyInput').value = 1;
         document.getElementById('itemNotes').value = '';
         
+        // Hide packet contents section
+        document.getElementById('packetContentsSection').classList.add('hidden');
+        document.getElementById('packetContentsList').innerHTML = '';
+        
         const flavorSection = document.getElementById('flavorsSection');
         const flavorList = document.getElementById('flavorsList');
 
@@ -690,6 +771,51 @@
         } else {
             custSection.classList.add('hidden');
             custList.innerHTML = '';
+        }
+
+        updateModalTotal();
+
+        const backdrop = document.getElementById('itemModalBackdrop');
+        backdrop.classList.add('show');
+    }
+
+    function openPacketModal(packet, imgSrc) {
+        document.getElementById('itemForm').action = `/kiosk/packet/${packet.id}/add`;
+        document.getElementById('modalImg').src = imgSrc;
+        document.getElementById('modalTitle').innerText = packet.name;
+        document.getElementById('modalDesc').innerText = packet.description || '';
+        
+        // Handle packets (fixed_price)
+        const price = packet.fixed_price || 0;
+        document.getElementById('modalPrice').innerText = '$' + parseFloat(price).toFixed(2);
+        
+        currentBasePrice = parseFloat(price);
+        document.getElementById('qtyInput').value = 1;
+        document.getElementById('itemNotes').value = '';
+        
+        // Hide flavors and customizations for packets
+        document.getElementById('flavorsSection').classList.add('hidden');
+        document.getElementById('flavorsList').innerHTML = '';
+        document.getElementById('customizationsSection').classList.add('hidden');
+        document.getElementById('customizationsList').innerHTML = '';
+        
+        // Show packet contents
+        const packetContentsSection = document.getElementById('packetContentsSection');
+        const packetContentsList = document.getElementById('packetContentsList');
+        
+        console.log('Opening packet modal with data:', packet);
+        
+        if (packet.items && packet.items.length > 0) {
+            packetContentsSection.classList.remove('hidden');
+            let html = '';
+            packet.items.forEach(packetItem => {
+                const qty = packetItem.pivot ? packetItem.pivot.quantity : 1;
+                html += `<div class="text-sm text-stone-600 p-3 bg-stone-50 rounded-lg border border-stone-200">${packetItem.name} x${qty}</div>`;
+            });
+            packetContentsList.innerHTML = html;
+        } else {
+            packetContentsSection.classList.add('hidden');
+            packetContentsList.innerHTML = '<div class="text-sm text-stone-500 italic">No items in this packet</div>';
         }
 
         updateModalTotal();
@@ -785,14 +911,34 @@
                 },
             });
 
-            const data = await response.json();
-
+            const contentType = response.headers.get('content-type');
+            
             if (!response.ok) {
-                alert(data.message || 'Payment failed. Please try again.');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    alert(data.message || 'Payment failed. Please try again.');
+                } else {
+                    // If not JSON, check if we were redirected
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        alert('Payment failed. Please try again.');
+                    }
+                }
                 return;
             }
 
-            window.location.href = data.redirect_url || '/kiosk/success';
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                window.location.href = data.redirect_url || '/kiosk/success';
+            } else {
+                // If not JSON but successful, check for redirect
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    window.location.href = '/kiosk/success';
+                }
+            }
         } catch (error) {
             console.error(error);
             alert('Payment failed. Please try again.');

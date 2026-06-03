@@ -18,6 +18,7 @@
             <table class="staff-table">
                 <thead>
                     <tr>
+                        <th></th>
                         <th>Image</th>
                         <th>Title</th>
                         <th>Promo Details</th>
@@ -26,9 +27,16 @@
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="promos-list">
                     @forelse ($promos as $promo)
-                        <tr>
+                        <tr data-id="{{ $promo->id }}">
+                            <td>
+                                <div class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 p-1 drag-handle">
+                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                                    </svg>
+                                </div>
+                            </td>
                             <td>
                                 @if ($promo->image)
                                     <img src="{{ asset('storage/' . $promo->image) }}" alt="{{ $promo->title }}" class="w-24 h-12 object-cover rounded-lg border border-slate-200">
@@ -270,31 +278,57 @@
                         giftOptions += `<option value="${gift.id}" ${gift.id === rule.gift_id ? 'selected' : ''}>${gift.name}</option>`;
                     });
                     
+                    const hasBuyItem = rule.buy_item_id;
+                    const hasGetItem = rule.get_item_id || rule.gift_id;
+                    
+                    let html = '';
+                    if (hasBuyItem) {
+                        html += `
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Buy Item</label>
+                                <select name="rules[${index}][buy_item_id]" class="staff-input">${options}</select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Buy Quantity</label>
+                                <input type="number" name="rules[${index}][buy_quantity]" value="${rule.buy_quantity || 1}" min="1" class="staff-input">
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <input type="hidden" name="rules[${index}][buy_item_id]" value="">
+                            <input type="hidden" name="rules[${index}][buy_quantity]" value="1">
+                        `;
+                    }
+                    
+                    if (hasGetItem) {
+                        html += `
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
+                                <select name="rules[${index}][get_item_id]" class="staff-input">${getOptions}</select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Or Get Gift/Toy</label>
+                                <select name="rules[${index}][gift_id]" class="staff-input">${giftOptions}</select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
+                                <input type="number" name="rules[${index}][get_quantity]" value="${rule.get_quantity || 1}" min="1" class="staff-input">
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <input type="hidden" name="rules[${index}][get_item_id]" value="">
+                            <input type="hidden" name="rules[${index}][gift_id]" value="">
+                            <input type="hidden" name="rules[${index}][get_quantity]" value="1">
+                        `;
+                    }
+                    
+                    html += `<button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-700 text-sm col-span-2">Remove</button>`;
+                    
                     const newRow = document.createElement('div');
                     newRow.className = 'promo-rule-row grid grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-lg';
                     newRow.dataset.index = index;
-                    newRow.innerHTML = `
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Buy Item</label>
-                            <select name="rules[${index}][buy_item_id]" class="staff-input">${options}</select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Buy Quantity</label>
-                            <input type="number" name="rules[${index}][buy_quantity]" value="${rule.buy_quantity || 1}" min="1" class="staff-input">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
-                            <select name="rules[${index}][get_item_id]" class="staff-input">${getOptions}</select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Or Get Gift/Toy</label>
-                            <select name="rules[${index}][gift_id]" class="staff-input">${giftOptions}</select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
-                            <input type="number" name="rules[${index}][get_quantity]" value="${rule.get_quantity || 1}" min="1" class="staff-input">
-                        </div>
-                    `;
+                    newRow.innerHTML = html;
                     rulesContainer.appendChild(newRow);
                 });
             }
@@ -346,10 +380,6 @@
                     form.querySelector('[name="title"]').value = @json($oldPromoTitle) || promo.title || '';
                     form.querySelector('[name="description"]').value = @json($oldPromoDescription) || promo.description || '';
                     form.querySelector('[name="order"]').value = @json($oldPromoOrder) || promo.order;
-                    form.querySelector('[name="buy_item_id"]').value = @json($oldBuyItemId) || promo.buy_item_id || '';
-                    form.querySelector('[name="get_item_id"]').value = @json($oldGetItemId) || promo.get_item_id || '';
-                    form.querySelector('[name="buy_quantity"]').value = @json($oldBuyQuantity) || promo.buy_quantity || 1;
-                    form.querySelector('[name="get_quantity"]').value = @json($oldGetQuantity) || promo.get_quantity || 1;
                     form.querySelector('[name="discount_type"]').value = @json($oldDiscountType) || promo.discount_type || '';
                     form.querySelector('[name="discount_value"]').value = @json($oldDiscountValue) || promo.discount_value || '';
                     
@@ -403,6 +433,7 @@
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
                                     <input type="number" name="rules[${index}][get_quantity]" value="${rule.get_quantity || 1}" min="1" class="staff-input">
                                 </div>
+                                <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-700 text-sm">Remove</button>
                             `;
                             rulesContainer.appendChild(newRow);
                         });
@@ -544,6 +575,7 @@
                 <input type="hidden" name="rules[${ruleCount}][get_item_id]" value="">
                 <input type="hidden" name="rules[${ruleCount}][gift_id]" value="">
                 <input type="hidden" name="rules[${ruleCount}][get_quantity]" value="1">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-700 text-sm col-span-2">Remove</button>
             `;
 
             container.appendChild(newRow);
@@ -583,6 +615,7 @@
                 </div>
                 <input type="hidden" name="rules[${ruleCount}][buy_item_id]" value="">
                 <input type="hidden" name="rules[${ruleCount}][buy_quantity]" value="1">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-700 text-sm col-span-2">Remove</button>
             `;
 
             container.appendChild(newRow);
@@ -629,5 +662,42 @@
         document.getElementById('cropModal').addEventListener('click', function(e) {
             if (e.target === this) closeCropModal();
         });
+
+        // Initialize sortable for promos
+        const promosList = document.getElementById('promos-list');
+        if (promosList) {
+            Sortable.create(promosList, {
+                handle: '.drag-handle',
+                animation: 150,
+                ghostClass: 'bg-slate-100',
+                onEnd: function() {
+                    const items = Array.from(promosList.children).map((tr, index) => {
+                        return {
+                            id: tr.dataset.id,
+                            order: index
+                        };
+                    });
+
+                    fetch('{{ route('admin.promos.reorder') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ order: items })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) {
+                            console.error('Failed to reorder promos');
+                        }
+                    })
+                    .catch(err => console.error(err));
+                }
+            });
+        }
     </script>
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+@endpush
 @endsection

@@ -21,6 +21,9 @@ class Order extends Model
         'is_closed',
         'closed_by',
         'closed_at',
+        'is_picked_up',
+        'picked_up_by',
+        'picked_up_at',
         'paid_by',
         'paid_at',
         'payment_method',
@@ -30,12 +33,14 @@ class Order extends Model
     protected function casts(): array
     {
         return [
-            'status' => OrderStatus::class,
-            'total' => 'decimal:2',
-            'is_closed' => 'boolean',
-            'closed_at' => 'datetime',
-            'paid_at' => 'datetime',
-            'amount_paid' => 'decimal:2',
+            'status'       => OrderStatus::class,
+            'total'        => 'decimal:2',
+            'is_closed'    => 'boolean',
+            'is_picked_up' => 'boolean',
+            'closed_at'    => 'datetime',
+            'picked_up_at' => 'datetime',
+            'paid_at'      => 'datetime',
+            'amount_paid'  => 'decimal:2',
         ];
     }
 
@@ -69,6 +74,11 @@ class Order extends Model
         return $this->status === OrderStatus::Pending;
     }
 
+    public function isPickedUp(): bool
+    {
+        return $this->is_picked_up;
+    }
+
     public function isClosed(): bool
     {
         return $this->is_closed;
@@ -76,10 +86,17 @@ class Order extends Model
 
     public function isFullyReady(): bool
     {
-        // If there are no items, it's not ready. Otherwise, it's ready if ALL items are ready.
         if ($this->items->isEmpty()) {
             return false;
         }
         return $this->items->every(fn($item) => $item->is_ready);
+    }
+
+    /** All 3 steps done: chef checked, picked up, paid. */
+    public function canClose(): bool
+    {
+        return $this->isFullyReady()
+            && $this->is_picked_up
+            && !$this->isPending();
     }
 }

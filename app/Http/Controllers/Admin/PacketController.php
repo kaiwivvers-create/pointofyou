@@ -117,4 +117,19 @@ class PacketController extends Controller
         $packet->delete();
         return redirect()->route('admin.packets.index')->with('success', 'Packet deleted successfully.');
     }
+
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*.id' => 'required|exists:packets,id',
+            'order.*.order' => 'required|integer|min:0',
+        ]);
+
+        foreach ($request->order as $item) {
+            Packet::where('id', $item['id'])->update(['order' => $item['order']]);
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

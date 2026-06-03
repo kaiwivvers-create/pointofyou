@@ -18,6 +18,7 @@
             <table class="staff-table">
                 <thead>
                     <tr>
+                        <th></th>
                         <th>Image</th>
                         <th>Name</th>
                         <th>Description</th>
@@ -28,9 +29,21 @@
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="packets-list">
                     @forelse ($packets as $packet)
-                        <tr>
+                        <tr data-id="{{ $packet->id }}">
+                            <td>
+                                <div class="cursor-not-allowed text-slate-300 p-1 drag-handle opacity-50">
+                                    <div class="flex items-center gap-1">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                                        </svg>
+                                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </td>
                             <td>
                                 @if ($packet->image)
                                     @php
@@ -55,7 +68,16 @@
                                 @if ($hasItems)
                                     <div class="max-w-xs">
                                         @foreach ($packet->items as $item)
-                                            <div class="text-xs">{{ $item->name }} x{{ $item->pivot->quantity ?? 1 }}</div>
+                                            @if ($item->pivot->gift_id)
+                                                @php
+                                                    $gift = \App\Models\Gift::find($item->pivot->gift_id);
+                                                @endphp
+                                                @if ($gift)
+                                                    <div class="text-xs">{{ $gift->name }} (Gift) x{{ $item->pivot->quantity ?? 1 }}</div>
+                                                @endif
+                                            @else
+                                                <div class="text-xs">{{ $item->name }} x{{ $item->pivot->quantity ?? 1 }}</div>
+                                            @endif
                                         @endforeach
                                     </div>
                                 @else
@@ -534,5 +556,15 @@
         document.getElementById('cropModal').addEventListener('click', function(e) {
             if (e.target === this) closeCropModal();
         });
+
+        // Initialize sortable for packets (disabled - packets are locked to top position)
+        const packetsList = document.getElementById('packets-list');
+        if (packetsList) {
+            // Packets reordering is disabled - they always appear at the top
+            // The drag handle shows a lock icon to indicate this
+        }
     </script>
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+@endpush
 @endsection

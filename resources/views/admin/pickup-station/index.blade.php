@@ -84,15 +84,24 @@
                 </div>
                 
                 @if ($can('kitchen', 'edit'))
-                    <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-3">
+                    <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-3">
                         @if(!$isClosed)
-                            <form method="POST" action="{{ route('admin.pickup-station.close', $order) }}" class="flex-1">
-                                @csrf
-                                <button type="submit" @disabled(! $isFullyReady) class="w-full font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors shadow-sm flex justify-center items-center gap-2 {{ $isFullyReady ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed' }}">
-                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    {{ $isFullyReady ? 'Pick Up / Close' : 'Waiting for Kitchen' }}
+                            <div class="flex gap-2">
+                                @if($isFullyReady)
+                                <form method="POST" action="{{ route('admin.pickup-station.close', $order) }}" class="flex-1">
+                                    @csrf
+                                    <button type="submit" class="w-full font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors shadow-sm flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+                                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        Pick Up
+                                    </button>
+                                </form>
+                                @endif
+                                @if(!$isPaid && $order->order_type === 'dine_in')
+                                <button onclick="openPaymentModal({{ $order->id }}, {{ $order->total }})" class="flex-1 font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors shadow-sm flex justify-center items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white">
+                                    Pay Now
                                 </button>
-                            </form>
+                                @endif
+                            </div>
                         @endif
                     </div>
                 @endif
@@ -156,4 +165,92 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="payment-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-slate-900">Select Payment Method</h3>
+            <button onclick="closePaymentModal()" class="text-slate-400 hover:text-slate-600">
+                <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div class="space-y-3 mb-6">
+            <button onclick="processPayment('cash')" class="w-full p-4 rounded-xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition-colors flex items-center gap-4">
+                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <svg class="size-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <div class="text-left">
+                    <p class="font-bold text-slate-900">Cash</p>
+                    <p class="text-sm text-slate-500">Pay with cash</p>
+                </div>
+            </button>
+            
+            <button onclick="processPayment('card')" class="w-full p-4 rounded-xl border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg class="size-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                </div>
+                <div class="text-left">
+                    <p class="font-bold text-slate-900">Card</p>
+                    <p class="text-sm text-slate-500">Pay with card</p>
+                </div>
+            </button>
+        </div>
+        
+        <div class="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
+            <span class="font-semibold text-slate-900">Amount:</span>
+            <span id="modal-amount" class="text-2xl font-bold text-emerald-600">$0.00</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentOrderId = null;
+    let currentAmount = 0;
+
+    function openPaymentModal(orderId, amount) {
+        currentOrderId = orderId;
+        currentAmount = amount;
+        document.getElementById('modal-amount').textContent = '$' + amount.toFixed(2);
+        document.getElementById('payment-modal').classList.remove('hidden');
+        document.getElementById('payment-modal').classList.add('flex');
+    }
+
+    function closePaymentModal() {
+        document.getElementById('payment-modal').classList.add('hidden');
+        document.getElementById('payment-modal').classList.remove('flex');
+        currentOrderId = null;
+        currentAmount = 0;
+    }
+
+    function processPayment(paymentMethod) {
+        if (!currentOrderId) return;
+
+        fetch('{{ route('admin.current-orders.pay', ':id') }}'.replace(':id', currentOrderId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                payment_method: paymentMethod,
+                amount_paid: currentAmount
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            closePaymentModal();
+            alert('Payment successful!');
+            setTimeout(() => location.reload(), 1000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Payment failed. Please try again.');
+        });
+    }
+</script>
 @endsection
