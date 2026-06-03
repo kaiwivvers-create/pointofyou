@@ -46,10 +46,16 @@
                     <label class="staff-label">Items</label>
                     <div id="items-container" class="space-y-2">
                         <div class="item-row flex gap-2">
-                            <select name="items[0][menu_item_id]" class="staff-input flex-1" required>
-                                <option value="">Select item</option>
+                            <select name="items[0][menu_item_id]" class="staff-input flex-1">
+                                <option value="">Select menu item</option>
                                 @foreach ($menuItems as $item)
                                     <option value="{{ $item->id }}">{{ $item->name }} (${{ number_format($item->price, 2) }})</option>
+                                @endforeach
+                            </select>
+                            <select name="items[0][gift_id]" class="staff-input flex-1">
+                                <option value="">Or select gift/toy</option>
+                                @foreach (\App\Models\Gift::where('is_active', true)->orderBy('name')->get() as $gift)
+                                    <option value="{{ $gift->id }}">{{ $gift->name }} (${{ number_format($gift->cost, 2) }})</option>
                                 @endforeach
                             </select>
                             <input type="number" name="items[0][quantity]" class="staff-input w-24" placeholder="Qty" min="1" value="1" required>
@@ -75,15 +81,20 @@
     <script>
         let itemCount = 1;
         const menuItems = @json($menuItems);
+        const gifts = @json(\App\Models\Gift::where('is_active', true)->orderBy('name')->get(['id', 'name', 'cost'])->toArray());
 
         function addItemRow() {
             const container = document.getElementById('items-container');
             const newRow = document.createElement('div');
             newRow.className = 'item-row flex gap-2';
             newRow.innerHTML = `
-                <select name="items[${itemCount}][menu_item_id]" class="staff-input flex-1" required>
-                    <option value="">Select item</option>
+                <select name="items[${itemCount}][menu_item_id]" class="staff-input flex-1">
+                    <option value="">Select menu item</option>
                     ${menuItems.map(item => `<option value="${item.id}">${item.name} ($${item.price})</option>`).join('')}
+                </select>
+                <select name="items[${itemCount}][gift_id]" class="staff-input flex-1">
+                    <option value="">Or select gift/toy</option>
+                    ${gifts.map(gift => `<option value="${gift.id}">${gift.name} ($${gift.cost})</option>`).join('')}
                 </select>
                 <input type="number" name="items[${itemCount}][quantity]" class="staff-input w-24" placeholder="Qty" min="1" value="1" required>
                 <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-700 px-2">Remove</button>

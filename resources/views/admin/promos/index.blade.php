@@ -263,6 +263,12 @@
                     menuItems.forEach(item => {
                         getOptions += `<option value="${item.id}" ${item.id === rule.get_item_id ? 'selected' : ''}>${item.name}</option>`;
                     });
+
+                    const gifts = @json(\App\Models\Gift::where('is_active', true)->orderBy('name')->get(['id', 'name'])->toArray());
+                    let giftOptions = '<option value="">Select gift/toy to get</option>';
+                    gifts.forEach(gift => {
+                        giftOptions += `<option value="${gift.id}" ${gift.id === rule.gift_id ? 'selected' : ''}>${gift.name}</option>`;
+                    });
                     
                     const newRow = document.createElement('div');
                     newRow.className = 'promo-rule-row grid grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-lg';
@@ -279,6 +285,10 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
                             <select name="rules[${index}][get_item_id]" class="staff-input">${getOptions}</select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Or Get Gift/Toy</label>
+                            <select name="rules[${index}][gift_id]" class="staff-input">${giftOptions}</select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
@@ -362,6 +372,12 @@
                             menuItems.forEach(item => {
                                 getOptions += `<option value="${item.id}" ${item.id === rule.get_item_id ? 'selected' : ''}>${item.name}</option>`;
                             });
+
+                            const gifts = @json(\App\Models\Gift::where('is_active', true)->orderBy('name')->get(['id', 'name'])->toArray());
+                            let giftOptions = '<option value="">Select gift/toy to get</option>';
+                            gifts.forEach(gift => {
+                                giftOptions += `<option value="${gift.id}" ${gift.id === rule.gift_id ? 'selected' : ''}>${gift.name}</option>`;
+                            });
                             
                             const newRow = document.createElement('div');
                             newRow.className = 'promo-rule-row grid grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-lg';
@@ -378,6 +394,10 @@
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
                                     <select name="rules[${index}][get_item_id]" class="staff-input">${getOptions}</select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Or Get Gift/Toy</label>
+                                    <select name="rules[${index}][gift_id]" class="staff-input">${giftOptions}</select>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>
@@ -522,6 +542,7 @@
                     <input type="number" name="rules[${ruleCount}][buy_quantity]" value="1" min="1" class="staff-input">
                 </div>
                 <input type="hidden" name="rules[${ruleCount}][get_item_id]" value="">
+                <input type="hidden" name="rules[${ruleCount}][gift_id]" value="">
                 <input type="hidden" name="rules[${ruleCount}][get_quantity]" value="1">
             `;
 
@@ -532,10 +553,16 @@
             const container = document.getElementById('promoRulesContainer-' + prefix);
             const ruleCount = container.querySelectorAll('.promo-rule-row').length;
             const menuItems = @json(\App\Models\MenuItem::where('is_available', true)->orderBy('name')->get(['id', 'name'])->toArray());
+            const gifts = @json(\App\Models\Gift::where('is_active', true)->orderBy('name')->get(['id', 'name'])->toArray());
 
             let getOptions = '<option value="">Select item to get</option>';
             menuItems.forEach(item => {
                 getOptions += `<option value="${item.id}">${item.name}</option>`;
+            });
+
+            let giftOptions = '<option value="">Select gift/toy to get</option>';
+            gifts.forEach(gift => {
+                giftOptions += `<option value="${gift.id}">${gift.name}</option>`;
             });
 
             const newRow = document.createElement('div');
@@ -545,6 +572,10 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Get Item</label>
                     <select name="rules[${ruleCount}][get_item_id]" class="staff-input">${getOptions}</select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Or Get Gift/Toy</label>
+                    <select name="rules[${ruleCount}][gift_id]" class="staff-input">${giftOptions}</select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>

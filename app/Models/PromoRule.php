@@ -28,4 +28,9 @@ class PromoRule extends Model
     {
         return $this->belongsTo(MenuItem::class, 'get_item_id');
     }
+
+    public function gift()
+    {
+        return $this->belongsTo(Gift::class, 'gift_id');
+    }
 }

@@ -75,6 +75,16 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Or Get Gift/Toy</label>
+                        <select name="rules[{{ $index }}][gift_id]" class="staff-input">
+                            <option value="">Select gift/toy to get</option>
+                            @foreach (\App\Models\Gift::where('is_active', true)->orderBy('name')->get() as $gift)
+                                <option value="{{ $gift->id }}" {{ ($rule['gift_id'] ?? '') == $gift->id ? 'selected' : '' }}>{{ $gift->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Get Quantity</label>

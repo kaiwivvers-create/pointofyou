@@ -35,6 +35,7 @@ class PromoController extends Controller
             'rules' => 'nullable|array',
             'rules.*.buy_item_id' => 'nullable|exists:menu_items,id',
             'rules.*.get_item_id' => 'nullable|exists:menu_items,id',
+            'rules.*.gift_id' => 'nullable|exists:gifts,id',
             'rules.*.buy_quantity' => 'nullable|integer|min:1',
             'rules.*.get_quantity' => 'nullable|integer|min:1',
         ]);
@@ -74,11 +75,12 @@ class PromoController extends Controller
 
         // Create promo rules
         foreach ($rules as $rule) {
-            if (!empty($rule['buy_item_id']) || !empty($rule['get_item_id'])) {
+            if (!empty($rule['buy_item_id']) || !empty($rule['get_item_id']) || !empty($rule['gift_id'])) {
                 PromoRule::create([
                     'promo_id' => $promo->id,
                     'buy_item_id' => $rule['buy_item_id'] ?: null,
                     'get_item_id' => $rule['get_item_id'] ?: null,
+                    'gift_id' => $rule['gift_id'] ?: null,
                     'buy_quantity' => $rule['buy_quantity'] ?? 1,
                     'get_quantity' => $rule['get_quantity'] ?? 1,
                 ]);
@@ -107,6 +109,7 @@ class PromoController extends Controller
             'rules' => 'nullable|array',
             'rules.*.buy_item_id' => 'nullable|exists:menu_items,id',
             'rules.*.get_item_id' => 'nullable|exists:menu_items,id',
+            'rules.*.gift_id' => 'nullable|exists:gifts,id',
             'rules.*.buy_quantity' => 'nullable|integer|min:1',
             'rules.*.get_quantity' => 'nullable|integer|min:1',
         ]);
@@ -148,11 +151,12 @@ class PromoController extends Controller
         $promo->rules()->delete();
 
         foreach ($rules as $rule) {
-            if (!empty($rule['buy_item_id']) || !empty($rule['get_item_id'])) {
+            if (!empty($rule['buy_item_id']) || !empty($rule['get_item_id']) || !empty($rule['gift_id'])) {
                 PromoRule::create([
                     'promo_id' => $promo->id,
                     'buy_item_id' => $rule['buy_item_id'] ?: null,
                     'get_item_id' => $rule['get_item_id'] ?: null,
+                    'gift_id' => $rule['gift_id'] ?: null,
                     'buy_quantity' => $rule['buy_quantity'] ?? 1,
                     'get_quantity' => $rule['get_quantity'] ?? 1,
                 ]);

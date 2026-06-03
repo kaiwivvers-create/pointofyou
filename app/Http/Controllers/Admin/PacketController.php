@@ -34,7 +34,8 @@ class PacketController extends Controller
             'is_active' => 'boolean',
             'order' => 'integer',
             'items' => 'array',
-            'items.*.menu_item_id' => 'required|exists:menu_items,id',
+            'items.*.menu_item_id' => 'nullable|exists:menu_items,id',
+            'items.*.gift_id' => 'nullable|exists:gifts,id',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -52,7 +53,11 @@ class PacketController extends Controller
 
         if (isset($validated['items'])) {
             foreach ($validated['items'] as $item) {
-                $packet->items()->attach($item['menu_item_id'], ['quantity' => $item['quantity']]);
+                if (!empty($item['menu_item_id'])) {
+                    $packet->items()->attach($item['menu_item_id'], ['quantity' => $item['quantity'], 'gift_id' => null]);
+                } elseif (!empty($item['gift_id'])) {
+                    $packet->items()->attach($item['menu_item_id'] ?? null, ['quantity' => $item['quantity'], 'gift_id' => $item['gift_id']]);
+                }
             }
         }
 
@@ -76,7 +81,8 @@ class PacketController extends Controller
             'is_active' => 'boolean',
             'order' => 'integer',
             'items' => 'array',
-            'items.*.menu_item_id' => 'required|exists:menu_items,id',
+            'items.*.menu_item_id' => 'nullable|exists:menu_items,id',
+            'items.*.gift_id' => 'nullable|exists:gifts,id',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -95,7 +101,11 @@ class PacketController extends Controller
         if (isset($validated['items'])) {
             $packet->items()->detach();
             foreach ($validated['items'] as $item) {
-                $packet->items()->attach($item['menu_item_id'], ['quantity' => $item['quantity']]);
+                if (!empty($item['menu_item_id'])) {
+                    $packet->items()->attach($item['menu_item_id'], ['quantity' => $item['quantity'], 'gift_id' => null]);
+                } elseif (!empty($item['gift_id'])) {
+                    $packet->items()->attach($item['menu_item_id'] ?? null, ['quantity' => $item['quantity'], 'gift_id' => $item['gift_id']]);
+                }
             }
         }
 
