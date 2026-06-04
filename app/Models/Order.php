@@ -44,6 +44,11 @@ class Order extends Model
         ];
     }
 
+    public function getOrderNumberAttribute(): string
+    {
+        return 'PO-' . str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
+    }
+
     public function cafeTable(): BelongsTo
     {
         return $this->belongsTo(CafeTable::class);

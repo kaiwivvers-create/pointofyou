@@ -19,7 +19,7 @@ use Illuminate\View\View;
 
 class OrderController extends Controller
 {
-    public function index(): View
+    public function tables(): View
     {
         // Get today's attendance status for the cashier
         $user = auth()->user();
@@ -69,13 +69,80 @@ class OrderController extends Controller
             ->latest()
             ->get();
 
-        return view('cashier.dashboard', compact(
+        return view('cashier.tables', compact(
             'attendance',
             'permit',
             'groupedMenuItems',
             'groupedInventory',
             'activeOrders'
         ));
+    }
+
+    public function pos(): View
+    {
+        $user = auth()->user();
+        $attendance = null;
+        if ($user->employee_id) {
+            $attendance = \App\Models\Attendance::where('employee_id', $user->employee_id)
+                ->where('date', today())
+                ->first();
+        }
+
+        $menuItems = \App\Models\MenuItem::query()
+            ->where('is_available', true)
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+        $gifts = \App\Models\Gift::where('is_active', true)->get();
+        $products = Product::with('category')->where('stock_quantity', '>', 0)->get();
+
+        $searchableItems = collect();
+
+        foreach ($menuItems as $m) {
+            $searchableItems->push([
+                'id'       => $m->id,
+                'type'     => 'menu_item',
+                'name'     => $m->name,
+                'image'    => $m->image ? asset('storage/' . $m->image) : null,
+                'price'    => (float) $m->price,
+                'category' => $m->category ?: 'Menu Item',
+                'barcode'  => $m->barcode,
+            ]);
+        }
+
+        foreach ($gifts as $g) {
+            $searchableItems->push([
+                'id'       => $g->id,
+                'type'     => 'gift',
+                'name'     => $g->name,
+                'image'    => $g->image ? asset('storage/' . $g->image) : null,
+                'price'    => (float) ($g->cost ?? 0),
+                'category' => 'Gift',
+                'barcode'  => $g->barcode ?? null,
+            ]);
+        }
+
+        foreach ($products as $p) {
+            $searchableItems->push([
+                'id'       => $p->id,
+                'type'     => 'product',
+                'name'     => $p->name,
+                'image'    => null,
+                'price'    => (float) ($p->selling_price ?? 0),
+                'category' => $p->category ? $p->category->name : 'Inventory / Takeout',
+                'barcode'  => $p->barcode ?? null,
+            ]);
+        }
+
+        $itemsJson = $searchableItems->values()->toArray();
+        $posCategories = collect($itemsJson)
+            ->pluck('category')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        return view('cashier.pos', compact('attendance', 'itemsJson', 'posCategories'));
     }
 
     public function create(Request $request): JsonResponse
@@ -86,62 +153,88 @@ class OrderController extends Controller
             'items.*.name' => 'required|string',
             'items.*.price' => 'required|numeric',
             'items.*.quantity' => 'required|integer|min:1',
-            'order_type' => 'required|in:dine-in,takeout',
+            'items.*.type' => 'nullable|string|in:menu_item,product,gift',
+            'order_type' => 'required|in:walk-in,dine-in,takeout',
             'table_id' => 'nullable|exists:cafe_tables,id',
             'subtotal' => 'required|numeric',
             'tax' => 'required|numeric',
             'total' => 'required|numeric',
-            'payment_method' => 'required|string|in:cash,card,qr,transfer',
+            'payment_method' => 'required|string|in:cash,card,qr,transfer,later',
         ]);
 
         try {
             DB::beginTransaction();
 
+            $status = $validated['payment_method'] === 'later' ? OrderStatus::Pending : OrderStatus::Paid;
+            $isWalkIn = $validated['order_type'] === 'walk-in';
+
             // Create order
             $order = Order::create([
-                'cafe_table_id' => $validated['order_type'] === 'dine-in' ? $validated['table_id'] : null,
-                'status' => OrderStatus::Paid,
+                'cafe_table_id' => $isWalkIn ? null : ($validated['order_type'] === 'dine-in' ? $validated['table_id'] : null),
+                'order_type' => $validated['order_type'],
+                'status' => $status,
                 'total' => $validated['total'],
-                'paid_by' => auth()->id(),
-                'paid_at' => now(),
-                'payment_method' => $validated['payment_method'],
-                'amount_paid' => $validated['total'],
+                'paid_by' => $status === OrderStatus::Paid ? auth()->id() : null,
+                'paid_at' => $status === OrderStatus::Paid ? now() : null,
+                'payment_method' => $status === OrderStatus::Paid ? $validated['payment_method'] : null,
+                'amount_paid' => $status === OrderStatus::Paid ? $validated['total'] : 0,
                 'is_closed' => false,
             ]);
 
             // Create order items and deduct inventory
             foreach ($validated['items'] as $item) {
-                $menuItem = \App\Models\MenuItem::find($item['id']);
-                
+                $type = $item['type'] ?? 'menu_item';
+
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'menu_item_id' => $item['id'],
+                    'menu_item_id' => $type === 'menu_item' ? $item['id'] : null,
+                    'product_id' => $type === 'product' ? $item['id'] : null,
+                    'gift_id' => $type === 'gift' ? $item['id'] : null,
+                    'item_name' => $item['name'],
                     'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                    'subtotal' => $item['price'] * $item['quantity'],
+                    'unit_price' => $item['price'],
+                    'line_total' => $item['price'] * $item['quantity'],
                     'is_ready' => false,
+                    'modifications' => [],
+                    'notes' => 'Added from POS',
                 ]);
 
-                // Deduct inventory for ingredients
-                if ($menuItem) {
-                    foreach ($menuItem->ingredients as $ingredient) {
-                        $product = $ingredient->product;
-                        if ($product) {
-                            $neededQuantity = $ingredient->pivot->quantity * $item['quantity'];
-                            
-                            if ($product->stock_quantity >= $neededQuantity) {
-                                $product->decrement('stock_quantity', $neededQuantity);
-                                
-                                StockMovement::create([
-                                    'product_id' => $product->id,
-                                    'type' => 'out',
-                                    'quantity' => $neededQuantity,
-                                    'unit_cost' => $product->unit_cost ?? 0,
-                                    'reference' => "Order #{$order->id}",
-                                    'notes' => "Menu item: {$menuItem->name}",
-                                ]);
+                // Deduct inventory for ingredients if menu item
+                if ($type === 'menu_item') {
+                    $menuItem = \App\Models\MenuItem::find($item['id']);
+                    if ($menuItem) {
+                        foreach ($menuItem->ingredients as $ingredient) {
+                            $product = $ingredient->product;
+                            if ($product) {
+                                $neededQuantity = $ingredient->pivot->quantity * $item['quantity'];
+
+                                if ($product->stock_quantity >= $neededQuantity) {
+                                    $product->decrement('stock_quantity', $neededQuantity);
+
+                                    StockMovement::create([
+                                        'product_id' => $product->id,
+                                        'type' => 'out',
+                                        'quantity' => $neededQuantity,
+                                        'unit_cost' => $product->unit_cost ?? 0,
+                                        'reference' => "Order #{$order->id}",
+                                        'notes' => "Menu item: {$menuItem->name}",
+                                    ]);
+                                }
                             }
                         }
+                    }
+                } elseif ($type === 'product') {
+                    $product = Product::find($item['id']);
+                    if ($product && $product->stock_quantity >= $item['quantity']) {
+                        $product->decrement('stock_quantity', $item['quantity']);
+                        StockMovement::create([
+                            'product_id' => $product->id,
+                            'type' => 'out',
+                            'quantity' => $item['quantity'],
+                            'unit_cost' => $product->unit_cost ?? 0,
+                            'reference' => "Order #{$order->id}",
+                            'notes' => "Sold at POS",
+                        ]);
                     }
                 }
             }
@@ -174,10 +267,14 @@ class OrderController extends Controller
 
             DB::commit();
 
+            $order->refresh();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully',
                 'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'receipt_url' => route('cashier.receipt', $order),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -370,7 +467,7 @@ class OrderController extends Controller
 
     public function receipt(Order $order): View
     {
-        $order->load(['items.menuItem', 'cafeTable', 'cashier', 'adjustments']);
+        $order->load(['items', 'cafeTable', 'cashier', 'adjustments']);
         return view('cashier.receipt', compact('order'));
     }
 }

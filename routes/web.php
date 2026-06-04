@@ -332,7 +332,8 @@ Route::middleware('auth')->group(function () {
 
     // Cashier
     Route::prefix('cashier')->name('cashier.')->group(function () {
-        Route::get('/', [CashierOrderController::class, 'index'])->name('dashboard')->middleware('role:cashier');
+        Route::get('/', [CashierOrderController::class, 'pos'])->name('dashboard')->middleware('role:cashier');
+        Route::get('/tables', [CashierOrderController::class, 'tables'])->name('tables')->middleware('role:cashier');
         Route::get('/current-orders', [CashierOrderController::class, 'currentOrders'])->name('current-orders')->middleware('permission:current_orders', 'attendance');
         Route::get('/payments', [CashierOrderController::class, 'payments'])->name('payments')->middleware('permission:orders', 'attendance');
         Route::get('/receipt/{order}', [CashierOrderController::class, 'receipt'])->name('receipt')->middleware('permission:orders', 'attendance');

@@ -1,12 +1,12 @@
 @extends('layouts.staff')
 
-@section('title', 'Cashier Dashboard')
+@section('title', 'Live Tables')
 
 @section('content')
     <div class="flex gap-4" style="width: 100%; display: flex;">
         <!-- Left Side (50%): Live Tables Status -->
         <div style="width: 50%; flex: 1;" class="bg-white rounded-lg shadow-sm p-4 flex flex-col">
-            <h2 class="text-lg font-bold text-slate-900 mb-4">Live Tables Status</h2>
+        <h2 class="text-lg font-bold text-slate-900 mb-4">Live Tables Status</h2>
             
             <div class="flex-1 overflow-y-auto space-y-2">
                 @foreach (\App\Models\CafeTable::all() as $table)

@@ -320,18 +320,37 @@ class CurrentOrdersController extends Controller
         $qty       = $validated['quantity'];
         $lineTotal = $unitPrice * $qty;
 
-        $orderItem = OrderItem::create([
-            'order_id'    => $order->id,
-            'menu_item_id'=> $validated['menu_item_id'] ?? null,
-            'gift_id'     => $validated['gift_id'] ?? null,
-            'product_id'  => $validated['product_id'] ?? null,
-            'item_name'   => $itemName,
-            'quantity'    => $qty,
-            'unit_price'  => $unitPrice,
-            'line_total'  => $lineTotal,
-            'modifications' => [],
-            'notes'       => 'Added by staff (' . ($validated['item_type'] ?? 'item') . ')',
-        ]);
+        $query = OrderItem::where('order_id', $order->id);
+        
+        if (!empty($validated['menu_item_id'])) {
+            $query->where('menu_item_id', $validated['menu_item_id']);
+        } elseif (!empty($validated['gift_id'])) {
+            $query->where('gift_id', $validated['gift_id']);
+        } elseif (!empty($validated['product_id'])) {
+            $query->where('product_id', $validated['product_id']);
+        }
+        
+        $existingItem = $query->first();
+
+        if ($existingItem) {
+            $existingItem->quantity += $qty;
+            $existingItem->line_total += $lineTotal;
+            $existingItem->save();
+            $orderItem = $existingItem;
+        } else {
+            $orderItem = OrderItem::create([
+                'order_id'    => $order->id,
+                'menu_item_id'=> $validated['menu_item_id'] ?? null,
+                'gift_id'     => $validated['gift_id'] ?? null,
+                'product_id'  => $validated['product_id'] ?? null,
+                'item_name'   => $itemName,
+                'quantity'    => $qty,
+                'unit_price'  => $unitPrice,
+                'line_total'  => $lineTotal,
+                'modifications' => [],
+                'notes'       => 'Added by staff (' . ($validated['item_type'] ?? 'item') . ')',
+            ]);
+        }
 
         $order->increment('total', $lineTotal);
 

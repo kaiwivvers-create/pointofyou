@@ -5,7 +5,7 @@
 <div class="receipt-header">
     <h2 class="text-lg font-bold">{{ $brandSettings->app_name ?? 'Point of You' }}</h2>
     <p class="text-sm text-slate-600">{{ $brandSettings->landing_kicker ?? 'Cafe & Bakery' }}</p>
-    <p class="text-xs text-slate-500 mt-2">Order #{{ $order->id }}</p>
+    <p class="text-xs text-slate-500 mt-2">Order #{{ $order->order_number }}</p>
     <p class="text-xs text-slate-500">{{ $order->paid_at ? $order->paid_at->format('M d, Y H:i') : now()->format('M d, Y H:i') }}</p>
     @if($order->cafeTable)
         <p class="text-xs text-slate-500">Table: {{ $order->cafeTable->name }}</p>
@@ -14,9 +14,9 @@
 
 <div class="mt-4">
     <h3 class="text-sm font-semibold border-b border-slate-300 pb-2 mb-2">Items</h3>
-    @foreach($order->items as $item)
+@foreach($order->items as $item)
         <div class="receipt-item">
-            <span>{{ $item->menuItem->name }} x{{ $item->quantity }}</span>
+            <span>{{ $item->item_name }} x{{ $item->quantity }}</span>
             <span>${{ number_format($item->subtotal, 2) }}</span>
         </div>
     @endforeach
@@ -43,11 +43,11 @@
     </div>
     <div class="receipt-item">
         <span>Payment Method</span>
-        <span>{{ ucfirst($order->payment_method) }}</span>
+        <span>{{ $order->payment_method ? ucfirst($order->payment_method) : 'Pending' }}</span>
     </div>
     <div class="receipt-item">
         <span>Paid By</span>
-        <span>{{ $order->cashier?->name ?? 'N/A' }}</span>
+        <span>{{ $order->cashier?->name ?? ($order->payment_method ? 'N/A' : 'Pending') }}</span>
     </div>
     <div class="receipt-item text-lg">
         <span>Total</span>
