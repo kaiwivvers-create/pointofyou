@@ -52,7 +52,7 @@
     </aside>
 
     <!-- Right Sidebar: Cart -->
-    <aside class="kiosk-sidebar-right">
+    <aside id="kioskCartSidebar" class="kiosk-sidebar-right">
         <div class="p-6 border-b border-amber-200/50 bg-[#faf6f0] shrink-0 flex justify-between items-center">
             <h2 class="font-display text-2xl font-semibold text-amber-950 flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -60,10 +60,19 @@
                 </svg>
                 Your Order
             </h2>
-            <span class="bg-amber-800 text-white text-sm font-bold w-8 h-8 flex items-center justify-center rounded-full shadow-sm">{{ count($cart) }}</span>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="toggleKioskCart()" class="lg:hidden inline-flex items-center gap-2 rounded-full bg-amber-800 px-3 py-2 text-xs font-bold text-white shadow-sm">
+                    Cart
+                    <span class="bg-white/15 text-white text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full">{{ count($cart) }}</span>
+                </button>
+                <button type="button" onclick="toggleKioskCart()" class="lg:hidden inline-flex w-9 h-9 items-center justify-center rounded-full border border-amber-200 bg-white text-amber-900 hover:bg-amber-50" aria-label="Close cart">
+                    <span class="text-xl leading-none">×</span>
+                </button>
+                <span class="hidden lg:flex bg-amber-800 text-white text-sm font-bold w-8 h-8 items-center justify-center rounded-full shadow-sm">{{ count($cart) }}</span>
+            </div>
         </div>
-        
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar min-h-0">
+
+        <div class="cart-body flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar min-h-0">
             @php
                 // Group cart items by menu_item_id, modifications, and flavor
                 $groupedCart = [];
@@ -368,7 +377,25 @@
                 <!-- Notes -->
                 <div class="mb-8">
                     <h3 class="font-display text-xl font-bold text-amber-950 mb-3">Special Notes</h3>
-                    <textarea id="itemNotes" name="notes" rows="2" class="w-full bg-stone-50 border-2 border-stone-100 rounded-xl p-4 focus:ring-0 focus:border-amber-300 transition-colors text-stone-700 resize-none font-medium placeholder:text-stone-400" placeholder="Any special requests?"></textarea>
+                    <textarea id="itemNotes" rows="2" class="w-full bg-stone-50 border-2 border-stone-100 rounded-xl p-4 focus:ring-0 focus:border-amber-300 transition-colors text-stone-700 resize-none font-medium placeholder:text-stone-400" placeholder="Any special requests?"></textarea>
+                    <div class="mt-3 flex flex-wrap items-center justify-between gap-3" data-speech-wrapper>
+                        <div class="flex items-center gap-2">
+                            <select data-speech-lang class="rounded-full border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-amber-900 shadow-sm focus:border-amber-400 focus:ring-0">
+                                <option value="en-US">English</option>
+                                <option value="id-ID">Indonesia</option>
+                                <option value="auto" selected>Auto</option>
+                            </select>
+                            <button type="button" data-speech-to-text data-target="itemNotes" class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-bold text-amber-800 shadow-sm transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 1.75a3.75 3.75 0 00-3.75 3.75v5a3.75 3.75 0 107.5 0v-5A3.75 3.75 0 0012 1.75z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 11.5a7.5 7.5 0 0015 0" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19.25v3" />
+                                </svg>
+                                <span data-speech-label>Speak</span>
+                            </button>
+                        </div>
+                        <p data-speech-status class="text-xs text-stone-400"></p>
+                    </div>
                 </div>
 
                 <!-- Quantity -->
@@ -384,7 +411,7 @@
             
             <!-- Footer Action -->
             <div class="p-6 bg-white border-t border-amber-100 shrink-0">
-                <button type="submit" class="w-full bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold py-5 rounded-2xl text-xl shadow-xl shadow-amber-900/20 transition-transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                <button type="button" onclick="submitAddItem()" class="w-full bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold py-5 rounded-2xl text-xl shadow-xl shadow-amber-900/20 transition-transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
                     Add to Order <span id="modalTotalBtn" class="ml-2 font-normal opacity-90"></span>
                 </button>
             </div>
@@ -411,6 +438,24 @@
                 <div>
                     <h3 class="font-bold text-stone-700 mb-2">Special Notes</h3>
                     <textarea id="editItemNotes" rows="2" class="w-full bg-stone-50 border-2 border-stone-100 rounded-xl p-3 focus:ring-0 focus:border-amber-300 transition-colors text-stone-700 resize-none font-medium placeholder:text-stone-400" placeholder="Any special requests?"></textarea>
+                    <div class="mt-3 flex flex-wrap items-center justify-between gap-3" data-speech-wrapper>
+                        <div class="flex items-center gap-2">
+                            <select data-speech-lang class="rounded-full border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-amber-900 shadow-sm focus:border-amber-400 focus:ring-0">
+                                <option value="en-US">English</option>
+                                <option value="id-ID">Indonesia</option>
+                                <option value="auto" selected>Auto</option>
+                            </select>
+                            <button type="button" data-speech-to-text data-target="editItemNotes" class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-bold text-amber-800 shadow-sm transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 1.75a3.75 3.75 0 00-3.75 3.75v5a3.75 3.75 0 107.5 0v-5A3.75 3.75 0 0012 1.75z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 11.5a7.5 7.5 0 0015 0" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19.25v3" />
+                                </svg>
+                                <span data-speech-label>Speak</span>
+                            </button>
+                        </div>
+                        <p data-speech-status class="text-xs text-stone-400"></p>
+                    </div>
                 </div>
 
                 <!-- Quantity -->
@@ -615,6 +660,10 @@
             icon.style.transform = 'rotate(0deg)';
         }
     }
+
+    function toggleKioskCart() {
+        document.getElementById('kioskCartSidebar')?.classList.toggle('is-open');
+    }
     
     function openEditModal(index, name, quantity, unitPrice, notes = '', hasModifications = false, flavor = null) {
         currentEditIndex = index;
@@ -704,6 +753,23 @@
         document.body.appendChild(form);
         form.submit();
     }
+
+    function submitAddItem() {
+        const form = document.getElementById('itemForm');
+        const notes = document.getElementById('itemNotes')?.value || '';
+        const existing = form.querySelector('input[name="notes"]');
+
+        if (existing) {
+            existing.remove();
+        }
+
+        const notesInput = document.createElement('input');
+        notesInput.type = 'hidden';
+        notesInput.name = 'notes';
+        notesInput.value = notes;
+        form.appendChild(notesInput);
+        form.submit();
+    }
     
     function openItemModal(item, imgSrc) {
         document.getElementById('itemForm').action = `/kiosk/cart/${item.id}`;
@@ -735,7 +801,7 @@
                 <label class="flex items-center justify-between p-4 rounded-xl border-2 border-stone-100 hover:border-amber-200 cursor-pointer transition-all has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 group shadow-sm hover:shadow">
                     <div class="flex items-center gap-4">
                         <div class="relative flex items-center">
-                            <input type="radio" name="flavors" value="${flavor.id}" data-price="${flavor.additional_price}" onchange="updateModalTotal()" ${index === 0 ? 'checked' : ''} class="peer w-6 h-6 border-stone-300 text-amber-600 focus:ring-amber-500 transition-all cursor-pointer">
+                            <input type="radio" name="flavor" value="${flavor.id}" data-price="${flavor.additional_price}" onchange="updateModalTotal()" ${index === 0 ? 'checked' : ''} class="peer w-6 h-6 border-stone-300 text-amber-600 focus:ring-amber-500 transition-all cursor-pointer">
                         </div>
                         <span class="font-bold text-stone-700 group-hover:text-stone-900 text-lg">${flavor.name}</span>
                     </div>
@@ -1076,4 +1142,5 @@
     };
 
 </script>
+@include('partials.speech-to-text')
 @endsection

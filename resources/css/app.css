@@ -197,6 +197,7 @@
         flex-direction: column;
         z-index: 40;
         box-shadow: -5px 0 20px rgba(0, 0, 0, 0.02);
+        transition: transform 0.3s ease;
     }
     
     .kiosk-main-content {
@@ -325,6 +326,7 @@
         flex-direction: column;
         overflow: hidden;
         z-index: 40;
+        transition: transform 0.3s ease;
     }
 
     /* Promo Banner - removed old CSS, now handled inline */
@@ -343,6 +345,36 @@
     }
 
     @media (max-width: 1024px) {
+        .kiosk-sidebar-right,
+        .table-sidebar-right {
+            top: auto;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: auto;
+            max-height: none;
+            border-left: none;
+            border-top: 1px solid rgba(217, 119, 6, 0.15);
+            transform: none;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .kiosk-sidebar-right.is-open,
+        .table-sidebar-right.is-open {
+            max-height: 70vh;
+        }
+
+        .kiosk-sidebar-right:not(.is-open) .cart-body,
+        .table-sidebar-right:not(.is-open) .cart-body {
+            display: none;
+        }
+
+        .kiosk-sidebar-right .cart-body,
+        .table-sidebar-right .cart-body {
+            max-height: 62vh;
+        }
+
         .table-sidebar-left {
             position: fixed !important;
             top: 118px;
@@ -359,30 +391,26 @@
             z-index: 45;
         }
 
-        .table-sidebar-right {
-            position: fixed !important;
-            top: auto;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            height: auto;
-            max-height: 50vh;
-            border-left: none;
-            border-top: 1px solid rgba(217, 119, 6, 0.15);
-            z-index: 45;
-        }
-
         .table-main-content {
             margin-left: 0;
             margin-right: 0;
             padding-top: 70px;
-            padding-bottom: 350px;
+            padding-bottom: 96px;
             padding-left: 16px;
             padding-right: 16px;
             width: 100%;
             position: relative;
             z-index: 1;
+        }
+
+        .kiosk-main-content {
+            margin-left: 0;
+            margin-right: 0;
+            padding-top: 92px;
+            padding-bottom: 96px;
+            padding-left: 16px;
+            padding-right: 16px;
+            width: 100%;
         }
     }
 }

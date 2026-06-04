@@ -9,6 +9,16 @@ class TableCart
 {
     private const SESSION_KEY = 'table_cart';
 
+    private static function signatureForLine(int $menuItemId, array $modifications, ?string $notes, ?int $flavorId): string
+    {
+        return implode('|', [
+            $menuItemId,
+            md5(json_encode(array_values($modifications))),
+            md5((string) $notes),
+            (string) $flavorId,
+        ]);
+    }
+
     public static function items(Request $request): array
     {
         return $request->session()->get(self::SESSION_KEY, []);
@@ -51,12 +61,12 @@ class TableCart
             }
         }
 
-        $signature = implode('|', [
+        $signature = self::signatureForLine(
             $menuItem->id,
-            md5(json_encode(array_values($selectedMods))),
-            md5((string) $notes),
-            (string) $flavorId,
-        ]);
+            $selectedMods,
+            $notes,
+            $flavorId
+        );
 
         foreach ($cart as $index => $existingItem) {
             if (($existingItem['signature'] ?? null) === $signature) {
@@ -112,8 +122,14 @@ class TableCart
                 $cart = array_values($cart); // re-index
             } else {
                 $cart[$index]['quantity'] = $quantity;
-                if ($request->has('notes')) {
+                if ($request->exists('notes')) {
                     $cart[$index]['notes'] = $notes;
+                    $cart[$index]['signature'] = self::signatureForLine(
+                        (int) ($cart[$index]['menu_item_id'] ?? 0),
+                        $cart[$index]['modifications'] ?? [],
+                        $notes,
+                        $cart[$index]['flavor']['id'] ?? null
+                    );
                 }
             }
         }

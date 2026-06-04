@@ -127,12 +127,13 @@ class TableScanController extends Controller
             'modifications' => 'nullable|array',
             'modifications.*' => 'exists:menu_item_modifications,id',
             'flavor' => 'nullable|exists:flavors,id',
+            'flavors' => 'nullable|exists:flavors,id',
             'notes' => 'nullable|string|max:255',
         ]);
 
         $quantity = $request->integer('quantity');
         $modifications = $request->input('modifications', []);
-        $flavorId = $request->input('flavor');
+        $flavorId = $request->input('flavor', $request->input('flavors'));
         $notes = $request->input('notes', '');
 
         TableCart::add($request, $menuItem, $quantity, $modifications, $flavorId, $notes);
@@ -148,12 +149,14 @@ class TableScanController extends Controller
 
         $request->validate([
             'quantity' => 'required|integer|min:1',
+            'notes' => 'nullable|string|max:255',
         ]);
 
         $quantity = $request->integer('quantity');
         $unitPrice = $packet->fixed_price;
         $lineTotal = $unitPrice * $quantity;
-        $signature = 'packet_' . $packet->id;
+        $notes = $request->input('notes', '');
+        $signature = 'packet_' . $packet->id . '|' . md5((string) $notes);
 
         $cart = TableCart::items($request);
         
@@ -186,7 +189,7 @@ class TableScanController extends Controller
             'line_total' => $lineTotal,
             'modifications' => [],
             'flavor' => null,
-            'notes' => null,
+            'notes' => $notes,
             'signature' => $signature,
             'is_packet' => true,
             'packet_contents' => $packetContents,
@@ -269,6 +272,11 @@ class TableScanController extends Controller
                     if (isset($line['is_packet']) && $line['is_packet'] && isset($line['packet_id'])) {
                         $packet = Packet::find($line['packet_id']);
                         if ($packet && $packet->items) {
+                            $packetNotes = trim((string) ($line['notes'] ?? ''));
+                            $packetNoteText = 'Part of packet: ' . $packet->name;
+                            if ($packetNotes !== '') {
+                                $packetNoteText .= ' | Packet notes: ' . $packetNotes;
+                            }
                             foreach ($packet->items as $packetItem) {
                                 $quantity = ($packetItem->pivot->quantity ?? 1) * $line['quantity'];
                                 $unitPrice = $packetItem->price ?? 0;
@@ -281,7 +289,7 @@ class TableScanController extends Controller
                                     'unit_price' => $unitPrice,
                                     'line_total' => $lineTotal,
                                     'modifications' => [],
-                                    'notes' => 'Part of packet: ' . $packet->name,
+                                    'notes' => $packetNoteText,
                                 ]);
                             }
                         }

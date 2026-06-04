@@ -16,13 +16,23 @@ use Illuminate\Support\Facades\Session;
 
 class KioskController extends Controller
 {
-    private function cartSignature(MenuItem $menuItem, array $modifications, ?string $notes, ?int $flavorId): string
+    private function cartSignatureFromLine(array $line): string
     {
         return implode('|', [
-            $menuItem->id,
-            md5(json_encode(array_values($modifications))),
-            md5((string) $notes),
-            (string) $flavorId,
+            (string) ($line['menu_item_id'] ?? 0),
+            md5(json_encode(array_values($line['modifications'] ?? []))),
+            md5((string) ($line['notes'] ?? '')),
+            (string) ($line['flavor']['id'] ?? null),
+        ]);
+    }
+
+    private function cartSignature(MenuItem $menuItem, array $modifications, ?string $notes, ?int $flavorId): string
+    {
+        return $this->cartSignatureFromLine([
+            'menu_item_id' => $menuItem->id,
+            'modifications' => $modifications,
+            'notes' => $notes,
+            'flavor' => ['id' => $flavorId],
         ]);
     }
 
@@ -113,6 +123,7 @@ class KioskController extends Controller
             'modifications' => 'nullable|array',
             'modifications.*' => 'exists:menu_item_modifications,id',
             'flavor' => 'nullable|exists:flavors,id',
+            'flavors' => 'nullable|exists:flavors,id',
             'notes' => 'nullable|string|max:255',
         ]);
 
@@ -137,9 +148,10 @@ class KioskController extends Controller
         // Handle flavor selection
         $selectedFlavor = null;
         $flavorTotal = 0;
-        if ($request->has('flavor')) {
+        $flavorInput = $request->input('flavor', $request->input('flavors'));
+        if ($flavorInput) {
             $availableFlavors = $menuItem->flavors->keyBy('id');
-            $flavorId = $request->input('flavor');
+            $flavorId = $flavorInput;
             if ($availableFlavors->has($flavorId)) {
                 $flavor = $availableFlavors->get($flavorId);
                 $selectedFlavor = [
@@ -192,12 +204,14 @@ class KioskController extends Controller
 
         $request->validate([
             'quantity' => 'required|integer|min:1',
+            'notes' => 'nullable|string|max:255',
         ]);
 
         $quantity = $request->integer('quantity');
         $unitPrice = $packet->fixed_price;
         $lineTotal = $unitPrice * $quantity;
-        $signature = 'packet_' . $packet->id;
+        $notes = $request->input('notes', '');
+        $signature = 'packet_' . $packet->id . '|' . md5((string) $notes);
 
         // Build packet contents for display
         $packetContents = [];
@@ -221,7 +235,7 @@ class KioskController extends Controller
             'line_total' => $lineTotal,
             'modifications' => [],
             'flavor' => null,
-            'notes' => null,
+            'notes' => $notes,
             'signature' => $signature,
             'packet_contents' => $packetContents,
         ];
@@ -263,8 +277,9 @@ class KioskController extends Controller
         if (isset($cart[$cartIndex])) {
             $cart[$cartIndex]['quantity'] = $request->integer('quantity');
             $cart[$cartIndex]['line_total'] = $cart[$cartIndex]['unit_price'] * $request->integer('quantity');
-            if ($request->has('notes')) {
+            if ($request->exists('notes')) {
                 $cart[$cartIndex]['notes'] = $request->input('notes');
+                $cart[$cartIndex]['signature'] = $this->cartSignatureFromLine($cart[$cartIndex]);
             }
             Session::put('kiosk_cart', $cart);
         }
@@ -338,6 +353,11 @@ class KioskController extends Controller
                     if (isset($item['is_packet']) && $item['is_packet'] && isset($item['packet_id'])) {
                         $packet = Packet::find($item['packet_id']);
                         if ($packet && $packet->items) {
+                            $packetNotes = trim((string) ($item['notes'] ?? ''));
+                            $packetNoteText = 'Part of packet: ' . $packet->name;
+                            if ($packetNotes !== '') {
+                                $packetNoteText .= ' | Packet notes: ' . $packetNotes;
+                            }
                             foreach ($packet->items as $packetItem) {
                                 $quantity = ($packetItem->pivot->quantity ?? 1) * $item['quantity'];
                                 $unitPrice = $packetItem->price ?? 0;
@@ -350,7 +370,7 @@ class KioskController extends Controller
                                     'unit_price' => $unitPrice,
                                     'line_total' => $lineTotal,
                                     'modifications' => [],
-                                    'notes' => 'Part of packet: ' . $packet->name,
+                                    'notes' => $packetNoteText,
                                 ]);
                             }
                         }
