@@ -51,8 +51,8 @@
         @endforeach
     </aside>
 
-    <!-- Right Sidebar: Cart -->
-    <aside id="kioskCartSidebar" class="kiosk-sidebar-right">
+    <!-- Right Sidebar: Cart (Desktop) -->
+    <aside id="kioskCartSidebar" class="hidden lg:flex kiosk-sidebar-right">
         <div class="p-6 border-b border-amber-200/50 bg-[#faf6f0] shrink-0 flex justify-between items-center">
             <h2 class="font-display text-2xl font-semibold text-amber-950 flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -60,16 +60,7 @@
                 </svg>
                 Your Order
             </h2>
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="toggleKioskCart()" class="lg:hidden inline-flex items-center gap-2 rounded-full bg-amber-800 px-3 py-2 text-xs font-bold text-white shadow-sm">
-                    Cart
-                    <span class="bg-white/15 text-white text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full">{{ count($cart) }}</span>
-                </button>
-                <button type="button" onclick="toggleKioskCart()" class="lg:hidden inline-flex w-9 h-9 items-center justify-center rounded-full border border-amber-200 bg-white text-amber-900 hover:bg-amber-50" aria-label="Close cart">
-                    <span class="text-xl leading-none">×</span>
-                </button>
-                <span class="hidden lg:flex bg-amber-800 text-white text-sm font-bold w-8 h-8 items-center justify-center rounded-full shadow-sm">{{ count($cart) }}</span>
-            </div>
+            <span class="bg-amber-800 text-white text-sm font-bold w-8 h-8 items-center justify-center rounded-full shadow-sm flex">{{ count($cart) }}</span>
         </div>
 
         <div class="cart-body flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar min-h-0">
@@ -240,6 +231,216 @@
             @endif
         </div>
     </aside>
+
+    <!-- Mobile Cart Floating Button -->
+    <div class="lg:hidden fixed bottom-6 left-4 right-4 z-[100]">
+        <button onclick="toggleMobileCart()" class="w-full bg-amber-800 text-white rounded-2xl shadow-2xl p-4 flex items-center justify-between border-2 border-amber-700">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    <span id="mobile-cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">{{ count($cart) }}</span>
+                </div>
+                <div class="text-left">
+                    <p class="font-bold text-base">Your Order</p>
+                    <p class="text-sm text-amber-100" id="mobile-cart-items-text">{{ count($cart) }} items</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="font-bold text-xl" id="mobile-cart-total">${{ number_format($cartTotal, 2) }}</p>
+                <p class="text-xs text-amber-100">Tap to view</p>
+            </div>
+        </button>
+    </div>
+
+    <!-- Mobile Cart Bottom Sheet -->
+    <div id="mobile-cart-sheet" class="lg:hidden fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="toggleMobileCart()"></div>
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl transform transition-transform duration-300 translate-y-full" id="mobile-cart-content" style="max-height: 80vh;">
+            <div class="p-4 border-b border-amber-200/50 bg-[#faf6f0] flex justify-between items-center">
+                <h2 class="font-display text-2xl font-semibold text-amber-950 flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Your Order
+                </h2>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMobileCart()" class="text-amber-800 hover:text-amber-900 p-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="cart-body flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar" style="max-height: calc(80vh - 280px);">
+                @php
+                    // Group cart items by menu_item_id, modifications, and flavor
+                    $groupedCart = [];
+                    if (!empty($cart) && is_array($cart)) {
+                        foreach($cart as $index => $cartItem) {
+                            $key = $cartItem['signature'] ?? ($cartItem['menu_item_id'] . '_' . md5(json_encode($cartItem['modifications'] ?? [])) . '_' . md5($cartItem['notes'] ?? '') . '_' . ($cartItem['flavor']['id'] ?? ''));
+                            if (!isset($groupedCart[$key])) {
+                                $groupedCart[$key] = [
+                                    'name' => $cartItem['name'],
+                                    'menu_item_id' => $cartItem['menu_item_id'],
+                                    'unit_price' => $cartItem['unit_price'],
+                                    'modifications' => $cartItem['modifications'] ?? [],
+                                    'flavor' => $cartItem['flavor'] ?? null,
+                                    'is_packet' => $cartItem['is_packet'] ?? false,
+                                    'packet_id' => $cartItem['packet_id'] ?? null,
+                                    'packet_contents' => $cartItem['packet_contents'] ?? null,
+                                    'items' => []
+                                ];
+                            }
+                            $groupedCart[$key]['items'][] = [
+                                'index' => $index,
+                                'quantity' => $cartItem['quantity'],
+                                'line_total' => $cartItem['line_total'],
+                                'notes' => $cartItem['notes'] ?? ''
+                            ];
+                        }
+                    }
+                @endphp
+
+                @forelse($groupedCart as $groupKey => $group)
+                    @php
+                        $totalQty = collect($group['items'])->sum('quantity');
+                        $totalPrice = collect($group['items'])->sum('line_total');
+                        $hasMultipleItems = count($group['items']) > 1;
+                    @endphp
+                    <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden relative">
+                        <div class="p-4 flex items-center gap-4 hover:border-amber-300 transition-colors">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center">
+                                    <h4 class="font-semibold text-amber-950">{{ $group['name'] }}</h4>
+                                    <span class="font-semibold text-stone-800">${{ number_format($totalPrice, 2) }}</span>
+                                </div>
+                                <div class="text-sm text-stone-500 font-medium">Qty: {{ $totalQty }}</div>
+
+                                @if(!empty($group['modifications']))
+                                    <div class="mt-1 flex flex-wrap gap-1">
+                                        @foreach($group['modifications'] as $mod)
+                                            <div class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100">
+                                                + {{ $mod['name'] }}
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if(isset($group['is_packet']) && $group['is_packet'])
+                                    <div class="mt-2 text-xs text-stone-600 bg-stone-50 p-2 rounded-lg border border-stone-200">
+                                        <span class="font-semibold">Packet contents:</span>
+                                        <div class="mt-1 space-y-1">
+                                            @if(isset($group['packet_contents']) && is_array($group['packet_contents']))
+                                                @foreach($group['packet_contents'] as $content)
+                                                    <div class="flex justify-between">
+                                                        <span>{{ $content['name'] }}</span>
+                                                        <span class="text-stone-500">x{{ $content['quantity'] ?? 1 }}</span>
+                                                    </div>
+                                                @endforeach
+                                            @else
+                                                <span class="text-stone-500 italic">See details in modal</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                @if($hasMultipleItems)
+                                    <button onclick="toggleDropdown('{{$groupKey}}')" class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm hover:bg-amber-200 transition-colors border border-amber-200 cursor-pointer">
+                                        <svg id="icon-{{$groupKey}}" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                @else
+                                    <button onclick="openEditModal({{ $group['items'][0]['index'] }}, '{{ addslashes($group['name']) }}', {{ $group['items'][0]['quantity'] }}, {{ $group['unit_price'] }}, '{{ addslashes($group['items'][0]['notes'] ?? '') }}', {{ !empty($group['modifications']) ? 'true' : 'false' }}, {{ !empty($group['flavor']) ? json_encode($group['flavor']) : 'null' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
+                                @endif
+                                <form method="POST" action="{{ route('kiosk.cart.remove', $group['items'][0]['index']) }}">
+                                    @csrf
+                                    <button type="submit" class="w-8 h-8 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center text-sm hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors border border-stone-200 cursor-pointer">×</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        @if(!$hasMultipleItems && (!empty($group['flavor']) || !empty($group['items'][0]['notes'])))
+                            <div class="px-4 pb-4 pt-0 space-y-2">
+                                @if(!empty($group['flavor']))
+                                    <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                        Flavor: {{ $group['flavor']['name'] }}
+                                    </div>
+                                @endif
+                                @if(!empty($group['items'][0]['notes']))
+                                    <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                        "{{ $group['items'][0]['notes'] }}"
+                                    </div>
+                                @endif
+                            </div>
+                        @elseif($hasMultipleItems && !empty($group['flavor']))
+                            <div class="px-4 pb-2 pt-0">
+                                <div class="text-xs text-stone-500 italic break-words bg-stone-50 p-2 rounded-lg border border-stone-100">
+                                    Flavor: {{ $group['flavor']['name'] }}
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Dropdown for individual items -->
+                        @if($hasMultipleItems)
+                            <div id="dropdown-{{$groupKey}}" class="hidden border-t border-stone-100 bg-stone-50">
+                                @foreach($group['items'] as $item)
+                                    <div class="p-3 pl-6 border-b border-stone-100 last:border-b-0">
+                                        <div class="flex flex-col gap-1.5 w-full">
+                                            <div class="flex justify-between items-center w-full">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="text-sm text-stone-500 font-medium">Item {{ $loop->iteration }}</span>
+                                                    <span class="text-sm text-stone-600">Qty: {{ $item['quantity'] }}</span>
+                                                    <span class="text-sm font-semibold text-stone-800">${{ number_format($item['line_total'], 2) }}</span>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <button onclick="openEditModal({{ $item['index'] }}, '{{ addslashes($group['name']) }}', {{ $item['quantity'] }}, {{ $group['unit_price'] }}, '{{ addslashes($item['notes'] ?? '') }}', {{ !empty($group['modifications']) ? 'true' : 'false' }}, {{ !empty($group['flavor']) ? json_encode($group['flavor']) : 'null' }})" class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-medium hover:bg-amber-200 transition-colors cursor-pointer">Edit</button>
+                                                    <form method="POST" action="{{ route('kiosk.cart.remove', $item['index']) }}" class="inline">
+                                                        @csrf
+                                                        <button type="submit" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg font-medium hover:bg-red-200 transition-colors cursor-pointer">Remove</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            @if(!empty($item['notes']))
+                                                <div class="text-xs text-stone-500 italic break-words pr-2">
+                                                    "{{ $item['notes'] }}"
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @empty
+                    <div class="flex flex-col items-center justify-center h-full text-center p-6 opacity-60">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-stone-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <p class="text-stone-600 font-bold text-lg">Your cart is empty.</p>
+                        <p class="text-stone-400 text-sm mt-2 font-medium">Tap an item to add it.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="p-6 bg-white border-t border-amber-200/50 shrink-0 shadow-[0_-5px_15px_rgba(0,0,0,0.02)]">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-lg font-bold text-stone-500">Total</span>
+                    <span class="font-display text-4xl font-semibold text-amber-950">${{ number_format($cartTotal, 2) }}</span>
+                </div>
+                @if(count($cart) > 0)
+                    <button type="button" onclick="openCheckoutModal(); toggleMobileCart();" class="w-full bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold py-4 rounded-2xl text-xl shadow-lg shadow-amber-900/20 transition-all active:scale-97 flex items-center justify-center gap-2 cursor-pointer">
+                        Checkout <span>→</span>
+                    </button>
+                @else
+                    <button disabled class="w-full bg-stone-200 text-stone-400 font-bold py-4 rounded-2xl text-xl cursor-not-allowed">
+                        Checkout
+                    </button>
+                @endif
+            </div>
+        </div>
+    </div>
 
     <!-- Middle: Items Grid (Main Scrollable Area) -->
     <main class="kiosk-main-content">
@@ -663,6 +864,25 @@
 
     function toggleKioskCart() {
         document.getElementById('kioskCartSidebar')?.classList.toggle('is-open');
+    }
+
+    function toggleMobileCart() {
+        const sheet = document.getElementById('mobile-cart-sheet');
+        const content = document.getElementById('mobile-cart-content');
+        
+        if (sheet.classList.contains('hidden')) {
+            // Open
+            sheet.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('translate-y-full');
+            }, 10);
+        } else {
+            // Close
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                sheet.classList.add('hidden');
+            }, 300);
+        }
     }
     
     function openEditModal(index, name, quantity, unitPrice, notes = '', hasModifications = false, flavor = null) {

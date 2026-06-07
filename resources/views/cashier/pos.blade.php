@@ -3,7 +3,7 @@
 @section('title', 'POS Checkout')
 
 @section('content')
-<div class="flex gap-4 h-full items-stretch" style="height: calc(100vh - 120px);">
+<div class="flex gap-4 h-full items-stretch flex-row" style="height: calc(100vh - 120px);">
     <!-- Left Pane: Menu Grid & Categories -->
     <div class="flex-[1.1] min-w-0 flex flex-col overflow-hidden bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
         
@@ -11,9 +11,15 @@
         <div class="bg-white p-4 border-b border-slate-200 shrink-0">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4">
                 <h1 class="text-xl font-bold text-slate-800">Point of Sale</h1>
-                <div class="relative w-full lg:w-[34rem] xl:w-[40rem]">
-                    <input type="text" id="search-input" placeholder="Search or Scan Barcode..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                    <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <div class="relative w-full lg:w-[34rem] xl:w-[40rem] flex gap-2">
+                    <div class="relative flex-1">
+                        <input type="text" id="search-input" placeholder="Search or Scan Barcode..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <button onclick="openBarcodeScanner()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                        <span class="hidden sm:inline">Scan</span>
+                    </button>
                 </div>
             </div>
             
@@ -32,8 +38,8 @@
         </div>
     </div>
 
-    <!-- Right Pane: Cart -->
-    <div class="w-[40rem] min-w-[40rem] flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
+    <!-- Right Pane: Cart (Desktop) -->
+    <div class="hidden lg:flex w-[40rem] min-w-[40rem] flex-col bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
         <div class="p-4 border-b border-slate-200 bg-slate-50 rounded-t-xl shrink-0 flex justify-between items-center">
             <h2 class="text-lg font-bold text-slate-800">Current Order</h2>
             <button onclick="clearCart()" class="text-xs font-medium text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">Clear</button>
@@ -73,6 +79,84 @@
                     <span>Pay Later</span>
                 </button>
                 <button onclick="openCheckoutModal()" id="checkout-btn" class="w-full py-4 bg-blue-700 hover:bg-blue-800 text-white border border-blue-800 rounded-xl font-bold text-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2M5 9h14l1 11H4L5 9z"></path>
+                    </svg>
+                    <span>Pay Now</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Cart Floating Button -->
+<div class="lg:hidden fixed bottom-6 left-4 right-4 z-[100]">
+    <button onclick="toggleMobileCart()" class="w-full bg-slate-900 text-white rounded-2xl shadow-2xl p-4 flex items-center justify-between border-2 border-slate-700">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <span id="mobile-cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">0</span>
+            </div>
+            <div class="text-left">
+                <p class="font-bold text-base">Current Order</p>
+                <p class="text-sm text-slate-300" id="mobile-cart-items-text">0 items</p>
+            </div>
+        </div>
+        <div class="text-right">
+            <p class="font-bold text-xl" id="mobile-cart-total">$0.00</p>
+            <p class="text-xs text-slate-300">Tap to view</p>
+        </div>
+    </button>
+</div>
+
+<!-- Mobile Cart Bottom Sheet -->
+<div id="mobile-cart-sheet" class="lg:hidden fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="toggleMobileCart()"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl transform transition-transform duration-300 translate-y-full" id="mobile-cart-content" style="max-height: 80vh;">
+        <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-slate-800">Current Order</h2>
+            <div class="flex items-center gap-2">
+                <button onclick="clearCart()" class="text-xs font-medium text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">Clear</button>
+                <button onclick="toggleMobileCart()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Cart Items -->
+        <div class="overflow-y-auto p-4" id="mobile-cart-items" style="max-height: calc(80vh - 200px);">
+            <div class="text-center py-10 text-slate-400 flex flex-col items-center">
+                <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <p>Cart is empty</p>
+                <p class="text-xs mt-1">Scan or click items to add</p>
+            </div>
+        </div>
+
+        <!-- Cart Totals & Actions -->
+        <div class="p-4 border-t border-slate-200 bg-slate-50">
+            <div class="space-y-2 mb-4 text-sm">
+                <div class="flex justify-between text-slate-600">
+                    <span>Subtotal</span>
+                    <span id="mobile-cart-subtotal">$0.00</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>Tax (10%)</span>
+                    <span id="mobile-cart-tax">$0.00</span>
+                </div>
+                <div class="flex justify-between text-lg font-bold text-slate-900 border-t border-slate-200 pt-2 mt-2">
+                    <span>Total</span>
+                    <span id="mobile-cart-total-display">$0.00</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="submitOrder(true); toggleMobileCart();" id="mobile-pay-later-btn" class="w-full py-4 bg-amber-600 hover:bg-amber-700 text-white border border-amber-700 rounded-xl font-bold text-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Pay Later</span>
+                </button>
+                <button onclick="openCheckoutModal(); toggleMobileCart();" id="mobile-checkout-btn" class="w-full py-4 bg-blue-700 hover:bg-blue-800 text-white border border-blue-800 rounded-xl font-bold text-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2M5 9h14l1 11H4L5 9z"></path>
                     </svg>
@@ -154,9 +238,38 @@
     </div>
 </div>
 
+<!-- Barcode Scanner Modal -->
+<div id="barcode-scanner-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden items-center justify-center z-[70] p-4 transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform" id="barcode-scanner-modal-content">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-slate-800">Scan Barcode</h3>
+            <div class="flex items-center gap-2">
+                <button onclick="flipCamera()" id="flip-camera-btn" class="text-slate-500 hover:text-slate-700 p-2 rounded-lg hover:bg-slate-100 transition-colors hidden" title="Flip Camera">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+                <button onclick="closeBarcodeScanner()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div id="reader" class="w-full bg-black rounded-lg overflow-hidden" style="min-height: 300px;"></div>
+            <p class="text-center text-sm text-slate-500 mt-4">Point your camera at a barcode to scan</p>
+        </div>
+        
+        <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+            <button onclick="closeBarcodeScanner()" class="w-full py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script>
     const itemsData = {!! json_encode($itemsJson) !!};
     const posCategories = {!! json_encode($posCategories ?? []) !!};
@@ -170,6 +283,11 @@
     // Barcode scanner logic
     let barcodeBuffer = '';
     let barcodeTimeout = null;
+    let html5QrcodeScanner = null;
+    let isScanning = false;
+    let currentCameraId = null;
+    let cameraDevices = [];
+    let currentCameraIndex = 0;
 
     document.addEventListener('DOMContentLoaded', () => {
         initCategories();
@@ -251,6 +369,131 @@
         }
     }
 
+    async function openBarcodeScanner() {
+        const modal = document.getElementById('barcode-scanner-modal');
+        const content = document.getElementById('barcode-scanner-modal-content');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+        }, 10);
+
+        // Initialize the scanner
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+        }
+
+        // Get available cameras
+        try {
+            cameraDevices = await Html5Qrcode.getCameras();
+            if (cameraDevices && cameraDevices.length > 0) {
+                // Start with rear camera (environment) if available
+                currentCameraIndex = cameraDevices.findIndex(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
+                if (currentCameraIndex === -1) currentCameraIndex = 0;
+                currentCameraId = cameraDevices[currentCameraIndex].id;
+
+                // Show flip button only if there are multiple cameras
+                const flipBtn = document.getElementById('flip-camera-btn');
+                if (flipBtn) {
+                    if (cameraDevices.length > 1) {
+                        flipBtn.classList.remove('hidden');
+                    } else {
+                        flipBtn.classList.add('hidden');
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Error getting cameras:", err);
+        }
+
+        const config = { 
+            fps: 20, 
+            qrbox: { width: 300, height: 150 },
+            aspectRatio: 1.0
+        };
+        
+        html5QrcodeScanner.start(
+            currentCameraId || { facingMode: "environment" },
+            config,
+            (decodedText, decodedResult) => {
+                // Barcode scanned successfully
+                handleBarcodeScanned(decodedText);
+                closeBarcodeScanner();
+            },
+            (errorMessage) => {
+                // Scanning in progress, ignore errors
+            }
+        ).catch((err) => {
+            console.error("Error starting scanner:", err);
+            alert("Unable to access camera. Please ensure camera permissions are granted.");
+            closeBarcodeScanner();
+        });
+
+        isScanning = true;
+    }
+
+    async function flipCamera() {
+        if (!html5QrcodeScanner || !isScanning || cameraDevices.length === 0) return;
+
+        try {
+            // Stop and clear current scanner completely
+            await html5QrcodeScanner.stop();
+            await html5QrcodeScanner.clear();
+            
+            // Destroy and recreate the scanner instance
+            html5QrcodeScanner = null;
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            
+            // Switch to next camera
+            currentCameraIndex = (currentCameraIndex + 1) % cameraDevices.length;
+            currentCameraId = cameraDevices[currentCameraIndex].id;
+
+            const config = { fps: 10, qrbox: { width: 300, height: 150 } };
+            
+            await html5QrcodeScanner.start(
+                currentCameraId,
+                config,
+                (decodedText, decodedResult) => {
+                    handleBarcodeScanned(decodedText);
+                    closeBarcodeScanner();
+                },
+                (errorMessage) => {
+                    // Scanning in progress, ignore errors
+                }
+            );
+        } catch (err) {
+            console.error("Error switching camera:", err);
+            alert("Unable to switch camera. Please try again.");
+        }
+    }
+
+    function closeBarcodeScanner() {
+        const modal = document.getElementById('barcode-scanner-modal');
+        const content = document.getElementById('barcode-scanner-modal-content');
+        
+        modal.classList.add('opacity-0');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 300);
+
+        // Stop the scanner
+        if (html5QrcodeScanner && isScanning) {
+            html5QrcodeScanner.stop().then(() => {
+                html5QrcodeScanner.clear();
+                isScanning = false;
+            }).catch((err) => {
+                console.error("Error stopping scanner:", err);
+                isScanning = false;
+            });
+        }
+    }
+
     function renderItems(searchQuery = '') {
         const grid = document.getElementById('items-grid');
         grid.innerHTML = '';
@@ -306,18 +549,15 @@
 
     function renderCart() {
         const container = document.getElementById('cart-items');
+        const mobileContainer = document.getElementById('mobile-cart-items');
         
-        if (cart.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-10 text-slate-400 flex flex-col items-center">
-                    <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    <p>Cart is empty</p>
-                    <p class="text-xs mt-1">Scan or click items to add</p>
-                </div>`;
-            document.getElementById('checkout-btn').disabled = true;
-            document.getElementById('pay-later-btn').disabled = true;
-        } else {
-            container.innerHTML = cart.map((item, idx) => `
+        const cartHtml = cart.length === 0
+            ? `<div class="text-center py-10 text-slate-400 flex flex-col items-center">
+                <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <p>Cart is empty</p>
+                <p class="text-xs mt-1">Scan or click items to add</p>
+            </div>`
+            : cart.map((item, idx) => `
                 <div class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg shadow-sm mb-2 hover:border-slate-200 transition-colors">
                     <div class="flex-1 pr-3">
                         <p class="font-bold text-slate-800 text-sm">${item.name}</p>
@@ -330,9 +570,22 @@
                     </div>
                 </div>
             `).join('');
-            document.getElementById('checkout-btn').disabled = false;
-            document.getElementById('pay-later-btn').disabled = false;
-        }
+
+        if (container) container.innerHTML = cartHtml;
+        if (mobileContainer) mobileContainer.innerHTML = cartHtml;
+
+        const hasItems = cart.length > 0;
+        
+        // Desktop buttons
+        if (document.getElementById('checkout-btn')) document.getElementById('checkout-btn').disabled = !hasItems;
+        if (document.getElementById('pay-later-btn')) document.getElementById('pay-later-btn').disabled = !hasItems;
+        
+        // Mobile buttons
+        if (document.getElementById('mobile-checkout-btn')) document.getElementById('mobile-checkout-btn').disabled = !hasItems;
+        if (document.getElementById('mobile-pay-later-btn')) document.getElementById('mobile-pay-later-btn').disabled = !hasItems;
+
+        // Update mobile floating button
+        updateMobileCartButton();
 
         updateTotals();
     }
@@ -342,17 +595,62 @@
         const tax = subtotal * 0.10; // Assuming 10% tax. Adjust if dynamic.
         const total = subtotal + tax;
 
-        document.getElementById('cart-subtotal').textContent = '$' + subtotal.toFixed(2);
-        document.getElementById('cart-tax').textContent = '$' + tax.toFixed(2);
-        document.getElementById('cart-total').textContent = '$' + total.toFixed(2);
-        document.getElementById('checkout-total-display').textContent = '$' + total.toFixed(2);
+        // Desktop totals
+        if (document.getElementById('cart-subtotal')) document.getElementById('cart-subtotal').textContent = '$' + subtotal.toFixed(2);
+        if (document.getElementById('cart-tax')) document.getElementById('cart-tax').textContent = '$' + tax.toFixed(2);
+        if (document.getElementById('cart-total')) document.getElementById('cart-total').textContent = '$' + total.toFixed(2);
+        if (document.getElementById('checkout-total-display')) document.getElementById('checkout-total-display').textContent = '$' + total.toFixed(2);
+
+        // Mobile totals
+        if (document.getElementById('mobile-cart-subtotal')) document.getElementById('mobile-cart-subtotal').textContent = '$' + subtotal.toFixed(2);
+        if (document.getElementById('mobile-cart-tax')) document.getElementById('mobile-cart-tax').textContent = '$' + tax.toFixed(2);
+        if (document.getElementById('mobile-cart-total-display')) document.getElementById('mobile-cart-total-display').textContent = '$' + total.toFixed(2);
+        if (document.getElementById('mobile-cart-total')) document.getElementById('mobile-cart-total').textContent = '$' + total.toFixed(2);
+    }
+
+    function updateMobileCartButton() {
+        const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const tax = total * 0.10;
+        const finalTotal = total + tax;
+
+        if (document.getElementById('mobile-cart-count')) {
+            document.getElementById('mobile-cart-count').textContent = itemCount;
+        }
+        if (document.getElementById('mobile-cart-items-text')) {
+            document.getElementById('mobile-cart-items-text').textContent = itemCount === 1 ? '1 item' : `${itemCount} items`;
+        }
+        if (document.getElementById('mobile-cart-total')) {
+            document.getElementById('mobile-cart-total').textContent = '$' + finalTotal.toFixed(2);
+        }
+    }
+
+    function toggleMobileCart() {
+        const sheet = document.getElementById('mobile-cart-sheet');
+        const content = document.getElementById('mobile-cart-content');
+        
+        if (sheet.classList.contains('hidden')) {
+            // Open
+            sheet.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('translate-y-full');
+            }, 10);
+        } else {
+            // Close
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                sheet.classList.add('hidden');
+            }, 300);
+        }
     }
 
     function clearCart() {
         cart = [];
         renderCart();
-        document.getElementById('checkout-btn').disabled = true;
-        document.getElementById('pay-later-btn').disabled = true;
+        if (document.getElementById('checkout-btn')) document.getElementById('checkout-btn').disabled = true;
+        if (document.getElementById('pay-later-btn')) document.getElementById('pay-later-btn').disabled = true;
+        if (document.getElementById('mobile-checkout-btn')) document.getElementById('mobile-checkout-btn').disabled = true;
+        if (document.getElementById('mobile-pay-later-btn')) document.getElementById('mobile-pay-later-btn').disabled = true;
     }
 
     // Modal logic
