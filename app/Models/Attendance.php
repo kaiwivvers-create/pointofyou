@@ -16,7 +16,8 @@ class Attendance extends Model
         'hours_worked',
         'overtime_hours',
         'status',
-        'notes'
+        'notes',
+        'face_verified'
     ];
 
     protected $casts = [

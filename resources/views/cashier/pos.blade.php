@@ -20,6 +20,10 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
                         <span class="hidden sm:inline">Scan</span>
                     </button>
+                    <button onclick="openDeviceConnectionModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        <span class="hidden sm:inline">Connect Device</span>
+                    </button>
                 </div>
             </div>
             
@@ -256,6 +260,15 @@
         <div class="p-6">
             <div id="reader" class="w-full bg-black rounded-lg overflow-hidden" style="min-height: 300px;"></div>
             <p class="text-center text-sm text-slate-500 mt-4">Point your camera at a barcode to scan</p>
+            
+            <!-- Manual barcode input fallback -->
+            <div class="mt-4 pt-4 border-t border-slate-200">
+                <p class="text-xs text-slate-500 mb-2">Or enter barcode manually:</p>
+                <div class="flex gap-2">
+                    <input type="text" id="manual-barcode-input" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter barcode...">
+                    <button onclick="submitManualBarcode()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Add</button>
+                </div>
+            </div>
         </div>
         
         <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
@@ -266,10 +279,64 @@
     </div>
 </div>
 
+<!-- Device Connection Modal -->
+<div id="device-connection-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden items-center justify-center z-[70] p-4 transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform" id="device-connection-modal-content">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-slate-800">Connect Device</h3>
+            <button onclick="closeDeviceConnectionModal()" class="text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <!-- QR Code Display -->
+            <div id="qr-section" class="text-center mb-6">
+                <p class="text-sm text-slate-600 mb-4">Scan this QR code with your phone to connect for barcode scanning</p>
+                <div id="qr-code-container" class="flex justify-center mb-4">
+                    <div id="qr-code" class="w-48 h-48 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <div class="text-slate-400">
+                            <svg class="w-12 h-12 mx-auto mb-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="text-sm">Generating QR...</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500">Session expires in 1 hour</p>
+            </div>
+
+            <!-- Add New Session Section (shown when sessions exist) -->
+            <div id="add-session-section" class="hidden text-center mb-6">
+                <p class="text-sm text-slate-600 mb-4">You have active sessions. You can add a new session if needed.</p>
+                <button onclick="createNewSessionFromModal()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors">
+                    Add New Session
+                </button>
+            </div>
+
+            <!-- Connected Devices -->
+            <div id="connected-devices-section" class="hidden">
+                <h4 class="text-sm font-semibold text-slate-800 mb-3">Connected Devices</h4>
+                <div id="connected-devices-list" class="space-y-2">
+                    <!-- Connected devices will be listed here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+            <button onclick="closeDeviceConnectionModal()" class="w-full py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
     const itemsData = {!! json_encode($itemsJson) !!};
     const posCategories = {!! json_encode($posCategories ?? []) !!};
@@ -289,11 +356,17 @@
     let cameraDevices = [];
     let currentCameraIndex = 0;
 
+    // Device connection logic
+    let currentSessionCode = null;
+    let devicePollingInterval = null;
+
     document.addEventListener('DOMContentLoaded', () => {
         initCategories();
         renderItems();
         setupSearch();
         setupScanner();
+        // Load active sessions on page load
+        loadActiveSessions();
     });
 
     function initCategories() {
@@ -360,12 +433,28 @@
     }
 
     function handleBarcodeScanned(barcode) {
+        console.log('Barcode scanned:', barcode);
+        console.log('Available items:', itemsData);
+        console.log('Item barcodes:', itemsData.map(i => ({ name: i.name, barcode: i.barcode })));
+        
         const item = itemsData.find(i => i.barcode === barcode);
         if (item) {
+            console.log('Item found:', item);
             addToCart(item);
             // Flash effect or sound could go here
         } else {
-            alert('Item with barcode ' + barcode + ' not found.');
+            console.log('Item not found for barcode:', barcode);
+            alert('Item with barcode ' + barcode + ' not found. Please try manual entry or check if the item has a barcode assigned.');
+        }
+    }
+
+    function submitManualBarcode() {
+        const input = document.getElementById('manual-barcode-input');
+        const barcode = input.value.trim();
+        
+        if (barcode) {
+            handleBarcodeScanned(barcode);
+            input.value = '';
         }
     }
 
@@ -381,6 +470,12 @@
             content.classList.remove('scale-95');
         }, 10);
 
+        // Check if HTTPS is required for camera access
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            console.warn('Camera access may require HTTPS on mobile devices');
+            alert('Note: Camera access on mobile devices requires HTTPS. If the scanner doesn\'t work, please use the manual barcode input below.');
+        }
+
         // Initialize the scanner
         if (!html5QrcodeScanner) {
             html5QrcodeScanner = new Html5Qrcode("reader");
@@ -389,11 +484,14 @@
         // Get available cameras
         try {
             cameraDevices = await Html5Qrcode.getCameras();
+            console.log('Available cameras:', cameraDevices);
+            
             if (cameraDevices && cameraDevices.length > 0) {
                 // Start with rear camera (environment) if available
                 currentCameraIndex = cameraDevices.findIndex(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
                 if (currentCameraIndex === -1) currentCameraIndex = 0;
                 currentCameraId = cameraDevices[currentCameraIndex].id;
+                console.log('Using camera:', currentCameraId, cameraDevices[currentCameraIndex].label);
 
                 // Show flip button only if there are multiple cameras
                 const flipBtn = document.getElementById('flip-camera-btn');
@@ -404,35 +502,47 @@
                         flipBtn.classList.add('hidden');
                     }
                 }
+            } else {
+                console.error('No cameras found');
+                alert('No cameras detected. Please use the manual barcode input below.');
+                return;
             }
         } catch (err) {
             console.error("Error getting cameras:", err);
+            alert('Unable to access camera. Please use the manual barcode input below.');
+            return;
         }
 
         const config = { 
-            fps: 20, 
-            qrbox: { width: 300, height: 150 },
-            aspectRatio: 1.0
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            disableFlip: false
         };
         
-        html5QrcodeScanner.start(
-            currentCameraId || { facingMode: "environment" },
-            config,
-            (decodedText, decodedResult) => {
-                // Barcode scanned successfully
-                handleBarcodeScanned(decodedText);
-                closeBarcodeScanner();
-            },
-            (errorMessage) => {
-                // Scanning in progress, ignore errors
-            }
-        ).catch((err) => {
+        console.log('Starting scanner with config:', config);
+        
+        try {
+            await html5QrcodeScanner.start(
+                currentCameraId || { facingMode: "environment" },
+                config,
+                (decodedText, decodedResult) => {
+                    console.log('Barcode scanned successfully:', decodedText);
+                    // Barcode scanned successfully
+                    handleBarcodeScanned(decodedText);
+                    closeBarcodeScanner();
+                },
+                (errorMessage) => {
+                    // Scanning in progress, ignore errors
+                    console.log('Scanning in progress...');
+                }
+            );
+            isScanning = true;
+        } catch (err) {
             console.error("Error starting scanner:", err);
-            alert("Unable to access camera. Please ensure camera permissions are granted.");
-            closeBarcodeScanner();
-        });
-
-        isScanning = true;
+            alert("Unable to start camera scanner. Please use the manual barcode input below.");
+            isScanning = false;
+        }
     }
 
     async function flipCamera() {
@@ -491,6 +601,253 @@
                 console.error("Error stopping scanner:", err);
                 isScanning = false;
             });
+        }
+    }
+
+    // Device Connection Functions
+    async function openDeviceConnectionModal() {
+        const modal = document.getElementById('device-connection-modal');
+        const content = document.getElementById('device-connection-modal-content');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+        }, 10);
+
+        // Load active sessions first
+        await loadConnectedDevices();
+
+        // Check if there are active sessions
+        const response = await fetch('/device-sessions/active');
+        const data = await response.json();
+
+        if (data.sessions && data.sessions.length > 0) {
+            // There are active sessions, show them and the add button
+            document.getElementById('qr-section').classList.add('hidden');
+            document.getElementById('add-session-section').classList.remove('hidden');
+        } else {
+            // No active sessions, auto-create one
+            await createDeviceSession();
+        }
+    }
+
+    function closeDeviceConnectionModal() {
+        const modal = document.getElementById('device-connection-modal');
+        const content = document.getElementById('device-connection-modal-content');
+        
+        modal.classList.add('opacity-0');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 300);
+    }
+
+    async function createDeviceSession() {
+        try {
+            const response = await fetch('/device-sessions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                console.error('Error creating device session:', data.error);
+                alert('Error creating device session: ' + data.error);
+                return;
+            }
+
+            if (data.session_code) {
+                currentSessionCode = data.session_code;
+                // Save session code to localStorage for persistence
+                localStorage.setItem('deviceSessionCode', currentSessionCode);
+                console.log('Session created with code:', currentSessionCode);
+                console.log('Starting polling...');
+                // Show QR section, hide add session section
+                document.getElementById('qr-section').classList.remove('hidden');
+                document.getElementById('add-session-section').classList.add('hidden');
+                generateQRCode(data.qr_url);
+                loadConnectedDevices();
+                // Start polling now that we have a session code
+                if (!devicePollingInterval) {
+                    startDevicePolling();
+                }
+            }
+        } catch (error) {
+            console.error('Error creating device session:', error);
+            alert('Error creating device session: ' + error.message);
+        }
+    }
+
+    function generateQRCode(url) {
+        const qrContainer = document.getElementById('qr-code');
+        qrContainer.innerHTML = '';
+        
+        new QRCode(qrContainer, {
+            text: url,
+            width: 192,
+            height: 192,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+
+    async function loadConnectedDevices() {
+        try {
+            const response = await fetch('/device-sessions/active');
+            const data = await response.json();
+
+            const devicesSection = document.getElementById('connected-devices-section');
+            const devicesList = document.getElementById('connected-devices-list');
+            const addSessionSection = document.getElementById('add-session-section');
+
+            if (data.sessions && data.sessions.length > 0) {
+                devicesSection.classList.remove('hidden');
+                addSessionSection.classList.remove('hidden');
+                devicesList.innerHTML = '';
+
+                data.sessions.forEach(session => {
+                    const deviceItem = document.createElement('div');
+                    deviceItem.className = 'bg-slate-100 rounded-lg p-3 flex justify-between items-center';
+                    deviceItem.innerHTML = `
+                        <div>
+                            <p class="text-sm font-medium text-slate-800">Session: ${session.session_code}</p>
+                            <p class="text-xs text-slate-500">Expires: ${new Date(session.expires_at).toLocaleTimeString()}</p>
+                        </div>
+                        <button onclick="disconnectDevice('${session.session_code}')" class="text-red-600 hover:text-red-700 text-sm font-medium">
+                            Disconnect
+                        </button>
+                    `;
+                    devicesList.appendChild(deviceItem);
+                });
+            } else {
+                devicesSection.classList.add('hidden');
+                addSessionSection.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Error loading connected devices:', error);
+        }
+    }
+
+    async function loadActiveSessions() {
+        try {
+            // Restore session code from localStorage if available
+            const savedSessionCode = localStorage.getItem('deviceSessionCode');
+            if (savedSessionCode) {
+                currentSessionCode = savedSessionCode;
+                console.log('Restored session code from localStorage:', currentSessionCode);
+            }
+
+            // Load connected devices
+            await loadConnectedDevices();
+
+            // If we have a session code, start polling
+            if (currentSessionCode) {
+                console.log('Starting polling for restored session...');
+                startDevicePolling();
+            }
+        } catch (error) {
+            console.error('Error loading active sessions:', error);
+        }
+    }
+
+    async function createNewSessionFromModal() {
+        // Hide the add session section
+        document.getElementById('add-session-section').classList.add('hidden');
+        // Show the QR section
+        document.getElementById('qr-section').classList.remove('hidden');
+        // Create a new session
+        await createDeviceSession();
+    }
+
+    async function disconnectDevice(sessionCode) {
+        try {
+            const response = await fetch(`/device-sessions/${sessionCode}/deactivate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+            });
+
+            if (response.ok) {
+                // Clear session code from localStorage if this was the current session
+                if (currentSessionCode === sessionCode) {
+                    currentSessionCode = null;
+                    localStorage.removeItem('deviceSessionCode');
+                    // Stop polling
+                    if (devicePollingInterval) {
+                        clearInterval(devicePollingInterval);
+                        devicePollingInterval = null;
+                    }
+                }
+                loadConnectedDevices();
+            }
+        } catch (error) {
+            console.error('Error disconnecting device:', error);
+            alert('Error disconnecting device');
+        }
+    }
+
+    function startDevicePolling() {
+        console.log('Starting device polling with session code:', currentSessionCode);
+        // Poll every 2 seconds for items from connected devices
+        devicePollingInterval = setInterval(async () => {
+            if (currentSessionCode) {
+                console.log('Polling for cart items...');
+                await checkDeviceCartItems();
+            }
+        }, 2000);
+    }
+
+    async function checkDeviceCartItems() {
+        try {
+            if (!currentSessionCode) {
+                console.log('No session code set, skipping poll');
+                return;
+            }
+            
+            const response = await fetch(`/device-sessions/${currentSessionCode}/cart-items`);
+            const data = await response.json();
+            
+            console.log('Device cart items response:', data);
+            
+            if (data.items && data.items.length > 0) {
+                console.log('Adding items to cart:', data.items);
+                data.items.forEach(item => {
+                    // Create a cart item directly from the device session data
+                    const cartItem = {
+                        id: item.id,
+                        name: item.name,
+                        price: parseFloat(item.price),
+                        barcode: item.barcode,
+                        type: item.type,
+                        quantity: 1
+                    };
+                    console.log('Adding cart item:', cartItem);
+                    addToCart(cartItem);
+                });
+                
+                // Clear the device session cart after adding to POS cart
+                await fetch(`/device-sessions/${currentSessionCode}/clear-cart`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+            }
+        } catch (error) {
+            console.error('Error checking device cart items:', error);
         }
     }
 

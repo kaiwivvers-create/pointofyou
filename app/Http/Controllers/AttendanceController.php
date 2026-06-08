@@ -46,11 +46,15 @@ class AttendanceController extends Controller
         $isLate = $now->gt($startTime);
         $lateMinutes = $isLate ? $now->diffInMinutes($startTime) : 0;
 
+        // Check if face verification was provided
+        $faceVerified = $request->has('face_image') && !empty($request->face_image);
+
         if ($existingAttendance) {
             $existingAttendance->update([
                 'check_in' => $now->format('H:i:s'),
                 'status' => $isLate ? 'late' : 'present',
                 'hours_worked' => 0,
+                'face_verified' => $faceVerified,
             ]);
         } else {
             Attendance::create([
@@ -59,6 +63,7 @@ class AttendanceController extends Controller
                 'check_in' => $now->format('H:i:s'),
                 'status' => $isLate ? 'late' : 'present',
                 'hours_worked' => 0,
+                'face_verified' => $faceVerified,
             ]);
         }
 

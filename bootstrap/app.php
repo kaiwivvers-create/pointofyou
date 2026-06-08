@@ -19,6 +19,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'permit' => \App\Http\Middleware\CheckPermit::class,
             'attendance' => \App\Http\Middleware\CheckAttendance::class,
         ]);
+        
+        $middleware->validateCsrfTokens(except: [
+            'device-sessions',
+            'device-sessions/*',
+            'device-sessions/*/add-to-cart',
+            'mobile-scan',
+            'mobile-scan/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

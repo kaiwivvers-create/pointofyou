@@ -26,6 +26,7 @@ use App\Http\Controllers\SuperAdmin\UserController;
 use App\Http\Controllers\Table\TableScanController;
 use App\Http\Controllers\KioskController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DeviceSessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -35,6 +36,9 @@ Route::get('/', function () {
 // Table QR flow (no login)
 Route::get('/table', [TableScanController::class, 'welcome'])->name('table.welcome');
 Route::get('/table/scan/{token}', [TableScanController::class, 'scan'])->name('table.scan');
+
+// Mobile device scanning (no login required - uses session code)
+Route::get('/mobile-scan/{sessionCode}', [DeviceSessionController::class, 'scanPage'])->name('mobile-scan.index');
 
 Route::middleware('table.session')->prefix('table')->group(function () {
     Route::get('/menu', [TableScanController::class, 'menu'])->name('table.menu');
@@ -71,6 +75,17 @@ Route::get('/login', [AdminAuthController::class, 'create']);
 Route::middleware('auth')->group(function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'destroy'])->name('admin.logout');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/face-descriptor', [ProfileController::class, 'saveFaceDescriptor'])->name('profile.face-descriptor');
+    Route::get('/api/user-face-descriptor', [ProfileController::class, 'getFaceDescriptor']);
+    
+    // Device session routes
+    Route::post('/device-sessions', [DeviceSessionController::class, 'create']);
+    Route::get('/device-sessions/active', [DeviceSessionController::class, 'activeSessions']);
+    Route::post('/device-sessions/{sessionCode}/deactivate', [DeviceSessionController::class, 'deactivate']);
+    Route::get('/device-sessions/{sessionCode}', [DeviceSessionController::class, 'show']);
+    Route::post('/device-sessions/{sessionCode}/add-to-cart', [DeviceSessionController::class, 'addToCart']);
+    Route::get('/device-sessions/{sessionCode}/cart-items', [DeviceSessionController::class, 'getCartItems']);
+    Route::post('/device-sessions/{sessionCode}/clear-cart', [DeviceSessionController::class, 'clearCart']);
 
     // Super Admin / Management
     Route::prefix('super-admin')->name('super-admin.')->group(function () {
@@ -338,7 +353,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/payments', [CashierOrderController::class, 'payments'])->name('payments')->middleware('permission:orders', 'attendance');
         Route::get('/receipt/{order}', [CashierOrderController::class, 'receipt'])->name('receipt')->middleware('permission:orders', 'attendance');
         
-        Route::middleware('permit', 'attendance')->group(function () {
+        Route::middleware('attendance')->group(function () {
             Route::post('orders/create', [CashierOrderController::class, 'create'])->name('orders.create')->middleware('permission:orders');
             Route::post('orders/{order}/pay', [CashierOrderController::class, 'markPaid'])->name('orders.pay')->middleware('permission:orders');
             Route::post('orders/{order}/close', [CashierOrderController::class, 'markClosed'])->name('orders.close')->middleware('permission:orders');
@@ -416,6 +431,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/create', [StaffScheduleController::class, 'create'])->name('create');
         Route::post('/', [StaffScheduleController::class, 'store'])->name('store');
         Route::delete('/{staffSchedule}', [StaffScheduleController::class, 'destroy'])->name('destroy');
+        Route::post('/attendance/filter', [StaffScheduleController::class, 'filterAttendance'])->name('attendance.filter');
     });
 
     // Attendance (check-in/check-out)

@@ -124,6 +124,9 @@
     @stack('modals')
     @stack('scripts')
 
+    <!-- Face API.js for face detection -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
     @include('partials.chatbot')
 
     <!-- Checkout Confirmation Modal -->
@@ -146,6 +149,37 @@
         </div>
     </div>
 
+    <!-- Face Verification Modal -->
+    <div id="face-verification-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="face-verification-modal-content">
+            <h2 class="text-xl font-semibold text-slate-900 mb-4">Face Verification</h2>
+            <p class="text-slate-600 mb-4">Please position your face in the center of the frame for verification.</p>
+            
+            <div class="relative mb-4">
+                <video id="face-video" class="w-full rounded-lg bg-slate-900" autoplay playsinline></video>
+                <canvas id="face-canvas" class="hidden"></canvas>
+                <div id="face-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/50">
+                    <div class="text-white text-center">
+                        <svg class="animate-spin h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p>Loading camera...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="face-status" class="mb-4 bg-slate-100 text-slate-700 px-4 py-3 rounded-lg text-center hidden">
+                <span id="face-status-text">Detecting face...</span>
+            </div>
+            
+            <div class="flex gap-3 relative z-10">
+                <button onclick="closeFaceVerification()" class="flex-1 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">Cancel</button>
+                <button id="capture-face-btn" onclick="captureFace()" disabled class="flex-1 py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer">Capture & Verify</button>
+            </div>
+        </div>
+    </div>
+
     <!-- User Profile Modal -->
     <div id="profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="profile-modal-content">
@@ -161,8 +195,8 @@
 
                     <!-- Current Profile Picture / Preview -->
                     <div class="flex justify-center mb-4">
-                        @if (Auth::user()->employee && Auth::user()->employee->profile_picture)
-                            <img id="current-profile-picture" src="{{ asset('storage/' . Auth::user()->employee->profile_picture) }}" alt="{{ Auth::user()->name }}" class="size-20 rounded-full object-cover select-none pointer-events-none">
+                        @if (Auth::user()->profile_picture)
+                            <img id="current-profile-picture" src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="{{ Auth::user()->name }}" class="size-20 rounded-full object-cover select-none pointer-events-none">
                         @else
                             <div id="current-profile-picture" class="size-20 rounded-full flex items-center justify-center text-2xl font-semibold bg-slate-200 text-slate-600 select-none pointer-events-none">
                                 {{ substr(Auth::user()->name, 0, 1) }}
@@ -181,6 +215,17 @@
                         <input type="file" name="profile_picture" id="profile-picture-input" accept="image/*" class="hidden">
                     </div>
                     <p class="text-xs text-slate-500 mt-1 text-center">JPG, PNG, GIF up to 2MB</p>
+
+                    <!-- Face Recognition Setup Button -->
+                    <div class="flex justify-center mt-3">
+                        <button type="button" onclick="openFaceRecognitionModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium hover:bg-blue-200 transition-colors">
+                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Setup Face Recognition
+                        </button>
+                    </div>
 
                     <!-- Cropper Modal -->
                     <div id="cropper-modal" class="hidden mt-4">
@@ -236,15 +281,53 @@
         </div>
     </div>
 
+    <!-- Face Recognition Setup Modal -->
+    <div id="face-recognition-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="face-recognition-modal-content">
+            <h2 class="text-xl font-semibold text-slate-900 mb-4">Face Recognition Setup</h2>
+            <p class="text-slate-600 mb-4">Capture a clear photo of your face for identity verification during clock-in.</p>
+            
+            <div class="relative mb-4">
+                <video id="face-recognition-video" class="w-full rounded-lg bg-slate-900" autoplay playsinline></video>
+                <canvas id="face-recognition-canvas" class="hidden"></canvas>
+                <div id="face-recognition-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/50">
+                    <div class="text-white text-center">
+                        <svg class="animate-spin h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p>Loading camera...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="face-recognition-status" class="mb-4 bg-slate-100 text-slate-700 px-4 py-3 rounded-lg text-center hidden">
+                <span id="face-recognition-status-text">Detecting face...</span>
+            </div>
+            
+            <div class="flex gap-3 relative z-10">
+                <button onclick="closeFaceRecognitionModal()" class="flex-1 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">Cancel</button>
+                <button id="capture-recognition-btn" onclick="captureRecognitionFace()" disabled class="flex-1 py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer">Capture Face</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Store routes as JavaScript variables
         const attendanceCheckInRoute = "{{ route('attendance.check-in') }}";
         const attendanceCheckOutRoute = "{{ route('attendance.check-out') }}";
         const attendanceStatusRoute = "{{ route('attendance.status') }}";
 
+        // Face recognition variables
+        let faceRecognitionStream = null;
+        let faceRecognitionModelsLoaded = false;
+        let userFaceDescriptor = null;
+
         // Attendance Check-in/Check-out
         document.addEventListener('DOMContentLoaded', function() {
             loadAttendanceStatus();
+            loadFaceRecognitionModels();
+            loadUserFaceDescriptor();
         });
 
         async function loadAttendanceStatus() {
@@ -290,6 +373,209 @@
         }
 
         async function checkIn() {
+            // Open face verification modal instead of directly checking in
+            openFaceVerification();
+        }
+
+        // Face Verification
+        let videoStream = null;
+        let faceDetectionInterval = null;
+        let isFaceDetected = false;
+
+        async function openFaceVerification() {
+            const modal = document.getElementById('face-verification-modal');
+            const modalContent = document.getElementById('face-verification-modal-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+
+            // Start camera
+            await startCamera();
+        }
+
+        async function closeFaceVerification() {
+            const modal = document.getElementById('face-verification-modal');
+            const modalContent = document.getElementById('face-verification-modal-content');
+            
+            // Stop camera
+            stopCamera();
+            
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        async function startCamera() {
+            const video = document.getElementById('face-video');
+            const loading = document.getElementById('face-loading');
+            const status = document.getElementById('face-status');
+            const statusText = document.getElementById('face-status-text');
+            const captureBtn = document.getElementById('capture-face-btn');
+            
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                
+                video.srcObject = videoStream;
+                
+                video.onloadedmetadata = () => {
+                    loading.classList.add('hidden');
+                    status.classList.remove('hidden');
+                    statusText.textContent = 'Position your face in the center';
+                    
+                    // Start face detection
+                    startFaceDetection();
+                };
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                loading.classList.add('hidden');
+                status.classList.remove('hidden');
+                statusText.textContent = 'Camera access denied. Please allow camera access.';
+                alert('Unable to access camera. Please allow camera permissions and try again.');
+            }
+        }
+
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            if (faceDetectionInterval) {
+                clearInterval(faceDetectionInterval);
+                faceDetectionInterval = null;
+            }
+            
+            isFaceDetected = false;
+            const captureBtn = document.getElementById('capture-face-btn');
+            if (captureBtn) captureBtn.disabled = true;
+        }
+
+        async function startFaceDetection() {
+            const video = document.getElementById('face-video');
+            const canvas = document.getElementById('face-canvas');
+            const statusText = document.getElementById('face-status-text');
+            const captureBtn = document.getElementById('capture-face-btn');
+            
+            // Load face detection models
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+            } catch (err) {
+                console.error('Error loading face detection models:', err);
+                statusText.textContent = 'Face detection unavailable. Proceeding without verification.';
+                captureBtn.disabled = false;
+                return;
+            }
+
+            // Detect faces continuously
+            faceDetectionInterval = setInterval(async () => {
+                if (!videoStream) return;
+
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+                
+                if (detections.length > 0) {
+                    isFaceDetected = true;
+                    statusText.textContent = 'Face detected! Ready to capture.';
+                    statusText.classList.add('text-emerald-400');
+                    statusText.classList.remove('text-amber-400');
+                    captureBtn.disabled = false;
+                } else {
+                    isFaceDetected = false;
+                    statusText.textContent = 'No face detected. Please position your face in the center.';
+                    statusText.classList.add('text-amber-400');
+                    statusText.classList.remove('text-emerald-400');
+                    captureBtn.disabled = true;
+                }
+            }, 500);
+        }
+
+        async function captureFace() {
+            const video = document.getElementById('face-video');
+            const canvas = document.getElementById('face-canvas');
+            const statusText = document.getElementById('face-status-text');
+            
+            // Capture image
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to base64
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            // Verify face is present
+            if (!isFaceDetected) {
+                statusText.textContent = 'No face detected. Please try again.';
+                return;
+            }
+
+            // If user has face recognition set up, verify identity
+            if (userFaceDescriptor) {
+                const isMatch = await verifyFaceIdentity(canvas);
+                if (!isMatch) {
+                    statusText.textContent = 'Face does not match. Please try again.';
+                    statusText.classList.add('text-red-400');
+                    statusText.classList.remove('text-emerald-400', 'text-amber-400');
+                    return;
+                }
+                statusText.textContent = 'Identity verified! Proceeding with check-in...';
+            }
+            
+            // Proceed with check-in
+            await performCheckIn(imageData);
+        }
+
+        async function verifyFaceIdentity(canvas) {
+            try {
+                // Load face recognition models if not loaded
+                if (!faceRecognitionModelsLoaded) {
+                    await loadFaceRecognitionModels();
+                }
+
+                // Detect face and get descriptor
+                const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                
+                if (!detection) {
+                    console.log('No face detected for verification');
+                    return false;
+                }
+
+                const capturedDescriptor = detection.descriptor;
+                
+                // Calculate Euclidean distance between descriptors
+                const distance = faceapi.euclideanDistance(capturedDescriptor, userFaceDescriptor);
+                
+                console.log('Face recognition distance:', distance);
+                
+                // Threshold for face matching (typically 0.6 is a good threshold)
+                const threshold = 0.6;
+                return distance < threshold;
+            } catch (err) {
+                console.error('Error verifying face identity:', err);
+                return false;
+            }
+        }
+
+        async function performCheckIn(faceImage) {
             try {
                 const response = await fetch(attendanceCheckInRoute, {
                     method: 'POST',
@@ -297,10 +583,13 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({}),
+                    body: JSON.stringify({
+                        face_image: faceImage
+                    }),
                 });
                 
                 if (response.ok) {
+                    closeFaceVerification();
                     loadAttendanceStatus();
                     // Show success message
                     const banner = document.getElementById('attendance-banner');
@@ -314,6 +603,199 @@
             } catch (error) {
                 console.error('Error checking in:', error);
                 alert('Error checking in. Please try again.');
+            }
+        }
+
+        // Face Recognition Setup Functions
+        async function loadFaceRecognitionModels() {
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+                faceRecognitionModelsLoaded = true;
+                console.log('Face recognition models loaded');
+            } catch (err) {
+                console.error('Error loading face recognition models:', err);
+            }
+        }
+
+        async function loadUserFaceDescriptor() {
+            try {
+                const response = await fetch('/api/user-face-descriptor');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.face_descriptor) {
+                        userFaceDescriptor = new Float32Array(JSON.parse(data.face_descriptor));
+                        console.log('User face descriptor loaded');
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading user face descriptor:', err);
+            }
+        }
+
+        function openFaceRecognitionModal() {
+            const modal = document.getElementById('face-recognition-modal');
+            const content = document.getElementById('face-recognition-modal-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+
+            startFaceRecognitionCamera();
+        }
+
+        function closeFaceRecognitionModal() {
+            const modal = document.getElementById('face-recognition-modal');
+            const content = document.getElementById('face-recognition-modal-content');
+            
+            stopFaceRecognitionCamera();
+            
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        async function startFaceRecognitionCamera() {
+            const video = document.getElementById('face-recognition-video');
+            const loading = document.getElementById('face-recognition-loading');
+            const status = document.getElementById('face-recognition-status');
+            const statusText = document.getElementById('face-recognition-status-text');
+            const captureBtn = document.getElementById('capture-recognition-btn');
+            
+            try {
+                faceRecognitionStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                
+                video.srcObject = faceRecognitionStream;
+                
+                video.onloadedmetadata = () => {
+                    loading.classList.add('hidden');
+                    status.classList.remove('hidden');
+                    statusText.textContent = 'Position your face in the center';
+                    
+                    // Start face detection for recognition setup
+                    startFaceRecognitionDetection();
+                };
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                loading.classList.add('hidden');
+                status.classList.remove('hidden');
+                statusText.textContent = 'Camera access denied. Please allow camera access.';
+                alert('Unable to access camera. Please allow camera permissions and try again.');
+            }
+        }
+
+        function stopFaceRecognitionCamera() {
+            if (faceRecognitionStream) {
+                faceRecognitionStream.getTracks().forEach(track => track.stop());
+                faceRecognitionStream = null;
+            }
+        }
+
+        async function startFaceRecognitionDetection() {
+            const video = document.getElementById('face-recognition-video');
+            const statusText = document.getElementById('face-recognition-status-text');
+            const captureBtn = document.getElementById('capture-recognition-btn');
+            
+            if (!faceRecognitionModelsLoaded) {
+                await loadFaceRecognitionModels();
+            }
+
+            // Detect faces continuously
+            const detectionInterval = setInterval(async () => {
+                if (!faceRecognitionStream) {
+                    clearInterval(detectionInterval);
+                    return;
+                }
+
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+                
+                if (detections.length > 0) {
+                    statusText.textContent = 'Face detected! Ready to capture.';
+                    statusText.classList.add('text-emerald-400');
+                    statusText.classList.remove('text-amber-400');
+                    captureBtn.disabled = false;
+                } else {
+                    statusText.textContent = 'No face detected. Please position your face in the center.';
+                    statusText.classList.add('text-amber-400');
+                    statusText.classList.remove('text-emerald-400');
+                    captureBtn.disabled = true;
+                }
+            }, 500);
+        }
+
+        async function captureRecognitionFace() {
+            const video = document.getElementById('face-recognition-video');
+            const canvas = document.getElementById('face-recognition-canvas');
+            const statusText = document.getElementById('face-recognition-status-text');
+            
+            // Capture image
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to base64
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            // Generate face descriptor
+            try {
+                const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                
+                if (detection) {
+                    const descriptor = Array.from(detection.descriptor);
+                    
+                    // Send to server
+                    await saveFaceDescriptor(imageData, descriptor);
+                } else {
+                    statusText.textContent = 'No face detected. Please try again.';
+                }
+            } catch (err) {
+                console.error('Error generating face descriptor:', err);
+                statusText.textContent = 'Error processing face. Please try again.';
+            }
+        }
+
+        async function saveFaceDescriptor(imageData, descriptor) {
+            try {
+                const response = await fetch('/profile/face-descriptor', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        profile_picture: imageData,
+                        face_descriptor: JSON.stringify(descriptor)
+                    }),
+                });
+                
+                if (response.ok) {
+                    closeFaceRecognitionModal();
+                    alert('Face recognition setup completed successfully!');
+                    location.reload();
+                } else {
+                    alert('Error saving face data. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error saving face descriptor:', error);
+                alert('Error saving face data. Please try again.');
             }
         }
 

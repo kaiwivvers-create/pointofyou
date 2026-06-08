@@ -61,18 +61,42 @@
             <table class="staff-table">
                 <thead>
                     <tr>
+                        <th>Profile</th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>Face Recognition</th>
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($users as $user)
                         <tr>
+                            <td>
+                                @if ($user->profile_picture)
+                                    <img src="{{ asset('storage/' . $user->profile_picture) }}" alt="{{ $user->name }}" class="size-10 rounded-full object-cover">
+                                @else
+                                    <div class="size-10 rounded-full flex items-center justify-center bg-slate-200 text-slate-600 font-semibold">
+                                        {{ substr($user->name, 0, 1) }}
+                                    </div>
+                                @endif
+                            </td>
                             <td class="font-semibold text-slate-900">{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
                             <td><span class="staff-badge-amber">{{ $user->dbRole->name ?? $user->role->label() }}</span></td>
+                            <td>
+                                @if ($user->face_descriptor)
+                                    <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                                        <svg class="size-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                                        Setup
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                                        <svg class="size-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                        Not Setup
+                                    </span>
+                                @endif
+                            </td>
                             <td class="text-right space-x-4">
                                 @if ($can('users', 'edit'))
                                     <button onclick="openEditModal({{ $user->toJson() }})" class="staff-link">Edit</button>

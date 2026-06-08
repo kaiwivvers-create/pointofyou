@@ -400,7 +400,13 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Product</label>
-                        <input type="text" id="movementProductName" readonly class="staff-input bg-slate-50">
+                        <div class="flex gap-2">
+                            <input type="text" id="movementProductName" readonly class="staff-input bg-slate-50 flex-1">
+                            <button type="button" onclick="openInventoryBarcodeScanner()" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 whitespace-nowrap">
+                                <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V8a1 1 0 011-1H5a1 1 0 00-1 1v.01M4 12h2a1 1 0 001-1V12a1 1 0 011-1H4a1 1 0 00-1 1v.01M16 12h2a1 1 0 001-1V12a1 1 0 011-1h-2a1 1 0 00-1 1v.01M12 16h2a1 1 0 001-1V16a1 1 0 011-1h-2a1 1 0 00-1 1v.01M12 20h2a1 1 0 001-1V20a1 1 0 011-1h-2a1 1 0 00-1 1v.01"></path></svg>
+                                Scan
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Type</label>
@@ -437,6 +443,38 @@
         </div>
     </div>
 
+    <!-- Inventory Barcode Scanner Modal -->
+    <div id="inventory-barcode-scanner-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden items-center justify-center z-[10000] p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform" id="inventory-barcode-scanner-modal-content">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">Scan Barcode</h3>
+                <button onclick="closeInventoryBarcodeScanner()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="inventory-reader" class="w-full bg-black rounded-lg overflow-hidden" style="min-height: 300px;"></div>
+                <p class="text-center text-sm text-slate-500 mt-4">Point your camera at a barcode to scan</p>
+                
+                <!-- Manual barcode input fallback -->
+                <div class="mt-4 pt-4 border-t border-slate-200">
+                    <p class="text-xs text-slate-500 mb-2">Or enter barcode manually:</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="inventory-manual-barcode-input" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter barcode...">
+                        <button onclick="submitInventoryManualBarcode()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Add</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+                <button onclick="closeInventoryBarcodeScanner()" class="w-full py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
     @if ($canEditInventory)
         @include('inventory.partials.bulk-purchase-modal', [
             'bulkProducts' => $bulkProducts,
@@ -444,6 +482,138 @@
             'bulkPurchaseDescription' => 'Add multiple inventory items in one stock purchase.',
         ])
     @endif
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        // Inventory barcode scanner
+        let inventoryHtml5QrcodeScanner = null;
+        let inventoryIsScanning = false;
+
+        const inventoryProducts = {!! json_encode($products->map(function($p) {
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'barcode' => $p->barcode,
+                'purchase_price' => $p->purchase_price,
+            ];
+        })) !!};
+
+        function openInventoryBarcodeScanner() {
+            const modal = document.getElementById('inventory-barcode-scanner-modal');
+            const content = document.getElementById('inventory-barcode-scanner-modal-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+
+            // Initialize the scanner
+            if (!inventoryHtml5QrcodeScanner) {
+                inventoryHtml5QrcodeScanner = new Html5Qrcode("inventory-reader");
+            }
+
+            // Check if HTTPS is required for camera access
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                console.warn('Camera access may require HTTPS on mobile devices');
+                alert('Note: Camera access on mobile devices requires HTTPS. If the scanner doesn\'t work, please use the manual barcode input below.');
+            }
+
+            // Get available cameras
+            Html5Qrcode.getCameras().then(devices => {
+                console.log('Available cameras:', devices);
+                
+                if (devices && devices.length > 0) {
+                    const cameraId = devices[0].id;
+                    const config = { 
+                        fps: 10, 
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0
+                    };
+                    
+                    inventoryHtml5QrcodeScanner.start(
+                        cameraId,
+                        config,
+                        (decodedText, decodedResult) => {
+                            console.log('Barcode scanned:', decodedText);
+                            handleInventoryBarcodeScanned(decodedText);
+                            closeInventoryBarcodeScanner();
+                        },
+                        (errorMessage) => {
+                            console.log('Scanning in progress...');
+                        }
+                    ).then(() => {
+                        inventoryIsScanning = true;
+                    }).catch(err => {
+                        console.error("Error starting scanner:", err);
+                        alert("Unable to start camera scanner. Please use the manual barcode input below.");
+                        inventoryIsScanning = false;
+                    });
+                } else {
+                    console.error('No cameras found');
+                    alert('No cameras detected. Please use the manual barcode input below.');
+                }
+            }).catch(err => {
+                console.error("Error getting cameras:", err);
+                alert('Unable to access camera. Please use the manual barcode input below.');
+            });
+        }
+
+        function closeInventoryBarcodeScanner() {
+            const modal = document.getElementById('inventory-barcode-scanner-modal');
+            const content = document.getElementById('inventory-barcode-scanner-modal-content');
+            
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+
+            // Stop the scanner
+            if (inventoryHtml5QrcodeScanner && inventoryIsScanning) {
+                inventoryHtml5QrcodeScanner.stop().then(() => {
+                    inventoryHtml5QrcodeScanner.clear();
+                    inventoryIsScanning = false;
+                }).catch((err) => {
+                    console.error("Error stopping scanner:", err);
+                    inventoryIsScanning = false;
+                });
+            }
+        }
+
+        function handleInventoryBarcodeScanned(barcode) {
+            console.log('Inventory barcode scanned:', barcode);
+            console.log('Available products:', inventoryProducts);
+            
+            const product = inventoryProducts.find(p => p.barcode === barcode);
+            if (product) {
+                console.log('Product found:', product);
+                // Open stock movement modal with the found product
+                openStockMovementModal({
+                    id: product.id,
+                    name: product.name,
+                    purchase_price: product.purchase_price
+                });
+            } else {
+                console.log('Product not found for barcode:', barcode);
+                alert('Product with barcode ' + barcode + ' not found. Please try manual entry or check if the product has a barcode assigned.');
+            }
+        }
+
+        function submitInventoryManualBarcode() {
+            const input = document.getElementById('inventory-manual-barcode-input');
+            const barcode = input.value.trim();
+            
+            if (barcode) {
+                handleInventoryBarcodeScanned(barcode);
+                input.value = '';
+            }
+        }
+    </script>
 
     <script>
         function openAddProductModal() {
