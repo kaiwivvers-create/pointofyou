@@ -252,10 +252,12 @@ class InventoryController extends Controller
             'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'consume_on_takeout' => 'boolean',
             'consume_per_item' => 'nullable|integer|min:1',
+            'show_in_menu' => 'boolean',
         ]);
 
         $validated['consume_on_takeout'] = $request->boolean('consume_on_takeout');
         $validated['consume_per_item'] = $request->integer('consume_per_item', 1);
+        $validated['show_in_menu'] = $request->boolean('show_in_menu', true);
 
         Product::create($validated);
         return redirect()->back()->with('success', 'Product created successfully');
@@ -279,6 +281,7 @@ class InventoryController extends Controller
             'description' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'consume_on_takeout' => 'sometimes|boolean',
             'consume_per_item' => 'nullable|integer|min:1',
+            'show_in_menu' => 'sometimes|boolean',
         ]);
 
         $validated['consume_on_takeout'] = $request->has('consume_on_takeout')
@@ -287,6 +290,9 @@ class InventoryController extends Controller
         $validated['consume_per_item'] = $request->filled('consume_per_item')
             ? $request->integer('consume_per_item', 1)
             : $product->consume_per_item;
+        $validated['show_in_menu'] = $request->has('show_in_menu')
+            ? $request->boolean('show_in_menu')
+            : $product->show_in_menu;
 
         $product->update($validated);
 

@@ -59,6 +59,7 @@
                         <th>Purchase Price</th>
                         <th>Selling Price</th>
                         <th>Unit</th>
+                        <th>Show in Menu</th>
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
@@ -79,6 +80,13 @@
                             <td class="text-slate-900">${{ number_format($product->purchase_price, 2) }}</td>
                             <td class="text-slate-900">${{ number_format($product->selling_price, 2) }}</td>
                             <td class="text-slate-600">{{ $product->unit }}</td>
+                            <td>
+                                @if($product->show_in_menu)
+                                    <span class="text-emerald-600">✓</span>
+                                @else
+                                    <span class="text-slate-400">✗</span>
+                                @endif
+                            </td>
                             <td class="text-right space-x-4">
                                 @if ($canEditInventory)
                                     <button onclick="openEditProductModal({{ $product->toJson() }})" class="staff-link">Edit</button>
@@ -93,7 +101,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="py-16 text-center text-slate-500">No products yet. Add your first product!</td>
+                            <td colspan="9" class="py-16 text-center text-slate-500">No products yet. Add your first product!</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -225,6 +233,13 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
                         <textarea name="description" rows="3" maxlength="5000" class="staff-input"></textarea>
                     </div>
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="show_in_menu" value="1" checked class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
+                            <span class="text-sm font-medium text-slate-700">Show in Menu</span>
+                        </label>
+                        <p class="text-xs text-slate-500 mt-1">Allow this product to be ordered directly from the menu</p>
+                    </div>
                 </div>
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
                     <button type="button" onclick="closeAddProductModal()" class="staff-btn-secondary">Cancel</button>
@@ -289,6 +304,13 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
                         <textarea name="description" id="editProductDescription" rows="3" maxlength="5000" class="staff-input"></textarea>
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="show_in_menu" id="editProductShowInMenu" value="1" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
+                            <span class="text-sm font-medium text-slate-700">Show in Menu</span>
+                        </label>
+                        <p class="text-xs text-slate-500 mt-1">Allow this product to be ordered directly from the menu</p>
                     </div>
                 </div>
                 <div class="mt-8 flex flex-wrap gap-3 justify-end">
@@ -730,6 +752,7 @@
             document.getElementById('editProductMinStock').value = product.min_stock_level || 0;
             document.getElementById('editProductUnit').value = product.unit || 'pcs';
             document.getElementById('editProductDescription').value = product.description || '';
+            document.getElementById('editProductShowInMenu').checked = product.show_in_menu ?? true;
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');

@@ -30,7 +30,11 @@
                                 Order #{{ $order->id }} &middot; {{ $order->created_at->diffForHumans() }}
                             </p>
                         </div>
-                        <div class="flex flex-col items-end gap-1">
+                        <div class="flex flex-col items-end gap-2">
+                            <button onclick="readOrder({{ $order->id }})" class="px-3 py-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-colors flex items-center gap-2 text-sm font-semibold" title="Read Order">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.828-2.828"></path></svg>
+                                <span>Read</span>
+                            </button>
                             <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 uppercase tracking-wider">Pending</span>
                         </div>
                     </div>
@@ -186,6 +190,37 @@
     let currentOrderId = null;
     let currentAmount = 0;
 
+    // Load voices for text-to-speech
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        // Some browsers need this event to load voices
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
+    }
+
+    // Store order data for text-to-speech
+    const ordersData = {
+        @foreach($activeOrders as $order)
+        {{ $order->id }}: {
+            id: {{ $order->id }},
+            table: "{{ $order->order_type === 'dine_in' && $order->cafeTable ? 'Table ' . $order->cafeTable->name : 'Takeout' }}",
+            items: [
+                @foreach($order->items as $item)
+                {
+                    name: "{{ $item->item_name }}",
+                    quantity: {{ $item->quantity }},
+                    flavor: @isset($item->flavor) "{{ $item->flavor['name'] ?? '' }}" @else "" @endif,
+                    modifications: @if(!empty($item->modifications)) {!! json_encode($item->modifications) !!} @else [] @endif,
+                    notes: @if($item->notes) "{{ $item->notes }}" @else "" @endif
+                },
+                @endforeach
+            ],
+            total: {{ $order->total }}
+        },
+        @endforeach
+    };
+
     function openPaymentModal(orderId, amount) {
         currentOrderId = orderId;
         currentAmount = amount;
@@ -233,6 +268,76 @@
         document.getElementById('receipt-amount').textContent = '$' + amount.toFixed(2);
         document.getElementById('receipt-modal').classList.remove('hidden');
         document.getElementById('receipt-modal').classList.add('flex');
+    }
+
+    function readOrder(orderId) {
+        const order = ordersData[orderId];
+        if (!order) return;
+
+        // Build natural language text for the order
+        let text = `Order ${order.id} for ${order.table}. `;
+
+        if (order.items.length === 1) {
+            text += 'You have one item: ';
+        } else {
+            text += `You have ${order.items.length} items: `;
+        }
+
+        order.items.forEach((item, index) => {
+            // Add item with quantity
+            text += `${item.quantity} ${item.name}`;
+
+            // Add flavor if present
+            if (item.flavor) {
+                text += `, with ${item.flavor} flavor`;
+            }
+
+            // Add modifications if present
+            if (item.modifications && item.modifications.length > 0) {
+                const modNames = item.modifications.map(mod => {
+                    if (typeof mod === 'string') return mod;
+                    return mod.name || mod;
+                }).join(', ');
+                text += `, with ${modNames}`;
+            }
+
+            // Add notes if present
+            if (item.notes) {
+                text += `. Note: ${item.notes}`;
+            }
+
+            // Add separator between items
+            if (index < order.items.length - 1) {
+                text += '. Next, ';
+            }
+        });
+
+        text += `. Total price is ${order.total.toFixed(2)} dollars.`;
+
+        // Use Web Speech API to read the text
+        if ('speechSynthesis' in window) {
+            // Cancel any current speech
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9; // Slightly slower for clarity
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            // Try to get a good voice
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(voice =>
+                voice.lang.includes('en') && voice.name.includes('Google')
+            ) || voices.find(voice => voice.lang.includes('en'));
+
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert('Text-to-speech is not supported in your browser.');
+        }
     }
 
     function closeReceiptModal() {

@@ -622,8 +622,25 @@
         const data = await response.json();
 
         if (data.sessions && data.sessions.length > 0) {
-            // There are active sessions, show them
-            await loadConnectedDevices();
+            // There are active sessions
+            if (data.sessions.length === 1) {
+                // Only one session - show its QR
+                const session = data.sessions[0];
+                currentSessionCode = session.session_code;
+                localStorage.setItem('deviceSessionCode', currentSessionCode);
+                document.getElementById('qr-section').classList.remove('hidden');
+                document.getElementById('add-session-section').classList.remove('hidden');
+                document.getElementById('connected-devices-section').classList.remove('hidden');
+                generateQRCode(session.qr_url);
+                await loadConnectedDevices();
+                // Start polling if not already
+                if (!devicePollingInterval) {
+                    startDevicePolling();
+                }
+            } else {
+                // Multiple sessions - show list
+                await loadConnectedDevices();
+            }
         } else {
             // No active sessions, auto-create one and show QR
             await createDeviceSession();
@@ -718,20 +735,32 @@
                 console.log('Found active sessions, showing devices list');
                 devicesSection.classList.remove('hidden');
                 addSessionSection.classList.remove('hidden');
-                qrSection.classList.add('hidden');
+                // Only hide QR section if there are multiple sessions
+                if (data.sessions.length > 1) {
+                    qrSection.classList.add('hidden');
+                }
                 devicesList.innerHTML = '';
 
                 data.sessions.forEach(session => {
                     const deviceItem = document.createElement('div');
                     deviceItem.className = 'bg-slate-100 rounded-lg p-3 flex justify-between items-center';
+                    const isConnected = currentSessionCode === session.session_code;
                     deviceItem.innerHTML = `
                         <div>
-                            <p class="text-sm font-medium text-slate-800">Session: ${session.session_code}</p>
+                            <p class="text-sm font-medium text-slate-800">Session: ${session.session_code} ${isConnected ? '<span class="text-emerald-600 text-xs">(Connected)</span>' : ''}</p>
                             <p class="text-xs text-slate-500">Expires: ${new Date(session.expires_at).toLocaleTimeString()}</p>
                         </div>
-                        <button onclick="disconnectDevice('${session.session_code}')" class="text-red-600 hover:text-red-700 text-sm font-medium">
-                            Disconnect
-                        </button>
+                        <div class="flex gap-2">
+                            ${!isConnected ? `<button onclick="connectToSession('${session.session_code}', '${session.qr_url}')" class="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
+                                Connect
+                            </button>` : ''}
+                            <button onclick="viewSessionQR('${session.session_code}', '${session.qr_url}')" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                View QR
+                            </button>
+                            <button onclick="disconnectDevice('${session.session_code}')" class="text-red-600 hover:text-red-700 text-sm font-medium">
+                                Disconnect
+                            </button>
+                        </div>
                     `;
                     devicesList.appendChild(deviceItem);
                 });
@@ -798,6 +827,34 @@
         await createDeviceSession();
     }
 
+    function viewSessionQR(sessionCode, qrUrl) {
+        // Show QR section
+        document.getElementById('qr-section').classList.remove('hidden');
+        // Generate QR code
+        generateQRCode(qrUrl);
+    }
+
+    function connectToSession(sessionCode, qrUrl) {
+        // Set this as the current session
+        currentSessionCode = sessionCode;
+        localStorage.setItem('deviceSessionCode', currentSessionCode);
+
+        console.log('Connected to session:', currentSessionCode);
+
+        // Show QR section
+        document.getElementById('qr-section').classList.remove('hidden');
+        // Generate QR code
+        generateQRCode(qrUrl);
+
+        // Start polling if not already
+        if (!devicePollingInterval) {
+            startDevicePolling();
+        }
+
+        // Reload the devices list to update the connected status
+        loadConnectedDevices();
+    }
+
     async function disconnectDevice(sessionCode) {
         try {
             const response = await fetch(`/device-sessions/${sessionCode}/deactivate`, {
@@ -819,7 +876,26 @@
                         devicePollingInterval = null;
                     }
                 }
-                loadConnectedDevices();
+
+                // Reload the devices list
+                await loadConnectedDevices();
+
+                // Check if there are any remaining sessions
+                const checkResponse = await fetch('/device-sessions/active');
+                const checkData = await checkResponse.json();
+
+                if (!checkData.sessions || checkData.sessions.length === 0) {
+                    // No sessions left, hide QR section and show it ready for new session
+                    document.getElementById('qr-section').classList.add('hidden');
+                    document.getElementById('add-session-section').classList.add('hidden');
+                    document.getElementById('connected-devices-section').classList.add('hidden');
+                    // Clear the QR code
+                    document.getElementById('qr-code').innerHTML = '';
+                } else if (currentSessionCode === null && checkData.sessions.length > 0) {
+                    // If we disconnected the current session but there are others, auto-connect to the first one
+                    const firstSession = checkData.sessions[0];
+                    connectToSession(firstSession.session_code, firstSession.qr_url);
+                }
             }
         } catch (error) {
             console.error('Error disconnecting device:', error);

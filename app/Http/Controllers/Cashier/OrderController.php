@@ -94,7 +94,7 @@ class OrderController extends Controller
             ->orderBy('name')
             ->get();
         $gifts = \App\Models\Gift::where('is_active', true)->get();
-        $products = Product::with('category')->where('stock_quantity', '>', 0)->get();
+        $products = Product::with('category')->where('stock_quantity', '>', 0)->where('show_in_menu', true)->get();
 
         $searchableItems = collect();
 

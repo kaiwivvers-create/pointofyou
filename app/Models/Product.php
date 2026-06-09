@@ -22,6 +22,7 @@ class Product extends Model
         'description',
         'consume_on_takeout',
         'consume_per_item',
+        'show_in_menu',
     ];
 
     protected $casts = [
@@ -29,6 +30,7 @@ class Product extends Model
         'selling_price' => 'decimal:2',
         'consume_on_takeout' => 'boolean',
         'consume_per_item' => 'integer',
+        'show_in_menu' => 'boolean',
     ];
 
     public function category()
