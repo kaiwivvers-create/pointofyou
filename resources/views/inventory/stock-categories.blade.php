@@ -53,6 +53,7 @@
                         <th>Description</th>
                         <th>Type</th>
                         <th>Products</th>
+                        <th>Show in Cashier</th>
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
@@ -65,10 +66,30 @@
                                 @if ($category->type === 'ingredient')
                                     <span class="staff-badge-green">Ingredient</span>
                                 @else
-                                    <span class="staff-badge-blue">Supply</span>
+                                    <span class="staff-badge-yellow">Supply</span>
                                 @endif
                             </td>
                             <td class="text-slate-600">{{ $category->products_count }}</td>
+                            <td>
+                                @if ($canEditInventory)
+                                    {{-- Inline toggle switch --}}
+                                    <button
+                                        type="button"
+                                        onclick="toggleShowInPos({{ $category->id }}, this)"
+                                        data-state="{{ $category->show_in_pos ? '1' : '0' }}"
+                                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $category->show_in_pos ? 'bg-blue-600' : 'bg-slate-300' }}"
+                                        title="{{ $category->show_in_pos ? 'Shown in cashier menu' : 'Hidden from cashier menu' }}"
+                                    >
+                                        <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 {{ $category->show_in_pos ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                                    </button>
+                                @else
+                                    @if ($category->show_in_pos)
+                                        <span class="staff-badge-green">Yes</span>
+                                    @else
+                                        <span class="staff-badge-yellow">No</span>
+                                    @endif
+                                @endif
+                            </td>
                             <td class="text-right space-x-4">
                                 @if ($canEditInventory)
                                     <button onclick="openEditCategoryModal({{ $category->toJson() }})" class="staff-link">Edit</button>
@@ -82,7 +103,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-16 text-center text-slate-500">No stock categories yet. Add your first category!</td>
+                            <td colspan="6" class="py-16 text-center text-slate-500">No stock categories yet. Add your first category!</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -115,6 +136,10 @@
                                 <option value="ingredient">Ingredient (for products like dairy, flour, etc.)</option>
                                 <option value="supply">Supply (for takeout items like boxes, bags, etc.)</option>
                             </select>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" name="show_in_pos" id="show_in_pos" value="1" checked class="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                            <label for="show_in_pos" class="text-sm font-medium text-slate-700">Show in Cashier Menu</label>
                         </div>
                     </div>
                     <div class="mt-8 flex flex-wrap gap-3 justify-end">
@@ -151,6 +176,10 @@
                                 <option value="supply">Supply (for takeout items like boxes, bags, etc.)</option>
                             </select>
                         </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" name="show_in_pos" id="editCategoryShowInPos" value="1" class="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                            <label for="editCategoryShowInPos" class="text-sm font-medium text-slate-700">Show in Cashier Menu</label>
+                        </div>
                     </div>
                     <div class="mt-8 flex flex-wrap gap-3 justify-end">
                         <button type="button" onclick="closeEditCategoryModal()" class="staff-btn-secondary">Cancel</button>
@@ -161,6 +190,39 @@
         </div>
 
         <script>
+            const togglePosRoute = '{{ route('inventory.categories.toggle-pos', ':id') }}';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+            async function toggleShowInPos(categoryId, btn) {
+                btn.disabled = true;
+                btn.classList.add('opacity-60');
+
+                try {
+                    const res = await fetch(togglePosRoute.replace(':id', categoryId), {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        const isOn = data.show_in_pos;
+                        btn.dataset.state = isOn ? '1' : '0';
+                        // Update colours
+                        btn.classList.toggle('bg-blue-600', isOn);
+                        btn.classList.toggle('bg-slate-300', !isOn);
+                        // Move the knob
+                        const knob = btn.querySelector('span');
+                        knob.classList.toggle('translate-x-6', isOn);
+                        knob.classList.toggle('translate-x-1', !isOn);
+                        btn.title = isOn ? 'Shown in cashier menu' : 'Hidden from cashier menu';
+                    }
+                } catch (e) {
+                    console.error('Toggle failed', e);
+                } finally {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-60');
+                }
+            }
+
             function openAddCategoryModal() {
                 const modal = document.getElementById('addCategoryModal');
                 const content = document.getElementById('addCategoryModalContent');
@@ -192,6 +254,7 @@
                 document.getElementById('editCategoryName').value = category.name || '';
                 document.getElementById('editCategoryDescription').value = category.description || '';
                 document.getElementById('editCategoryType').value = category.type || 'ingredient';
+                document.getElementById('editCategoryShowInPos').checked = category.show_in_pos ?? true;
 
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');

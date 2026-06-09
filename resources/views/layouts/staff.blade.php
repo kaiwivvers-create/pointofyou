@@ -358,13 +358,44 @@
                     statusText.textContent = 'Not checked in today';
                     checkInBtn.classList.remove('hidden');
                     checkOutBtn.classList.add('hidden');
+                    
+                    // Show force check-in overlay
+                    const overlay = document.getElementById('force-checkin-overlay');
+                    if (overlay) {
+                        overlay.classList.remove('hidden');
+                        overlay.classList.add('flex');
+                    }
                 } else if (data.status === 'checked_in') {
                     statusText.textContent = `Checked in at ${data.check_in_time}`;
                     checkInBtn.classList.add('hidden');
                     checkOutBtn.classList.remove('hidden');
+                    
+                    // Hide force check-in overlay
+                    const overlay = document.getElementById('force-checkin-overlay');
+                    if (overlay) {
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
+                    }
                 } else if (data.status === 'checked_out') {
                     statusText.textContent = `Checked out at ${data.check_out_time} (${data.hours_worked} hours)`;
                     checkInBtn.classList.add('hidden');
+                    checkOutBtn.classList.add('hidden');
+                    
+                    // Hide force check-in overlay
+                    const overlay = document.getElementById('force-checkin-overlay');
+                    if (overlay) {
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
+                    }
+                } else if (data.status === 'error') {
+                    statusText.textContent = 'Error loading status';
+                    checkInBtn.classList.remove('hidden');
+                    checkOutBtn.classList.add('hidden');
+                } else {
+                    // Unknown status, default to showing check-in button
+                    console.warn('Unknown attendance status:', data.status);
+                    statusText.textContent = 'Status unknown';
+                    checkInBtn.classList.remove('hidden');
                     checkOutBtn.classList.add('hidden');
                 }
             } catch (error) {
@@ -590,7 +621,10 @@
                 
                 if (response.ok) {
                     closeFaceVerification();
-                    loadAttendanceStatus();
+                    // Wait a moment for the database to update
+                    setTimeout(() => {
+                        loadAttendanceStatus();
+                    }, 500);
                     // Show success message
                     const banner = document.getElementById('attendance-banner');
                     banner.classList.add('bg-emerald-50', 'border-emerald-200');
@@ -941,13 +975,7 @@
             }
         }
 
-        function loadAttendanceStatus() {
-            const banner = document.getElementById('attendance-banner');
-            if (!banner) return;
-            
-            // Load attendance status logic here
-            banner.classList.remove('hidden');
-        }
+
 
         // Profile Modal
         window.openProfileModal = function() {
@@ -1058,5 +1086,19 @@
             profilePictureInput.value = '';
         }
     </script>
+    <!-- Force Check In Overlay -->
+    <div id="force-checkin-overlay" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[9990] hidden flex-col items-center justify-center transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 text-center transform transition-transform duration-300 scale-100">
+            <div class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <svg class="w-12 h-12 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-3">Shift Check-In Required</h2>
+            <p class="text-slate-600 mb-8 text-lg">You must check in to start your shift before accessing the system.</p>
+            <button onclick="openFaceVerification()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+                Check In Now
+            </button>
+        </div>
+    </div>
+
 </body>
 </html>

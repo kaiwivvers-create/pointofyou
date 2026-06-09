@@ -11,20 +11,25 @@ class AttendanceController extends Controller
 {
     public function checkIn(Request $request)
     {
+        \Log::info('Check-in attempt started');
         $user = Auth::user();
         if (!$user->employee_id) {
+            \Log::info('No employee_id for user ' . $user->id);
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You do not have an employee record.'], 400);
             }
             return redirect()->back()->with('error', 'You do not have an employee record.');
         }
 
-        $today = today();
+        $today = today()->format('Y-m-d');
         $existingAttendance = Attendance::where('employee_id', $user->employee_id)
-            ->where('date', $today)
+            ->whereDate('date', today())
             ->first();
 
+        \Log::info('Existing attendance check: ' . ($existingAttendance ? 'found' : 'not found') . ' for date ' . $today);
+
         if ($existingAttendance && $existingAttendance->check_in) {
+            \Log::info('Already checked in today for user ' . $user->id);
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You have already checked in today.'], 400);
             }
@@ -39,9 +44,16 @@ class AttendanceController extends Controller
             ->where('type', 'work_day')
             ->first();
         
-        $startTime = $schedule 
-            ? now()->setTimeFromTimeString($schedule->expected_start_time->format('H:i:s'))
-            : now()->setHour(9)->setMinute(0)->setSecond(0);
+        try {
+            if ($schedule && $schedule->expected_start_time) {
+                $startTime = now()->setTimeFromTimeString($schedule->expected_start_time->format('H:i:s'));
+            } else {
+                $startTime = now()->setHour(9)->setMinute(0)->setSecond(0);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error parsing schedule time: ' . $e->getMessage());
+            $startTime = now()->setHour(9)->setMinute(0)->setSecond(0);
+        }
         
         $isLate = $now->gt($startTime);
         $lateMinutes = $isLate ? $now->diffInMinutes($startTime) : 0;
@@ -56,6 +68,7 @@ class AttendanceController extends Controller
                 'hours_worked' => 0,
                 'face_verified' => $faceVerified,
             ]);
+            \Log::info('Attendance updated for user ' . $user->id . ' on ' . $today);
         } else {
             Attendance::create([
                 'employee_id' => $user->employee_id,
@@ -65,11 +78,14 @@ class AttendanceController extends Controller
                 'hours_worked' => 0,
                 'face_verified' => $faceVerified,
             ]);
+            \Log::info('Attendance created for user ' . $user->id . ' on ' . $today);
         }
 
         $message = $isLate 
             ? "Checked in successfully. You are {$lateMinutes} minutes late." 
             : "Checked in successfully. On time!";
+        
+        \Log::info('Check-in successful for user ' . $user->id);
         
         if ($request->expectsJson()) {
             return response()->json(['message' => $message, 'success' => true]);
@@ -89,7 +105,7 @@ class AttendanceController extends Controller
 
         $today = today();
         $attendance = Attendance::where('employee_id', $user->employee_id)
-            ->where('date', $today)
+            ->whereDate('date', $today)
             ->first();
 
         if (!$attendance || !$attendance->check_in) {
@@ -111,12 +127,7 @@ class AttendanceController extends Controller
         
         // Calculate hours worked using time values
         // check_in is stored as time (H:i:s), so we need to combine with today's date
-        // But if it's already a Carbon object, use it directly
-        if ($checkInTime instanceof \Carbon\Carbon) {
-            $checkInDateTime = $checkInTime;
-        } else {
-            $checkInDateTime = \Carbon\Carbon::parse($today->format('Y-m-d') . ' ' . $checkInTime);
-        }
+        $checkInDateTime = \Carbon\Carbon::parse($today->format('Y-m-d') . ' ' . $checkInTime);
         $hoursWorked = $checkInDateTime->diffInMinutes($now) / 60;
         
         // Calculate overtime (more than 8 hours)
@@ -138,73 +149,60 @@ class AttendanceController extends Controller
 
     public function getCurrentStatus()
     {
-        $user = Auth::user();
-        if (!$user->employee_id) {
-            return response()->json(['status' => 'no_employee']);
-        }
-
-        $today = today();
-        $attendance = Attendance::where('employee_id', $user->employee_id)
-            ->where('date', $today)
-            ->first();
-
-        if (!$attendance) {
-            return response()->json(['status' => 'not_checked_in']);
-        }
-
-        if (!$attendance->check_in) {
-            return response()->json(['status' => 'not_checked_in']);
-        }
-
-        if (!$attendance->check_out) {
-            // Convert time to Jakarta time for display
-            try {
-                // check_in is stored as time (H:i:s), combine with date
-                if ($attendance->check_in instanceof \Carbon\Carbon) {
-                    $checkInTime = $attendance->check_in->setTimezone('Asia/Jakarta')->format('H:i');
-                } else {
-                    $checkInDateTime = \Carbon\Carbon::parse($attendance->date . ' ' . $attendance->check_in)
-                        ->setTimezone('Asia/Jakarta');
-                    $checkInTime = $checkInDateTime->format('H:i');
-                }
-            } catch (\Exception $e) {
-                $checkInTime = $attendance->check_in;
-            }
-            
-            return response()->json([
-                'status' => 'checked_in',
-                'check_in_time' => $checkInTime,
-            ]);
-        }
-
-        // Convert times to Jakarta time for display
         try {
-            // check_in and check_out are stored as time (H:i:s), combine with date
-            if ($attendance->check_in instanceof \Carbon\Carbon) {
-                $checkInTime = $attendance->check_in->setTimezone('Asia/Jakarta')->format('H:i');
-            } else {
-                $checkInDateTime = \Carbon\Carbon::parse($attendance->date . ' ' . $attendance->check_in)
-                    ->setTimezone('Asia/Jakarta');
-                $checkInTime = $checkInDateTime->format('H:i');
-            }
+            $user = Auth::user();
+            \Log::info('getCurrentStatus called for user ' . $user->id);
             
-            if ($attendance->check_out instanceof \Carbon\Carbon) {
-                $checkOutTime = $attendance->check_out->setTimezone('Asia/Jakarta')->format('H:i');
-            } else {
-                $checkOutDateTime = \Carbon\Carbon::parse($attendance->date . ' ' . $attendance->check_out)
-                    ->setTimezone('Asia/Jakarta');
-                $checkOutTime = $checkOutDateTime->format('H:i');
+            if (!$user->employee_id) {
+                \Log::info('No employee_id for user ' . $user->id);
+                return response()->json(['status' => 'no_employee']);
             }
-        } catch (\Exception $e) {
-            $checkInTime = $attendance->check_in;
-            $checkOutTime = $attendance->check_out;
-        }
 
-        return response()->json([
-            'status' => 'checked_out',
-            'check_in_time' => $checkInTime,
-            'check_out_time' => $checkOutTime,
-            'hours_worked' => $attendance->hours_worked,
-        ]);
+            $today = today()->format('Y-m-d');
+            \Log::info('Checking attendance for user ' . $user->id . ', employee_id: ' . $user->employee_id . ', date: ' . $today);
+            
+            $attendance = Attendance::where('employee_id', $user->employee_id)
+                ->whereDate('date', today())
+                ->first();
+
+            if (!$attendance) {
+                \Log::info('No attendance record found for user ' . $user->id . ' on ' . $today);
+                return response()->json(['status' => 'not_checked_in']);
+            }
+
+            \Log::info('Attendance record found: check_in=' . ($attendance->check_in ?? 'null') . ', check_out=' . ($attendance->check_out ?? 'null') . ', status=' . $attendance->status);
+
+            // Check if check_in is null
+            if (!$attendance->check_in) {
+                \Log::info('check_in is null/empty for user ' . $user->id);
+                return response()->json(['status' => 'not_checked_in']);
+            }
+
+            if (!$attendance->check_out) {
+                $checkInTime = $attendance->check_in->format('H:i');
+                \Log::info('User is checked in, returning checked_in status with time: ' . $checkInTime);
+                
+                return response()->json([
+                    'status' => 'checked_in',
+                    'check_in_time' => $checkInTime,
+                ]);
+            }
+
+            $checkInTime = $attendance->check_in->format('H:i');
+            $checkOutTime = $attendance->check_out->format('H:i');
+
+            \Log::info('User is checked out, returning checked_out status');
+
+            return response()->json([
+                'status' => 'checked_out',
+                'check_in_time' => $checkInTime,
+                'check_out_time' => $checkOutTime,
+                'hours_worked' => $attendance->hours_worked,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getCurrentStatus: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json(['status' => 'error', 'message' => 'An error occurred while checking attendance status.'], 500);
+        }
     }
 }

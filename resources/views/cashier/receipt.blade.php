@@ -17,7 +17,7 @@
 @foreach($order->items as $item)
         <div class="receipt-item">
             <span>{{ $item->item_name }} x{{ $item->quantity }}</span>
-            <span>${{ number_format($item->subtotal, 2) }}</span>
+            <span>${{ number_format($item->line_total, 2) }}</span>
         </div>
     @endforeach
 </div>

@@ -31,20 +31,20 @@
         </h1>
         
         <!-- The Buttons -->
-        <form method="POST" action="{{ route('kiosk.type') }}" class="flex gap-8 md:gap-12 w-full justify-center max-w-3xl mb-16">
+        <form method="POST" action="{{ route('kiosk.type') }}" class="flex gap-4 md:gap-12 w-full justify-center max-w-3xl mb-16">
             @csrf
             <!-- Dine In Button -->
-            <button type="submit" name="order_type" value="dine_in" 
-                class="kiosk-btn flex-1 py-16 px-6 rounded-3xl bg-white shadow-2xl border-b-4 border-amber-200 cursor-pointer">
-                <h2 class="font-display text-4xl font-bold text-amber-900 mb-3">Dine In</h2>
-                <p class="text-stone-500 text-xl font-medium">Eat at a table</p>
+            <button type="submit" name="order_type" value="dine_in"
+                class="kiosk-btn flex-1 py-12 md:py-16 px-4 md:px-6 rounded-3xl bg-white shadow-2xl border-b-4 border-amber-200 cursor-pointer">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-amber-900 mb-2 md:mb-3">Dine In</h2>
+                <p class="text-stone-500 text-lg md:text-xl font-medium">Eat at a table</p>
             </button>
-            
+
             <!-- Takeout Button -->
-            <button type="submit" name="order_type" value="takeout" 
-                class="kiosk-btn flex-1 py-16 px-6 rounded-3xl bg-white shadow-2xl border-b-4 border-amber-200 cursor-pointer">
-                <h2 class="font-display text-4xl font-bold text-amber-900 mb-3">Takeout</h2>
-                <p class="text-stone-500 text-xl font-medium">Pack to go</p>
+            <button type="submit" name="order_type" value="takeout"
+                class="kiosk-btn flex-1 py-12 md:py-16 px-4 md:px-6 rounded-3xl bg-white shadow-2xl border-b-4 border-amber-200 cursor-pointer">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-amber-900 mb-2 md:mb-3">Takeout</h2>
+                <p class="text-stone-500 text-lg md:text-xl font-medium">Pack to go</p>
             </button>
         </form>
 

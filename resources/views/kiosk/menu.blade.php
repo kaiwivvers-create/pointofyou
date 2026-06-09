@@ -22,6 +22,16 @@
 
     <!-- Left Sidebar: Categories -->
     <aside class="kiosk-sidebar-left hide-scrollbar">
+    <style>
+        @media (max-width: 768px) {
+            .kiosk-sidebar-left {
+                display: none !important;
+                visibility: hidden !important;
+                position: absolute !important;
+                left: -9999px !important;
+            }
+        }
+    </style>
         @if($menuItems->has('packets'))
             <button onclick="document.getElementById('cat-packets')?.scrollIntoView({behavior: 'smooth', block: 'start'})"
                 class="category-btn flex flex-col items-center gap-2 p-2 w-24 rounded-2xl transition-all hover:bg-amber-50 hover:scale-105 group focus:outline-none cursor-pointer">
@@ -450,6 +460,26 @@
             </div>--}}
         @endif
 
+        <!-- Search and Filter Bar -->
+        <div class="mb-6 bg-white rounded-2xl shadow-sm border border-amber-100 p-4">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" id="menuSearch" placeholder="Search menu items..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all outline-none" onkeyup="filterMenuItems()">
+                </div>
+                <div class="flex gap-2">
+                    <select id="categoryFilter" onchange="filterMenuItems()" class="px-4 py-3 rounded-xl border border-stone-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all outline-none bg-white">
+                        <option value="">All Categories</option>
+                        @foreach($menuItems->keys() as $category)
+                            <option value="{{ strtolower($category) }}">{{ $category }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+        </div>
+
         @include('partials.promo-carousel', ['promos' => $promos])
 
             @forelse($menuItems as $category => $items)
@@ -458,7 +488,7 @@
                         {{ $category }}
                     </h2>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                         @foreach($items as $item)
                             @php
                                 $isPacket = $category === 'packets';
@@ -473,36 +503,36 @@
                                 if($category === 'promo' && !$item->image) $img = 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&q=80';
                             @endphp
                             @if($isPacket)
-                                <button onclick="openPacketModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
-                                    <div class="w-full h-48 bg-stone-100 overflow-hidden relative">
+                                <button onclick="openPacketModal({{ $item->toJson() }}, '{{ $img }}')" data-name="{{ $item->name }}" class="kiosk-item-card item-card bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer min-w-0">
+                                    <div class="w-full h-36 sm:h-48 bg-stone-100 overflow-hidden relative flex-shrink-0">
                                         <img src="{{ $img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="{{ $item->name }}">
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     </div>
-                                    <div class="p-5 flex flex-col flex-1 w-full">
-                                        <div class="flex justify-between items-start gap-2 mb-2">
-                                            <h3 class="font-display text-xl font-bold text-amber-950 leading-tight">{{ $item->name }}</h3>
+                                    <div class="p-3 sm:p-5 flex flex-col flex-1 w-full min-w-0">
+                                        <div class="flex justify-between items-start gap-2 mb-1 sm:mb-2">
+                                            <h3 class="font-display text-base sm:text-xl font-bold text-amber-950 leading-tight line-clamp-2">{{ $item->name }}</h3>
                                         </div>
-                                        <p class="text-sm text-stone-500 line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
-                                        <div class="mt-auto flex items-center justify-between w-full">
-                                            <span class="text-xl font-bold text-amber-800">${{ number_format($item->fixed_price, 2) }}</span>
-                                            <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors">+</div>
+                                        <p class="text-xs sm:text-sm text-stone-500 line-clamp-2 mb-2 sm:mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
+                                        <div class="mt-auto flex items-center justify-between w-full gap-2">
+                                            <span class="text-base sm:text-xl font-bold text-amber-800">${{ number_format($item->fixed_price, 2) }}</span>
+                                            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-base sm:text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors flex-shrink-0">+</div>
                                         </div>
                                     </div>
                                 </button>
                             @else
-                                <button onclick="openItemModal({{ $item->toJson() }}, '{{ $img }}')" class="item-card bg-white rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer">
-                                    <div class="w-full h-48 bg-stone-100 overflow-hidden relative">
+                                <button onclick="openItemModal({{ $item->toJson() }}, '{{ $img }}')" data-name="{{ $item->name }}" class="kiosk-item-card item-card bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-stone-200 flex flex-col text-left relative overflow-hidden group hover:shadow-xl hover:border-amber-300 cursor-pointer min-w-0">
+                                    <div class="w-full h-36 sm:h-48 bg-stone-100 overflow-hidden relative flex-shrink-0">
                                         <img src="{{ $img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="{{ $item->name }}">
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     </div>
-                                    <div class="p-5 flex flex-col flex-1 w-full">
-                                        <div class="flex justify-between items-start gap-2 mb-2">
-                                            <h3 class="font-display text-xl font-bold text-amber-950 leading-tight">{{ $item->name }}</h3>
+                                    <div class="p-3 sm:p-5 flex flex-col flex-1 w-full min-w-0">
+                                        <div class="flex justify-between items-start gap-2 mb-1 sm:mb-2">
+                                            <h3 class="font-display text-base sm:text-xl font-bold text-amber-950 leading-tight line-clamp-2">{{ $item->name }}</h3>
                                         </div>
-                                        <p class="text-sm text-stone-500 line-clamp-2 mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
-                                        <div class="mt-auto flex items-center justify-between w-full">
-                                            <span class="text-xl font-bold text-amber-800">{{ $item->formattedPrice() }}</span>
-                                            <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors">+</div>
+                                        <p class="text-xs sm:text-sm text-stone-500 line-clamp-2 mb-2 sm:mb-4 flex-1 font-medium leading-relaxed">{{ $item->description }}</p>
+                                        <div class="mt-auto flex items-center justify-between w-full gap-2">
+                                            <span class="text-base sm:text-xl font-bold text-amber-800">{{ $item->formattedPrice() }}</span>
+                                            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-base sm:text-lg group-hover:bg-amber-800 group-hover:text-white transition-colors flex-shrink-0">+</div>
                                         </div>
                                     </div>
                                 </button>
@@ -1359,6 +1389,38 @@
 
         document.body.appendChild(form);
         form.submit();
+    };
+
+    window.filterMenuItems = function() {
+        const searchTerm = document.getElementById('menuSearch').value.toLowerCase();
+        const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
+
+        const categoryDivs = document.querySelectorAll('[id^="cat-"]');
+        categoryDivs.forEach(div => {
+            const categoryName = div.id.replace('cat-', '');
+            const categoryMatch = !categoryFilter || categoryName === categoryFilter;
+
+            const itemCards = div.querySelectorAll('.kiosk-item-card');
+            let hasVisibleItems = false;
+
+            itemCards.forEach(card => {
+                const itemName = card.getAttribute('data-name')?.toLowerCase() || '';
+                const searchMatch = !searchTerm || itemName.includes(searchTerm);
+
+                if (categoryMatch && searchMatch) {
+                    card.style.display = '';
+                    hasVisibleItems = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            if (categoryMatch && hasVisibleItems) {
+                div.style.display = '';
+            } else {
+                div.style.display = 'none';
+            }
+        });
     };
 
 </script>

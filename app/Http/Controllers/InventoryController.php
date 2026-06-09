@@ -322,6 +322,8 @@ class InventoryController extends Controller
             'type' => 'required|in:ingredient,supply',
         ]);
 
+        $validated['show_in_pos'] = $request->boolean('show_in_pos', true);
+
         InventoryCategory::create($validated);
         return redirect()->back()->with('success', 'Category created successfully');
     }
@@ -338,9 +340,22 @@ class InventoryController extends Controller
             'type' => 'required|in:ingredient,supply',
         ]);
 
+        $validated['show_in_pos'] = $request->boolean('show_in_pos');
+
         $category->update($validated);
 
         return redirect()->back()->with('success', 'Category updated successfully');
+    }
+
+    public function toggleCategoryShowInPos(InventoryCategory $category)
+    {
+        if (! $this->canEditInventory()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $category->update(['show_in_pos' => ! $category->show_in_pos]);
+
+        return response()->json(['show_in_pos' => $category->show_in_pos]);
     }
 
     public function destroyCategory(InventoryCategory $category)

@@ -92,10 +92,21 @@
         <!-- Cash Payment Settings -->
         <div class="staff-card p-6 mb-6">
             <h2 class="text-lg font-semibold text-slate-900 mb-4">Cash Payment</h2>
-            
+
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Cash Instructions</label>
                 <textarea name="cash_instructions" id="cash_instructions" maxlength="5000" class="staff-input" rows="3" placeholder="Instructions for cash payments">{{ $settings->cash_instructions }}</textarea>
+            </div>
+        </div>
+
+        <!-- Tax Settings -->
+        <div class="staff-card p-6 mb-6">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">Tax Settings</h2>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Tax Rate (%)</label>
+                <input type="number" name="tax_rate" id="tax_rate" value="{{ $settings->tax_rate ?? 10 }}" step="0.01" min="0" max="100" class="staff-input" placeholder="e.g., 10">
+                <p class="text-xs text-slate-500 mt-1">Enter the tax rate as a percentage (e.g., 10 for 10%)</p>
             </div>
         </div>
         

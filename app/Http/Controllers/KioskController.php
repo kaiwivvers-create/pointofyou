@@ -390,6 +390,7 @@ class KioskController extends Controller
                 }
 
                 $inventoryService->applyMenuItemIngredients($order);
+                $inventoryService->applyGiftStock($order);
                 $inventoryService->applyTakeoutSupplies($order);
                 $inventoryService->recalculateOrderTotal($order);
 

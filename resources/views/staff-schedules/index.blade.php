@@ -25,7 +25,7 @@
             <table class="staff-table">
                 <thead>
                     <tr>
-                        <th>Employee</th>
+                        <th>Scheduled For</th>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Expected Start</th>
@@ -37,7 +37,17 @@
                 <tbody>
                     @forelse ($schedules as $schedule)
                         <tr>
-                            <td class="font-semibold text-slate-900">{{ $schedule->user ? $schedule->user->name : '-' }}</td>
+                            <td class="font-semibold text-slate-900">
+                                @if($schedule->role)
+                                    <span class="text-emerald-600">{{ $schedule->role->label() }}</span>
+                                    <span class="text-xs text-slate-400">(All {{ $schedule->role->label() }})</span>
+                                @elseif($schedule->user)
+                                    {{ $schedule->user->name }}
+                                    <span class="text-xs text-slate-400">({{ $schedule->user->role->label() }})</span>
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td class="text-slate-900">{{ $schedule->date->format('M d, Y') }}</td>
                             <td>
                                 @if ($schedule->type === 'work_day')

@@ -509,6 +509,7 @@
                 {
                     name: "{{ $item->item_name }}",
                     quantity: {{ $item->quantity }},
+                    type: @if($item->menu_item_id) "menu_item" @elseif($item->gift_id) "gift" @elseif($item->product_id) "product" @else "unknown" @endif,
                     flavor: @isset($item->flavor) "{{ $item->flavor['name'] ?? '' }}" @else "" @endif,
                     modifications: @if(!empty($item->modifications)) {!! json_encode($item->modifications) !!} @else [] @endif,
                     notes: @if($item->notes) "{{ $item->notes }}" @else "" @endif
@@ -541,7 +542,14 @@
         }
 
         order.items.forEach((item, index) => {
-            text += `${item.quantity} ${item.name}`;
+            // Add item name with type
+            let itemName = item.name;
+            if (item.type === 'gift') {
+                itemName += ' (gift)';
+            } else if (item.type === 'product') {
+                itemName += ' (inventory item)';
+            }
+            text += `${item.quantity} ${itemName}`;
 
             if (item.flavor) {
                 text += `, with ${item.flavor} flavor`;
@@ -566,6 +574,11 @@
 
         text += `. Total price is ${order.total.toFixed(2)} dollars.`;
 
+        // Stop auto-refresh while speaking
+        if (typeof stopAutoRefresh === 'function') {
+            stopAutoRefresh();
+        }
+
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
 
@@ -583,9 +596,20 @@
                 utterance.voice = preferredVoice;
             }
 
+            // Resume auto-refresh after speaking
+            utterance.onend = function() {
+                if (typeof startAutoRefresh === 'function') {
+                    startAutoRefresh();
+                }
+            };
+
             window.speechSynthesis.speak(utterance);
         } else {
             alert('Text-to-speech is not supported in your browser.');
+            // Resume auto-refresh if TTS not supported
+            if (typeof startAutoRefresh === 'function') {
+                startAutoRefresh();
+            }
         }
     }
 </script>
@@ -751,28 +775,36 @@
     }
 
     // Auto-refresh every 10 seconds
-    let refreshTimer = setTimeout(function() {
-        if (document.getElementById('add-item-modal').classList.contains('hidden') && document.getElementById('payment-modal').classList.contains('hidden')) {
-            window.location.reload();
-        } else {
-            // If modal is open, try again in 10s without reloading now
-            refreshTimer = setTimeout(arguments.callee, 10000);
+    let refreshTimer = null;
+
+    function startAutoRefresh() {
+        if (refreshTimer) clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(function() {
+            if (document.getElementById('add-item-modal').classList.contains('hidden') && document.getElementById('payment-modal').classList.contains('hidden')) {
+                window.location.reload();
+            } else {
+                // If modal is open, try again in 10s without reloading now
+                refreshTimer = setTimeout(arguments.callee, 10000);
+            }
+        }, 10000);
+    }
+
+    function stopAutoRefresh() {
+        if (refreshTimer) {
+            clearTimeout(refreshTimer);
+            refreshTimer = null;
         }
-    }, 10000);
+    }
+
+    // Start auto-refresh on page load
+    startAutoRefresh();
 
     // Reset timer on visibility change to prevent spamming server in background
     document.addEventListener("visibilitychange", function() {
         if (document.visibilityState === 'visible') {
-            clearTimeout(refreshTimer);
-            refreshTimer = setTimeout(function() {
-                if (document.getElementById('add-item-modal').classList.contains('hidden') && document.getElementById('payment-modal').classList.contains('hidden')) {
-                    window.location.reload();
-                } else {
-                    refreshTimer = setTimeout(arguments.callee, 10000);
-                }
-            }, 10000);
+            startAutoRefresh();
         } else {
-            clearTimeout(refreshTimer);
+            stopAutoRefresh();
         }
     });
 </script>

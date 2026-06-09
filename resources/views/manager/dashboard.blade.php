@@ -113,6 +113,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         console.log('Chart.js loaded:', typeof Chart !== 'undefined');
         console.log('Chart object:', Chart);

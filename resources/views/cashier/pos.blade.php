@@ -44,7 +44,16 @@
 
     <!-- Right Pane: Cart (Desktop) -->
     <div class="hidden lg:flex w-[40rem] min-w-[40rem] flex-col bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
-        <div class="p-4 border-b border-slate-200 bg-slate-50 rounded-t-xl shrink-0 flex justify-between items-center">
+        <div class="p-4 border-b border-slate-200 bg-emerald-50 rounded-t-xl shrink-0 flex justify-between items-center">
+            <div>
+                <p class="text-xs text-emerald-600 font-bold uppercase tracking-wider">Today's Sales (You)</p>
+                <p class="text-xl font-black text-emerald-700">${{ number_format($todayTotal ?? 0, 2) }}</p>
+            </div>
+            <div class="text-right">
+                <svg class="w-8 h-8 text-emerald-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+        <div class="p-4 border-b border-slate-200 bg-slate-50 shrink-0 flex justify-between items-center">
             <h2 class="text-lg font-bold text-slate-800">Current Order</h2>
             <button onclick="clearCart()" class="text-xs font-medium text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">Clear</button>
         </div>
@@ -201,6 +210,11 @@
                     <button type="button" onclick="setPaymentMethod('transfer')" id="pay-transfer" class="py-2 border-2 border-slate-200 text-slate-600 rounded-lg font-medium text-sm hover:border-slate-300 transition-colors">Transfer</button>
                 </div>
                 
+                <!-- Dynamic Payment Details -->
+                <div id="payment-details-container" class="mt-4 p-4 border border-slate-200 rounded-lg bg-white hidden">
+                    <!-- Populated by JS -->
+                </div>
+                
                 <div class="mt-3">
                     <button type="button" onclick="setPaymentMethod('later')" id="pay-later" class="w-full py-3 border-2 border-dashed border-amber-300 bg-amber-50 text-amber-700 rounded-lg font-medium hover:bg-amber-100 transition-colors">
                         Pay Later (Submit as Pending)
@@ -232,9 +246,9 @@
         </div>
         
         <div class="space-y-3">
-            <a id="print-receipt-btn" href="#" target="_blank" class="block w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md transition-colors">
-                Print Receipt
-            </a>
+            <button id="print-receipt-btn" type="button" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md transition-colors">
+                View Receipt
+            </button>
             <button onclick="closeSuccessModal()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">
                 New Order
             </button>
@@ -330,6 +344,32 @@
             </button>
         </div>
     </div>
+    </div>
+</div>
+
+<!-- Receipt Modal -->
+<div id="receipt-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300" id="receipt-modal-content">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-slate-900">Receipt</h2>
+                <button onclick="closeReceiptModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="receipt-content">
+                <div class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+                <button onclick="printReceipt()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors flex-1">Print Receipt</button>
+                <button onclick="closeReceiptModal()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors flex-1">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @endsection
@@ -340,9 +380,10 @@
 <script>
     const itemsData = {!! json_encode($itemsJson) !!};
     const posCategories = {!! json_encode($posCategories ?? []) !!};
+    const taxRate = {{ \App\Models\PaymentSettings::getSettings()->tax_rate ?? 10 }} / 100;
     let currentCategory = 'All';
     let cart = [];
-    
+
     // Checkout state
     let paymentMethod = 'cash';
     let isSubmitting = false;
@@ -367,6 +408,8 @@
         setupScanner();
         // Load active sessions on page load
         loadActiveSessions();
+        // Load cart from localStorage
+        loadCartFromStorage();
     });
 
     function initCategories() {
@@ -998,7 +1041,36 @@
         } else {
             cart.push({ ...item, quantity: 1 });
         }
+        saveCartToStorage();
         renderCart();
+    }
+
+    function loadCartFromStorage() {
+        try {
+            const savedCart = localStorage.getItem('posCart');
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+                renderCart();
+            }
+        } catch (error) {
+            console.error('Error loading cart from storage:', error);
+        }
+    }
+
+    function saveCartToStorage() {
+        try {
+            localStorage.setItem('posCart', JSON.stringify(cart));
+        } catch (error) {
+            console.error('Error saving cart to storage:', error);
+        }
+    }
+
+    function clearCartStorage() {
+        try {
+            localStorage.removeItem('posCart');
+        } catch (error) {
+            console.error('Error clearing cart from storage:', error);
+        }
     }
 
     function updateCartQuantity(index, delta) {
@@ -1006,6 +1078,7 @@
         if (cart[index].quantity <= 0) {
             cart.splice(index, 1);
         }
+        saveCartToStorage();
         renderCart();
     }
 
@@ -1054,7 +1127,7 @@
 
     function updateTotals() {
         const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.10; // Assuming 10% tax. Adjust if dynamic.
+        const tax = subtotal * taxRate;
         const total = subtotal + tax;
 
         // Desktop totals
@@ -1073,7 +1146,7 @@
     function updateMobileCartButton() {
         const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = total * 0.10;
+        const tax = total * taxRate;
         const finalTotal = total + tax;
 
         if (document.getElementById('mobile-cart-count')) {
@@ -1108,6 +1181,7 @@
 
     function clearCart() {
         cart = [];
+        clearCartStorage();
         renderCart();
         if (document.getElementById('checkout-btn')) document.getElementById('checkout-btn').disabled = true;
         if (document.getElementById('pay-later-btn')) document.getElementById('pay-later-btn').disabled = true;
@@ -1144,6 +1218,8 @@
         }, 300);
     }
 
+    const paymentSettings = {!! json_encode(\App\Models\PaymentSettings::getSettings()) !!};
+
     function setPaymentMethod(method) {
         paymentMethod = method;
         const methods = ['cash', 'card', 'qr', 'transfer'];
@@ -1155,10 +1231,126 @@
                 el.className = 'py-2 border-2 border-slate-200 text-slate-600 rounded-lg font-medium text-sm hover:border-slate-300 transition-colors';
             }
         });
+
+        const container = document.getElementById('payment-details-container');
+        container.innerHTML = '';
+        container.classList.remove('hidden');
+
+        if (method === 'cash') {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * taxRate;
+            const total = subtotal + tax;
+            
+            container.innerHTML = `
+                <div class="space-y-3">
+                    <p class="text-sm font-semibold text-slate-700">Cash Payment</p>
+                    <p class="text-xs text-slate-500 mb-2">${paymentSettings.cash_instructions || 'Accept cash payments'}</p>
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1">Amount Paid</label>
+                        <input type="number" id="cash-amount-paid" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter amount..." step="0.01" min="${total}">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1">Change Due</label>
+                        <div id="cash-change-due" class="text-lg font-bold text-slate-800">$0.00</div>
+                    </div>
+                </div>
+            `;
+            
+            const amountInput = document.getElementById('cash-amount-paid');
+            const changeDisplay = document.getElementById('cash-change-due');
+            
+            // Auto-focus the input to make it faster
+            setTimeout(() => {
+                if (amountInput) amountInput.focus();
+            }, 50);
+            
+            amountInput.addEventListener('input', (e) => {
+                let paidStr = e.target.value;
+                const paid = parseFloat(paidStr) || 0;
+                const change = paid - total;
+                
+                if (change >= 0) {
+                    changeDisplay.textContent = '$' + change.toFixed(2);
+                    changeDisplay.classList.remove('text-red-500');
+                    changeDisplay.classList.add('text-slate-800');
+                } else {
+                    changeDisplay.textContent = '-$' + Math.abs(change).toFixed(2);
+                    changeDisplay.classList.add('text-red-500');
+                    changeDisplay.classList.remove('text-slate-800');
+                }
+            });
+        } else if (method === 'card') {
+            container.innerHTML = `
+                <div class="space-y-2 text-center py-2">
+                    <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    <p class="text-sm font-semibold text-slate-700">Card Payment</p>
+                    <p class="text-sm text-slate-600">${paymentSettings.card_instructions || 'Insert or tap card on the terminal'}</p>
+                </div>
+            `;
+        } else if (method === 'qr') {
+            const qrImage = paymentSettings.qr_code_image ? '/storage/' + paymentSettings.qr_code_image : null;
+            const qrContent = qrImage 
+                ? `<img src="${qrImage}" class="w-48 h-48 mx-auto object-contain mb-3" alt="QR Code">`
+                : `<div class="w-48 h-48 mx-auto bg-slate-100 flex items-center justify-center text-slate-400 mb-3"><span class="text-xs">No QR configured</span></div>`;
+                
+            container.innerHTML = `
+                <div class="text-center py-2">
+                    <p class="text-sm font-semibold text-slate-700 mb-3">QR Payment</p>
+                    ${qrContent}
+                    <p class="text-sm text-slate-600">${paymentSettings.qr_code_instructions || 'Scan the QR code to pay'}</p>
+                </div>
+            `;
+        } else if (method === 'transfer') {
+            container.innerHTML = `
+                <div class="space-y-3">
+                    <p class="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">Bank Transfer Details</p>
+                    <p class="text-sm text-slate-600 mb-2">${paymentSettings.transfer_instructions || 'Transfer to the account details below'}</p>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-xs text-slate-500">Bank Name</span>
+                            <span class="text-sm font-medium text-slate-800">${paymentSettings.bank_name || '-'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-xs text-slate-500">Account Number</span>
+                            <span class="text-sm font-medium text-slate-800">${paymentSettings.account_number || '-'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-xs text-slate-500">Account Name</span>
+                            <span class="text-sm font-medium text-slate-800">${paymentSettings.account_name || '-'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-xs text-slate-500">Bank Address</span>
+                            <span class="text-sm font-medium text-slate-800 text-right">${paymentSettings.bank_address || '-'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-xs text-slate-500">SWIFT/BIC</span>
+                            <span class="text-sm font-medium text-slate-800">${paymentSettings.swift_code || '-'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.classList.add('hidden');
+        }
     }
 
     async function submitOrder(forceLater = false) {
         if (cart.length === 0 || isSubmitting) return;
+
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const tax = subtotal * taxRate;
+        const total = subtotal + tax;
+
+        if (!forceLater && paymentMethod === 'cash') {
+            const amountInput = document.getElementById('cash-amount-paid');
+            if (amountInput) {
+                const paid = parseFloat(amountInput.value) || 0;
+                if (paid < total) {
+                    alert('Please enter a sufficient cash amount to cover the total.');
+                    return;
+                }
+            }
+        }
 
         isSubmitting = true;
         const btn = forceLater ? document.getElementById('pay-later-btn') : document.getElementById('submit-order-btn');
@@ -1169,10 +1361,6 @@
         if (!forceLater) {
             spinner.classList.remove('hidden');
         }
-
-        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.10;
-        const total = subtotal + tax;
 
         const payload = {
             items: cart.map(item => ({
@@ -1204,6 +1392,7 @@
             const data = await response.json();
 
             if (response.ok && data.success) {
+                clearCartStorage();
                 closeCheckoutModal();
                 showSuccessModal(data.order_id, data.order_number, data.receipt_url);
             } else {
@@ -1227,7 +1416,12 @@
         const content = document.getElementById('success-modal-content');
         
         document.getElementById('success-order-number').textContent = '#' + (orderNumber || orderId);
-        document.getElementById('print-receipt-btn').href = receiptUrl || '{{ route("cashier.receipt", ":id") }}'.replace(':id', orderId);
+        
+        const btn = document.getElementById('print-receipt-btn');
+        btn.onclick = function() {
+            closeSuccessModal();
+            viewReceipt(orderId);
+        };
         
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -1251,6 +1445,60 @@
             clearCart();
             setPaymentMethod('cash');
         }, 300);
+    }
+
+    function viewReceipt(orderId) {
+        const modal = document.getElementById('receipt-modal');
+        const modalContent = document.getElementById('receipt-modal-content');
+        const content = document.getElementById('receipt-content');
+        
+        // Show modal with animation
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+            modalContent.classList.add('scale-100');
+        }, 10);
+        
+        // Load content
+        content.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div></div>';
+        
+        fetch('{{ route('cashier.receipt', ':id') }}'.replace(':id', orderId))
+            .then(response => response.text())
+            .then(html => {
+                content.innerHTML = html;
+            })
+            .catch(error => {
+                content.innerHTML = '<div class="text-center py-8 text-red-600">Failed to load receipt.</div>';
+            });
+    }
+    
+    function closeReceiptModal() {
+        const modal = document.getElementById('receipt-modal');
+        const modalContent = document.getElementById('receipt-modal-content');
+        
+        // Animate out
+        modal.classList.add('opacity-0');
+        modalContent.classList.remove('scale-100');
+        modalContent.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 300);
+    }
+    
+    function printReceipt() {
+        const content = document.getElementById('receipt-content');
+        const printWindow = window.open('', '', 'width=600,height=800');
+        printWindow.document.write('<html><head><title>Receipt</title>');
+        printWindow.document.write('<style>body{font-family:monospace;padding:20px;}.receipt-header{text-align:center;margin-bottom:20px;}.receipt-item{display:flex;justify-content:space-between;margin:5px 0;}.receipt-total{border-top:1px solid #000;margin-top:10px;padding-top:10px;font-weight:bold;}</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(content.innerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
     }
 </script>
 @endpush

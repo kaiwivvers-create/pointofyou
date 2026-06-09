@@ -94,7 +94,13 @@ class OrderController extends Controller
             ->orderBy('name')
             ->get();
         $gifts = \App\Models\Gift::where('is_active', true)->get();
-        $products = Product::with('category')->where('stock_quantity', '>', 0)->where('show_in_menu', true)->get();
+        $products = Product::with('category')
+            ->where('stock_quantity', '>', 0)
+            ->where('show_in_menu', true)
+            ->whereHas('category', function($query) {
+                $query->where('show_in_pos', true);
+            })
+            ->get();
 
         $searchableItems = collect();
 
@@ -142,7 +148,12 @@ class OrderController extends Controller
             ->values()
             ->all();
 
-        return view('cashier.pos', compact('attendance', 'itemsJson', 'posCategories'));
+        $todayTotal = Order::where('status', OrderStatus::Paid)
+            ->whereDate('paid_at', today())
+            ->where('paid_by', $user->id)
+            ->sum('total');
+
+        return view('cashier.pos', compact('attendance', 'itemsJson', 'posCategories', 'todayTotal'));
     }
 
     public function create(Request $request): JsonResponse
@@ -168,9 +179,28 @@ class OrderController extends Controller
             $status = $validated['payment_method'] === 'later' ? OrderStatus::Pending : OrderStatus::Paid;
             $isWalkIn = $validated['order_type'] === 'walk-in';
 
+            // For walk-in orders, create or use a default walk-in table
+            $tableId = null;
+            if ($isWalkIn) {
+                $walkInTable = \App\Models\CafeTable::firstOrCreate(
+                    ['name' => 'Walk-In'],
+                    ['status' => 'available', 'token' => str()->random(16)]
+                );
+                $tableId = $walkInTable->id;
+            } elseif ($validated['order_type'] === 'dine-in') {
+                $tableId = $validated['table_id'];
+            } else {
+                // Takeout
+                $takeoutTable = \App\Models\CafeTable::firstOrCreate(
+                    ['name' => 'Takeout'],
+                    ['status' => 'available', 'token' => str()->random(16)]
+                );
+                $tableId = $takeoutTable->id;
+            }
+
             // Create order
             $order = Order::create([
-                'cafe_table_id' => $isWalkIn ? null : ($validated['order_type'] === 'dine-in' ? $validated['table_id'] : null),
+                'cafe_table_id' => $tableId,
                 'order_type' => $validated['order_type'],
                 'status' => $status,
                 'total' => $validated['total'],
@@ -180,6 +210,8 @@ class OrderController extends Controller
                 'amount_paid' => $status === OrderStatus::Paid ? $validated['total'] : 0,
                 'is_closed' => false,
             ]);
+
+            $totalCogs = 0;
 
             // Create order items and deduct inventory
             foreach ($validated['items'] as $item) {
@@ -211,11 +243,14 @@ class OrderController extends Controller
                                 if ($product->stock_quantity >= $neededQuantity) {
                                     $product->decrement('stock_quantity', $neededQuantity);
 
+                                    $cost = $product->unit_cost ?? 0;
+                                    $totalCogs += $cost * $neededQuantity;
+
                                     StockMovement::create([
                                         'product_id' => $product->id,
                                         'type' => 'out',
                                         'quantity' => $neededQuantity,
-                                        'unit_cost' => $product->unit_cost ?? 0,
+                                        'unit_cost' => $cost,
                                         'reference' => "Order #{$order->id}",
                                         'notes' => "Menu item: {$menuItem->name}",
                                     ]);
@@ -227,14 +262,26 @@ class OrderController extends Controller
                     $product = Product::find($item['id']);
                     if ($product && $product->stock_quantity >= $item['quantity']) {
                         $product->decrement('stock_quantity', $item['quantity']);
+                        
+                        $cost = $product->unit_cost ?? 0;
+                        $totalCogs += $cost * $item['quantity'];
+                        
                         StockMovement::create([
                             'product_id' => $product->id,
                             'type' => 'out',
                             'quantity' => $item['quantity'],
-                            'unit_cost' => $product->unit_cost ?? 0,
+                            'unit_cost' => $cost,
                             'reference' => "Order #{$order->id}",
                             'notes' => "Sold at POS",
                         ]);
+                    }
+                } elseif ($type === 'gift') {
+                    $gift = \App\Models\Gift::find($item['id']);
+                    if ($gift && $gift->stock_quantity >= $item['quantity']) {
+                        $gift->decrement('stock_quantity', $item['quantity']);
+                        
+                        $cost = $gift->cost ?? 0;
+                        $totalCogs += $cost * $item['quantity'];
                     }
                 }
             }
@@ -245,25 +292,37 @@ class OrderController extends Controller
                 if ($takeoutBox && $takeoutBox->stock_quantity > 0) {
                     $takeoutBox->decrement('stock_quantity', 1);
                     
+                    $cost = $takeoutBox->unit_cost ?? 0;
+                    $totalCogs += $cost * 1;
+                    
                     StockMovement::create([
                         'product_id' => $takeoutBox->id,
                         'type' => 'out',
                         'quantity' => 1,
-                        'unit_cost' => $takeoutBox->unit_cost ?? 0,
+                        'unit_cost' => $cost,
                         'reference' => "Order #{$order->id}",
                         'notes' => 'Takeout packaging',
                     ]);
                 }
             }
 
-            // Create operational expense for stock purchases
-            OperationalExpense::create([
-                'source' => 'auto_stock_purchase',
-                'amount' => $validated['subtotal'],
-                'description' => "Order #{$order->id} - Stock deduction",
-                'expense_date' => now(),
-                'status' => 'approved',
-            ]);
+            if ($totalCogs > 0) {
+                // Create operational expense for stock purchases
+                $expenseCategory = \App\Models\ExpenseCategory::firstOrCreate(
+                    ['name' => 'Order Stock Deduction'],
+                    ['description' => 'Automatic expenses from order stock deduction', 'color' => '#6366f1']
+                );
+
+                OperationalExpense::create([
+                    'expense_category_id' => $expenseCategory->id,
+                    'title' => "Order #{$order->id} Stock Deduction",
+                    'source' => 'auto_stock_purchase',
+                    'amount' => $totalCogs,
+                    'description' => "Order #{$order->id} - Stock deduction (COGS)",
+                    'expense_date' => now(),
+                    'status' => 'approved',
+                ]);
+            }
 
             DB::commit();
 

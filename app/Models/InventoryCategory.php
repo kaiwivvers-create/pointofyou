@@ -9,7 +9,7 @@ class InventoryCategory extends Model
 {
     use LogsActivity;
 
-    protected $fillable = ['name', 'description'];
+    protected $fillable = ['name', 'description', 'show_in_pos'];
 
     public function products()
     {

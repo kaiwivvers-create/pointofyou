@@ -23,12 +23,26 @@
 @section('content')
     @php
         $paymentSettings = \App\Models\PaymentSettings::getSettings();
+        \Log::info('Payment settings loaded', [
+            'qr_code_image' => $paymentSettings->qr_code_image ?? 'null',
+            'qr_code_instructions' => $paymentSettings->qr_code_instructions ?? 'null',
+            'card_instructions' => $paymentSettings->card_instructions ?? 'null',
+            'bank_name' => $paymentSettings->bank_name ?? 'null',
+            'account_number' => $paymentSettings->account_number ?? 'null',
+        ]);
         $promos = \App\Models\Promo::where('is_active', true)->with(['buyItem', 'getItem'])->get();
+        $moneyMadeToday = \App\Models\Order::whereDate('created_at', today())
+            ->where('status', \App\Enums\OrderStatus::Paid)
+            ->sum('total');
     @endphp
     <div class="staff-page-header">
         <div>
             <h1 class="staff-page-title">Cashier Dashboard</h1>
             <p class="staff-page-subtitle">Manage payments and order handoffs</p>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2">
+            <p class="text-xs text-emerald-600 font-medium uppercase tracking-wider">Money Made Today</p>
+            <p class="text-2xl font-bold text-emerald-700">${{ number_format($moneyMadeToday, 2) }}</p>
         </div>
     </div>
 
@@ -244,7 +258,7 @@
                     <div class="text-center py-6">
                         <div class="bg-slate-50 rounded-xl p-6 mb-4">
                             <svg class="size-16 mx-auto text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-                            <p class="text-sm text-slate-500">{{ $paymentSettings->card_instructions ?? 'Insert or tap card' }}</p>
+                            <p class="text-sm text-slate-500">{{ $paymentSettings->card_instructions ?? 'Insert or tap card to complete payment' }}</p>
                         </div>
                     </div>
                 </div>
@@ -254,19 +268,19 @@
                     <div class="text-center py-6">
                         <div class="bg-slate-50 rounded-xl p-6 mb-4">
                             <svg class="size-16 mx-auto text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                            <p class="text-sm text-slate-500 mb-4">{{ $paymentSettings->transfer_instructions ?? 'Bank transfer details' }}</p>
+                            <p class="text-sm text-slate-500 mb-4">{{ $paymentSettings->transfer_instructions ?? 'Transfer to the following bank account:' }}</p>
                             <div class="text-left space-y-2 text-sm">
                                 <div class="flex justify-between">
                                     <span class="text-slate-500">Bank:</span>
-                                    <span class="font-medium text-slate-900">{{ $paymentSettings->bank_name }}</span>
+                                    <span class="font-medium text-slate-900">{{ $paymentSettings->bank_name ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-slate-500">Account Number:</span>
-                                    <span class="font-medium text-slate-900">{{ $paymentSettings->account_number }}</span>
+                                    <span class="font-medium text-slate-900">{{ $paymentSettings->account_number ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-slate-500">Account Name:</span>
-                                    <span class="font-medium text-slate-900">{{ $paymentSettings->account_name }}</span>
+                                    <span class="font-medium text-slate-900">{{ $paymentSettings->account_name ?? 'N/A' }}</span>
                                 </div>
                                 @if($paymentSettings->bank_address)
                                 <div class="flex justify-between">
@@ -324,12 +338,35 @@
                             </div>
                         </div>
                         <div class="text-center">
-                            <button onclick="printReceipt()" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                            <button onclick="openReceiptModal()" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
                                 <svg class="size-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 Print Receipt
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300" id="receipt-modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-slate-900">Receipt</h2>
+                    <button onclick="closeReceiptModal()" class="text-slate-400 hover:text-slate-600">
+                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="receipt-content">
+                    <!-- Receipt content will be loaded here -->
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button onclick="printModalReceipt()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex-1">Print Receipt</button>
+                    <button onclick="closeReceiptModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2 px-4 rounded-lg flex-1">Close</button>
                 </div>
             </div>
         </div>
@@ -781,8 +818,62 @@
             document.getElementById('paymentForm').classList.add('hidden');
         }
 
+        function openReceiptModal() {
+            console.log('openReceiptModal called');
+            // Make sure receipt section is visible
+            const receiptSection = document.getElementById('receiptSection');
+            if (!receiptSection) {
+                console.error('receiptSection not found');
+                return;
+            }
+            receiptSection.classList.remove('hidden');
+            
+            const receiptContent = receiptSection.innerHTML;
+            const modal = document.getElementById('receipt-modal');
+            const modalContent = document.getElementById('receipt-modal-content');
+            const contentDiv = document.getElementById('receipt-content');
+            
+            if (!modal || !modalContent || !contentDiv) {
+                console.error('Modal elements not found', { modal, modalContent, contentDiv });
+                return;
+            }
+            
+            console.log('Loading receipt content into modal');
+            // Load content
+            contentDiv.innerHTML = receiptContent;
+            
+            console.log('Showing modal');
+            // Show modal with animation
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
         function printReceipt() {
-            const receiptContent = document.getElementById('receiptSection').innerHTML;
+            openReceiptModal();
+        }
+
+        function closeReceiptModal() {
+            const modal = document.getElementById('receipt-modal');
+            const modalContent = document.getElementById('receipt-modal-content');
+            
+            // Animate out
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function printModalReceipt() {
+            const content = document.getElementById('receipt-content').innerHTML;
             const printWindow = window.open('', '', 'width=400,height=600');
             printWindow.document.write(`
                 <html>
@@ -802,12 +893,26 @@
                         .text-emerald-600 { color: #059669; }
                     </style>
                 </head>
-                <body>${receiptContent}</body>
+                <body>${content}</body>
                 </html>
             `);
             printWindow.document.close();
             printWindow.print();
         }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeReceiptModal();
+            }
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('receipt-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeReceiptModal();
+            }
+        });
 
         function validateOrderReady(isFullyReady) {
             if (!isFullyReady) {

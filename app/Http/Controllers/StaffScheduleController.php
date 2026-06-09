@@ -4,37 +4,46 @@ namespace App\Http\Controllers;
 
 use App\Models\StaffSchedule;
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 
 class StaffScheduleController extends Controller
 {
     public function index()
     {
-        $schedules = StaffSchedule::with('user')
+        $schedules = StaffSchedule::with(['user', 'role'])
             ->orderBy('date')
             ->paginate(20);
         
         $users = User::whereNotNull('employee_id')->get();
+        $roles = Role::all();
         
-        return view('staff-schedules.index', compact('schedules', 'users'));
+        return view('staff-schedules.index', compact('schedules', 'users', 'roles'));
     }
 
     public function create()
     {
         $users = User::whereNotNull('employee_id')->get();
-        return view('staff-schedules.create', compact('users'));
+        $roles = Role::all();
+        return view('staff-schedules.create', compact('users', 'roles'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'role_id' => 'nullable|exists:roles,id',
+            'user_id' => 'nullable|exists:users,id',
             'date' => 'required|date',
             'type' => 'required|in:work_day,day_off,holiday',
             'expected_start_time' => 'nullable|date_format:H:i',
             'expected_end_time' => 'nullable|date_format:H:i|after:expected_start_time',
             'notes' => 'nullable|string',
         ]);
+
+        // Require either role_id or user_id
+        if (!$request->role_id && !$request->user_id) {
+            return redirect()->back()->with('error', 'Please select either a role or an employee.');
+        }
 
         StaffSchedule::create($validated);
 

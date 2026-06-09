@@ -72,7 +72,7 @@ class CurrentOrdersController extends Controller
     public function index(): View
     {
         $activeOrders = Order::query()
-            ->with(['cafeTable', 'items.menuItem'])
+            ->with(['cafeTable', 'items.menuItem', 'items.gift', 'items.product'])
             ->where('is_closed', false)
             ->where(function($q) {
                 $q->whereHas('items', function ($query) {

@@ -139,6 +139,34 @@ class OrderInventoryService
         }
     }
 
+    public function applyGiftStock(Order $order): void
+    {
+        $orderItems = $order->items()->with('gift')->get();
+
+        if ($orderItems->isEmpty()) {
+            return;
+        }
+
+        foreach ($orderItems as $orderItem) {
+            $gift = $orderItem->gift;
+            if (!$gift) {
+                continue;
+            }
+
+            $requiredQuantity = $orderItem->quantity;
+
+            if ($requiredQuantity > $gift->stock_quantity) {
+                throw new RuntimeException("Not enough {$gift->name} in stock. Required: {$requiredQuantity}, Available: {$gift->stock_quantity}");
+            }
+
+            if ($requiredQuantity <= 0) {
+                continue;
+            }
+
+            $gift->decrement('stock_quantity', $requiredQuantity);
+        }
+    }
+
     public function recalculateOrderTotal(Order $order): float
     {
         $baseTotal = (float) $order->items()->sum('line_total');

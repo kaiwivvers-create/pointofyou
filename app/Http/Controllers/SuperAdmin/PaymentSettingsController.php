@@ -30,6 +30,7 @@ class PaymentSettingsController extends Controller
             'card_instructions' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'transfer_instructions' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
             'cash_instructions' => 'nullable|string|max:5000|regex:/^[a-zA-Z0-9\s\-.,!?@]+$/',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $settings = PaymentSettings::getSettings();

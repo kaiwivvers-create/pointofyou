@@ -20,6 +20,7 @@ class PaymentSettings extends Model
         'card_instructions',
         'transfer_instructions',
         'cash_instructions',
+        'tax_rate',
     ];
 
     public static function getSettings()
@@ -39,6 +40,7 @@ class PaymentSettings extends Model
             'card_instructions' => 'Insert or tap card',
             'transfer_instructions' => 'Transfer to the account details below',
             'cash_instructions' => 'Accept cash payments',
+            'tax_rate' => 10,
         ]);
     }
 }

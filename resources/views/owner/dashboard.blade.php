@@ -57,6 +57,9 @@
                     <button onclick="switchTab('staff')" id="tab-staff" class="w-full text-left px-4 py-3 rounded-lg font-medium bg-emerald-600 text-white">
                         Staff Management
                     </button>
+                    <button onclick="switchTab('holidays')" id="tab-holidays" class="w-full text-left px-4 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">
+                        Holidays & Day Offs
+                    </button>
                     <button onclick="switchTab('analytics')" id="tab-analytics" class="w-full text-left px-4 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">
                         Analytics & Reports
                     </button>
@@ -165,7 +168,54 @@
                     </div>
                 </div>
 
-                <!-- Tab C: Inventory Control -->
+                <!-- Tab C: Holidays & Day Offs -->
+                <div id="content-holidays" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-bold text-slate-900">Holidays & Day Offs</h2>
+                            <a href="{{ route('holidays.create') }}" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium">Add New</a>
+                        </div>
+                        
+                        @php
+                            $holidays = \App\Models\Holiday::orderBy('date')->get();
+                        @endphp
+                        
+                        @if ($holidays->count() > 0)
+                            <div class="space-y-3">
+                                @foreach ($holidays as $holiday)
+                                    <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <div>
+                                            <p class="font-semibold text-slate-900">{{ $holiday->name }}</p>
+                                            <p class="text-sm text-slate-600">{{ $holiday->date->format('M d, Y') }}</p>
+                                            <div class="flex gap-2 mt-1">
+                                                @if ($holiday->type === 'holiday')
+                                                    <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Holiday</span>
+                                                @else
+                                                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Day Off</span>
+                                                @endif
+                                                @if ($holiday->is_recurring)
+                                                    <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">Recurring</span>
+                                                @endif
+                                            </div>
+                                            @if ($holiday->notes)
+                                                <p class="text-xs text-slate-500 mt-1">{{ $holiday->notes }}</p>
+                                            @endif
+                                        </div>
+                                        <form method="POST" action="{{ route('holidays.destroy', $holiday) }}" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-medium">Delete</button>
+                                        </form>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-slate-500">No holidays or day offs scheduled.</p>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Tab D: Inventory Control -->
                 <div id="content-inventory" class="tab-content hidden">
                     <div class="bg-white rounded-lg shadow-sm p-6">
                         <h2 class="text-lg font-bold text-slate-900 mb-4">Inventory Control</h2>
@@ -279,8 +329,10 @@
                 });
                 
                 const data = await response.json();
+                console.log('Check-in response:', data);
                 
-                if (response.ok && data.success) {
+                if (response.ok) {
+                    // Always reload on success, regardless of success flag
                     location.reload();
                 } else {
                     alert(data.message || 'Error checking in. Please try again.');
@@ -304,8 +356,10 @@
                 });
                 
                 const data = await response.json();
+                console.log('Check-out response:', data);
                 
-                if (response.ok && data.success) {
+                if (response.ok) {
+                    // Always reload on success, regardless of success flag
                     location.reload();
                 } else {
                     alert(data.message || 'Error checking out. Please try again.');

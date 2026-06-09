@@ -40,4 +40,14 @@ class OrderItem extends Model
     {
         return $this->belongsTo(MenuItem::class);
     }
+
+    public function gift(): BelongsTo
+    {
+        return $this->belongsTo(Gift::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
 }

@@ -15,6 +15,7 @@ use App\Http\Controllers\OperationalExpenseController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PermitController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\StaffScheduleController;
 use App\Http\Controllers\SuperAdmin\BrandSettingsController;
 use App\Http\Controllers\SuperAdmin\PaymentSettingsController;
@@ -388,6 +389,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/categories', [InventoryController::class, 'storeCategory'])->name('categories.store');
         Route::put('/categories/{category}', [InventoryController::class, 'updateCategory'])->name('categories.update');
         Route::delete('/categories/{category}', [InventoryController::class, 'destroyCategory'])->name('categories.destroy');
+        Route::post('/categories/{category}/toggle-pos', [InventoryController::class, 'toggleCategoryShowInPos'])->name('categories.toggle-pos');
         Route::post('/stock-movements', [InventoryController::class, 'storeStockMovement'])->name('stock-movements.store');
         Route::post('/bulk-purchases', [InventoryController::class, 'storeBulkPurchase'])->name('bulk-purchases.store');
         
@@ -432,6 +434,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [StaffScheduleController::class, 'store'])->name('store');
         Route::delete('/{staffSchedule}', [StaffScheduleController::class, 'destroy'])->name('destroy');
         Route::post('/attendance/filter', [StaffScheduleController::class, 'filterAttendance'])->name('attendance.filter');
+    });
+
+    // Holidays & Day Offs
+    Route::middleware('permit')->prefix('holidays')->name('holidays.')->group(function () {
+        Route::get('/', [HolidayController::class, 'index'])->name('index');
+        Route::get('/create', [HolidayController::class, 'create'])->name('create');
+        Route::post('/', [HolidayController::class, 'store'])->name('store');
+        Route::delete('/{holiday}', [HolidayController::class, 'destroy'])->name('destroy');
     });
 
     // Attendance (check-in/check-out)
