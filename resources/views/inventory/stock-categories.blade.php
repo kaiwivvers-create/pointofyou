@@ -76,11 +76,14 @@
                                     <button
                                         type="button"
                                         onclick="toggleShowInPos({{ $category->id }}, this)"
-                                        data-state="{{ $category->show_in_pos ? '1' : '0' }}"
-                                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $category->show_in_pos ? 'bg-blue-600' : 'bg-slate-300' }}"
-                                        title="{{ $category->show_in_pos ? 'Shown in cashier menu' : 'Hidden from cashier menu' }}"
+                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $category->show_in_pos ? 'bg-blue-600' : 'bg-gray-200' }}"
+                                        role="switch"
+                                        aria-checked="{{ $category->show_in_pos ? 'true' : 'false' }}"
                                     >
-                                        <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 {{ $category->show_in_pos ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                                        <span
+                                            aria-hidden="true"
+                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $category->show_in_pos ? 'translate-x-5' : 'translate-x-0' }}"
+                                        ></span>
                                     </button>
                                 @else
                                     @if ($category->show_in_pos)
@@ -205,15 +208,14 @@
                     const data = await res.json();
                     if (res.ok) {
                         const isOn = data.show_in_pos;
-                        btn.dataset.state = isOn ? '1' : '0';
+                        btn.setAttribute('aria-checked', isOn ? 'true' : 'false');
                         // Update colours
-                        btn.classList.toggle('bg-blue-600', isOn);
-                        btn.classList.toggle('bg-slate-300', !isOn);
+                        btn.classList.remove('bg-blue-600', 'bg-gray-200');
+                        btn.classList.add(isOn ? 'bg-blue-600' : 'bg-gray-200');
                         // Move the knob
                         const knob = btn.querySelector('span');
-                        knob.classList.toggle('translate-x-6', isOn);
-                        knob.classList.toggle('translate-x-1', !isOn);
-                        btn.title = isOn ? 'Shown in cashier menu' : 'Hidden from cashier menu';
+                        knob.classList.remove('translate-x-5', 'translate-x-0');
+                        knob.classList.add(isOn ? 'translate-x-5' : 'translate-x-0');
                     }
                 } catch (e) {
                     console.error('Toggle failed', e);
