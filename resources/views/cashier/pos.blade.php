@@ -617,19 +617,15 @@
             content.classList.remove('scale-95');
         }, 10);
 
-        // Load active sessions first
-        await loadConnectedDevices();
-
         // Check if there are active sessions
         const response = await fetch('/device-sessions/active');
         const data = await response.json();
 
         if (data.sessions && data.sessions.length > 0) {
-            // There are active sessions, show them and the add button
-            document.getElementById('qr-section').classList.add('hidden');
-            document.getElementById('add-session-section').classList.remove('hidden');
+            // There are active sessions, show them
+            await loadConnectedDevices();
         } else {
-            // No active sessions, auto-create one
+            // No active sessions, auto-create one and show QR
             await createDeviceSession();
         }
     }
@@ -671,10 +667,12 @@
                 localStorage.setItem('deviceSessionCode', currentSessionCode);
                 console.log('Session created with code:', currentSessionCode);
                 console.log('Starting polling...');
-                // Show QR section, hide add session section
+                // Show QR section, hide other sections
                 document.getElementById('qr-section').classList.remove('hidden');
                 document.getElementById('add-session-section').classList.add('hidden');
+                document.getElementById('connected-devices-section').classList.add('hidden');
                 generateQRCode(data.qr_url);
+                // Load connected devices to show the new session in the list
                 loadConnectedDevices();
                 // Start polling now that we have a session code
                 if (!devicePollingInterval) {
@@ -688,9 +686,10 @@
     }
 
     function generateQRCode(url) {
+        console.log('Generating QR code for URL:', url);
         const qrContainer = document.getElementById('qr-code');
         qrContainer.innerHTML = '';
-        
+
         new QRCode(qrContainer, {
             text: url,
             width: 192,
@@ -699,20 +698,27 @@
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
         });
+        console.log('QR code generated');
     }
 
     async function loadConnectedDevices() {
         try {
+            console.log('Loading connected devices for modal...');
             const response = await fetch('/device-sessions/active');
             const data = await response.json();
+
+            console.log('Connected devices response:', data);
 
             const devicesSection = document.getElementById('connected-devices-section');
             const devicesList = document.getElementById('connected-devices-list');
             const addSessionSection = document.getElementById('add-session-section');
+            const qrSection = document.getElementById('qr-section');
 
             if (data.sessions && data.sessions.length > 0) {
+                console.log('Found active sessions, showing devices list');
                 devicesSection.classList.remove('hidden');
                 addSessionSection.classList.remove('hidden');
+                qrSection.classList.add('hidden');
                 devicesList.innerHTML = '';
 
                 data.sessions.forEach(session => {
@@ -730,8 +736,10 @@
                     devicesList.appendChild(deviceItem);
                 });
             } else {
+                console.log('No active sessions, showing QR section');
                 devicesSection.classList.add('hidden');
                 addSessionSection.classList.add('hidden');
+                qrSection.classList.remove('hidden');
             }
         } catch (error) {
             console.error('Error loading connected devices:', error);
@@ -740,20 +748,40 @@
 
     async function loadActiveSessions() {
         try {
-            // Restore session code from localStorage if available
-            const savedSessionCode = localStorage.getItem('deviceSessionCode');
-            if (savedSessionCode) {
-                currentSessionCode = savedSessionCode;
-                console.log('Restored session code from localStorage:', currentSessionCode);
-            }
+            console.log('Loading active sessions...');
+            // First, check for active sessions in the database
+            const response = await fetch('/device-sessions/active');
+            const data = await response.json();
 
-            // Load connected devices
-            await loadConnectedDevices();
+            console.log('Active sessions response:', data);
 
-            // If we have a session code, start polling
-            if (currentSessionCode) {
+            if (data.sessions && data.sessions.length > 0) {
+                // Use the first active session
+                currentSessionCode = data.sessions[0].session_code;
+                localStorage.setItem('deviceSessionCode', currentSessionCode);
+                console.log('Using active session from database:', currentSessionCode);
                 console.log('Starting polling for restored session...');
                 startDevicePolling();
+            } else {
+                console.log('No active sessions in database, checking localStorage...');
+                // No active sessions in database, check localStorage
+                const savedSessionCode = localStorage.getItem('deviceSessionCode');
+                if (savedSessionCode) {
+                    currentSessionCode = savedSessionCode;
+                    console.log('Restored session code from localStorage:', currentSessionCode);
+                    // Verify it's still valid by checking the database
+                    const verifyResponse = await fetch(`/device-sessions/${currentSessionCode}`);
+                    if (verifyResponse.ok) {
+                        console.log('Session is still valid, starting polling...');
+                        startDevicePolling();
+                    } else {
+                        console.log('Session is no longer valid, clearing from localStorage');
+                        currentSessionCode = null;
+                        localStorage.removeItem('deviceSessionCode');
+                    }
+                } else {
+                    console.log('No saved session in localStorage');
+                }
             }
         } catch (error) {
             console.error('Error loading active sessions:', error);
@@ -761,8 +789,9 @@
     }
 
     async function createNewSessionFromModal() {
-        // Hide the add session section
+        // Hide the add session section and devices section
         document.getElementById('add-session-section').classList.add('hidden');
+        document.getElementById('connected-devices-section').classList.add('hidden');
         // Show the QR section
         document.getElementById('qr-section').classList.remove('hidden');
         // Create a new session
