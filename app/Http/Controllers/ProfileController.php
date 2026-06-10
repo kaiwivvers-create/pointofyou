@@ -68,27 +68,10 @@ class ProfileController extends Controller
         $user = auth()->user();
 
         $request->validate([
-            'profile_picture' => 'required|string',
             'face_descriptor' => 'required|string',
         ]);
 
-        // Handle base64 image
-        $imageData = $request->profile_picture;
-        $imageData = preg_replace('/^data:image\/(\w+);base64,/', '', $imageData);
-        $imageData = base64_decode($imageData);
-
-        // Delete old profile picture if exists
-        if ($user->profile_picture) {
-            Storage::disk('public')->delete($user->profile_picture);
-        }
-
-        // Store new profile picture
-        $fileName = 'profile-' . $user->id . '-' . time() . '.png';
-        $path = 'profile-pictures/' . $fileName;
-        Storage::disk('public')->put($path, $imageData);
-
-        // Update user with profile picture and face descriptor
-        $user->profile_picture = $path;
+        // Only save the face descriptor, don't update profile picture
         $user->face_descriptor = $request->face_descriptor;
         $user->save();
 

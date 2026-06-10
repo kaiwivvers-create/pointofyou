@@ -126,8 +126,14 @@ class AttendanceController extends Controller
         $checkInTime = $attendance->check_in;
         
         // Calculate hours worked using time values
-        // check_in is stored as time (H:i:s), so we need to combine with today's date
-        $checkInDateTime = \Carbon\Carbon::parse($today->format('Y-m-d') . ' ' . $checkInTime);
+        // check_in might be stored as time (H:i:s) or datetime
+        if (strlen($checkInTime) > 8) {
+            // Already includes date, use it directly
+            $checkInDateTime = \Carbon\Carbon::parse($checkInTime);
+        } else {
+            // Only time, combine with today's date
+            $checkInDateTime = \Carbon\Carbon::parse($today->format('Y-m-d') . ' ' . $checkInTime);
+        }
         $hoursWorked = $checkInDateTime->diffInMinutes($now) / 60;
         
         // Calculate overtime (more than 8 hours)

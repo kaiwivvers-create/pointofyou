@@ -98,19 +98,24 @@
             <main class="flex-1 p-1 sm:p-4 lg:p-10 w-full overflow-auto">
                 @php
                     $user = auth()->user();
-                    $showAttendanceBanner = $user && !$user->isManager() && !$user->isOwner() && !$user->isSuperAdmin() && $user->dbRole && $user->dbRole->is_paid;
+                    // Show banner if user has a paid dbRole OR if their enum role is a paid role (Cashier, Manager, Chef)
+                    $paidEnumRoles = ['cashier', 'manager', 'chef'];
+                    $showAttendanceBanner = $user && (
+                        ($user->dbRole && $user->dbRole->is_paid) ||
+                        in_array($user->role->value, $paidEnumRoles)
+                    );
                 @endphp
                 <!-- Attendance Check-in/Check-out Banner -->
                 @if($showAttendanceBanner)
-                <div id="attendance-banner" class="mb-2 sm:mb-6 p-2 sm:p-4 rounded-lg bg-slate-100 border border-slate-200 hidden">
+                <div id="attendance-banner" class="mb-2 sm:mb-6 p-2 sm:p-4 rounded-lg bg-slate-100 border border-slate-200">
                     <div class="flex items-center justify-between gap-2 sm:gap-4">
                         <div>
                             <p class="text-xs sm:text-sm font-semibold text-slate-900">Attendance Tracking</p>
                             <p id="attendance-status" class="text-[10px] sm:text-xs text-slate-600">Loading status...</p>
                         </div>
                         <div class="flex gap-1 sm:gap-2">
-                            <button id="check-in-btn" onclick="checkIn()" class="staff-btn-primary text-[10px] sm:text-sm">Check In</button>
-                            <button id="check-out-btn" onclick="checkOut()" class="staff-btn-secondary text-[10px] sm:text-sm hidden">Check Out</button>
+                            <button id="check-in-btn" onclick="attendanceCheckIn()" class="staff-btn-primary text-[10px] sm:text-sm">Check In</button>
+                            <button id="check-out-btn" onclick="attendanceCheckOut()" class="staff-btn-secondary text-[10px] sm:text-sm hidden">Check Out</button>
                         </div>
                     </div>
                 </div>
@@ -129,28 +134,28 @@
 
     @include('partials.chatbot')
 
-    <!-- Checkout Confirmation Modal -->
-    <div id="checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="checkout-modal-content">
+    <!-- Attendance Check-out Confirmation Modal -->
+    <div id="attendance-checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="attendance-checkout-modal-content">
             <h2 class="text-xl font-semibold text-slate-900 mb-4">Confirm Check Out</h2>
             <p class="text-slate-600 mb-4">Are you sure you want to check out? This action cannot be undone.</p>
             
             <div class="mb-4">
-                <p id="countdown-text" class="text-sm text-slate-500 mb-2">Please wait <span id="countdown" class="font-bold text-red-600">5</span> seconds before confirming...</p>
+                <p id="attendance-countdown-text" class="text-sm text-slate-500 mb-2">Please wait <span id="attendance-countdown" class="font-bold text-red-600">5</span> seconds before confirming...</p>
                 <div class="w-full bg-slate-200 rounded-full h-2">
-                    <div id="countdown-bar" class="bg-red-600 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                    <div id="attendance-countdown-bar" class="bg-red-600 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
                 </div>
             </div>
             
             <div class="flex gap-3">
-                <button onclick="closeCheckoutModal()" class="flex-1 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">Cancel</button>
-                <button id="confirm-checkout-btn" onclick="confirmCheckout()" disabled class="flex-1 py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300" style="background-color: #cbd5e1; color: #64748b;">Confirm Check Out</button>
+                <button onclick="closeAttendanceCheckoutModal()" class="flex-1 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">Cancel</button>
+                <button id="confirm-attendance-checkout-btn" onclick="confirmAttendanceCheckout()" disabled class="flex-1 py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300" style="background-color: #cbd5e1; color: #64748b;">Confirm Check Out</button>
             </div>
         </div>
     </div>
 
     <!-- Face Verification Modal -->
-    <div id="face-verification-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+    <div id="face-verification-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300" onclick="event.stopPropagation()">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="face-verification-modal-content">
             <h2 class="text-xl font-semibold text-slate-900 mb-4">Face Verification</h2>
             <p class="text-slate-600 mb-4">Please position your face in the center of the frame for verification.</p>
@@ -174,8 +179,7 @@
             </div>
             
             <div class="flex gap-3 relative z-10">
-                <button onclick="closeFaceVerification()" class="flex-1 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">Cancel</button>
-                <button id="capture-face-btn" onclick="captureFace()" disabled class="flex-1 py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer">Capture & Verify</button>
+                <button id="capture-face-btn" onclick="captureFace()" disabled class="w-full py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer">Capture & Verify</button>
             </div>
         </div>
     </div>
@@ -282,7 +286,7 @@
     </div>
 
     <!-- Face Recognition Setup Modal -->
-    <div id="face-recognition-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+    <div id="face-recognition-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300" onclick="event.stopPropagation()">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="face-recognition-modal-content">
             <h2 class="text-xl font-semibold text-slate-900 mb-4">Face Recognition Setup</h2>
             <p class="text-slate-600 mb-4">Capture a clear photo of your face for identity verification during clock-in.</p>
@@ -306,8 +310,7 @@
             </div>
             
             <div class="flex gap-3 relative z-10">
-                <button onclick="closeFaceRecognitionModal()" class="flex-1 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">Cancel</button>
-                <button id="capture-recognition-btn" onclick="captureRecognitionFace()" disabled class="flex-1 py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer">Capture Face</button>
+                <button id="capture-recognition-btn" onclick="captureRecognitionFace()" disabled class="w-full py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer">Capture Face</button>
             </div>
         </div>
     </div>
@@ -322,6 +325,7 @@
         let faceRecognitionStream = null;
         let faceRecognitionModelsLoaded = false;
         let userFaceDescriptor = null;
+        let hasFaceRecognition = false;
 
         // Attendance Check-in/Check-out
         document.addEventListener('DOMContentLoaded', function() {
@@ -348,7 +352,9 @@
                 }
 
                 if (data.status === 'no_employee') {
-                    banner.classList.add('hidden');
+                    statusText.textContent = 'No employee record found. Please contact admin.';
+                    checkInBtn.classList.add('hidden');
+                    checkOutBtn.classList.add('hidden');
                     return;
                 }
 
@@ -359,7 +365,7 @@
                     checkInBtn.classList.remove('hidden');
                     checkOutBtn.classList.add('hidden');
                     
-                    // Show force check-in overlay
+                    // Show force check-in overlay after face verification
                     const overlay = document.getElementById('force-checkin-overlay');
                     if (overlay) {
                         overlay.classList.remove('hidden');
@@ -403,9 +409,40 @@
             }
         }
 
-        async function checkIn() {
-            // Open face verification modal instead of directly checking in
-            openFaceVerification();
+        async function attendanceCheckIn() {
+            console.log('attendanceCheckIn called');
+            console.log('hasFaceRecognition:', hasFaceRecognition);
+            console.log('userFaceDescriptor:', userFaceDescriptor);
+            
+            // Wait for face descriptor to load if not loaded yet
+            if (userFaceDescriptor === null && !hasFaceRecognition) {
+                console.log('Face descriptor not loaded, reloading...');
+                await loadUserFaceDescriptor();
+                console.log('After reload - hasFaceRecognition:', hasFaceRecognition, 'userFaceDescriptor:', userFaceDescriptor);
+            }
+            
+            // Check if user has face recognition set up
+            if (!hasFaceRecognition || !userFaceDescriptor) {
+                console.log('No face recognition set up, showing setup modal');
+                // User doesn't have face recognition set up, show setup modal
+                openFaceRecognitionModal();
+            } else {
+                console.log('Face recognition set up, showing verification modal');
+                // User has face recognition set up, show verification modal
+                openFaceVerification();
+            }
+        }
+
+        async function handleForceCheckIn() {
+            console.log('handleForceCheckIn called');
+            // Hide the force check-in overlay
+            const overlay = document.getElementById('force-checkin-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }
+            // Then proceed with normal check-in flow (face verification)
+            await attendanceCheckIn();
         }
 
         // Face Verification
@@ -559,14 +596,19 @@
 
             // If user has face recognition set up, verify identity
             if (userFaceDescriptor) {
-                const isMatch = await verifyFaceIdentity(canvas);
-                if (!isMatch) {
-                    statusText.textContent = 'Face does not match. Please try again.';
+                const verificationResult = await verifyFaceIdentity(canvas);
+                if (!verificationResult.match) {
+                    statusText.textContent = `Face does not match (${verificationResult.percentage}% similarity, minimum 65% required). Please try again.`;
                     statusText.classList.add('text-red-400');
                     statusText.classList.remove('text-emerald-400', 'text-amber-400');
+                    // Don't close modal, let user try again
                     return;
                 }
-                statusText.textContent = 'Identity verified! Proceeding with check-in...';
+                statusText.textContent = `Identity verified! (${verificationResult.percentage}% similarity). Proceeding with check-in...`;
+                // Pause for 4 seconds to let user read the percentage
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                // Only close modal after successful verification
+                closeFaceVerification();
             }
             
             // Proceed with check-in
@@ -580,14 +622,14 @@
                     await loadFaceRecognitionModels();
                 }
 
-                // Detect face and get descriptor
-                const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions())
+                // Detect face and get descriptor with better accuracy
+                const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
                     .withFaceLandmarks()
                     .withFaceDescriptor();
                 
                 if (!detection) {
                     console.log('No face detected for verification');
-                    return false;
+                    return { match: false, percentage: 0 };
                 }
 
                 const capturedDescriptor = detection.descriptor;
@@ -597,12 +639,22 @@
                 
                 console.log('Face recognition distance:', distance);
                 
-                // Threshold for face matching (typically 0.6 is a good threshold)
+                // Convert distance to percentage (0.6 threshold = 0%, 0 distance = 100%)
                 const threshold = 0.6;
-                return distance < threshold;
+                const percentage = Math.max(0, Math.round((1 - distance / threshold) * 100));
+                
+                console.log('Face match percentage:', percentage);
+                
+                // Require at least 65% match for verification
+                const minimumMatchPercentage = 65;
+                const match = percentage >= minimumMatchPercentage;
+                
+                console.log('Face verification result:', { match, percentage, minimumMatchPercentage });
+                
+                return { match, percentage };
             } catch (err) {
                 console.error('Error verifying face identity:', err);
-                return false;
+                return { match: false, percentage: 0 };
             }
         }
 
@@ -658,14 +710,27 @@
                 const response = await fetch('/api/user-face-descriptor');
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Face descriptor API response:', data);
+                    hasFaceRecognition = data.has_face_recognition || false;
                     if (data.face_descriptor) {
                         userFaceDescriptor = new Float32Array(JSON.parse(data.face_descriptor));
-                        console.log('User face descriptor loaded');
+                        console.log('User face descriptor loaded successfully');
+                    } else {
+                        console.log('No face descriptor found in response');
+                        userFaceDescriptor = null;
                     }
+                } else {
+                    console.log('Face descriptor API request failed');
+                    userFaceDescriptor = null;
+                    hasFaceRecognition = false;
                 }
             } catch (err) {
                 console.error('Error loading user face descriptor:', err);
+                userFaceDescriptor = null;
+                hasFaceRecognition = false;
             }
+            console.log('Final userFaceDescriptor value:', userFaceDescriptor);
+            console.log('Final hasFaceRecognition value:', hasFaceRecognition);
         }
 
         function openFaceRecognitionModal() {
@@ -815,15 +880,16 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        profile_picture: imageData,
                         face_descriptor: JSON.stringify(descriptor)
                     }),
                 });
                 
                 if (response.ok) {
                     closeFaceRecognitionModal();
-                    alert('Face recognition setup completed successfully!');
-                    location.reload();
+                    // Reload the face descriptor
+                    await loadUserFaceDescriptor();
+                    // Now proceed with check-in
+                    openFaceVerification();
                 } else {
                     alert('Error saving face data. Please try again.');
                 }
@@ -836,11 +902,18 @@
         let countdownInterval = null;
         let countdownValue = 5;
 
-        function checkOut() {
+        function attendanceCheckOut() {
+            // Check if user is already checked out
+            const statusText = document.getElementById('attendance-status');
+            if (statusText && statusText.textContent.includes('Checked out')) {
+                alert('You are already checked out.');
+                return;
+            }
+            
             // Check if modal exists
-            const modal = document.getElementById('checkout-modal');
+            const modal = document.getElementById('attendance-checkout-modal');
             if (!modal) {
-                console.error('Checkout modal not found');
+                console.error('Attendance checkout modal not found');
                 return;
             }
             
@@ -851,7 +924,7 @@
             }
             
             // Show modal with animation
-            const modalContent = document.getElementById('checkout-modal-content');
+            const modalContent = document.getElementById('attendance-checkout-modal-content');
             
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -865,10 +938,10 @@
             
             // Reset countdown
             countdownValue = 5;
-            const countdownEl = document.getElementById('countdown');
-            const countdownTextEl = document.getElementById('countdown-text');
-            const countdownBarEl = document.getElementById('countdown-bar');
-            const confirmBtnEl = document.getElementById('confirm-checkout-btn');
+            const countdownEl = document.getElementById('attendance-countdown');
+            const countdownTextEl = document.getElementById('attendance-countdown-text');
+            const countdownBarEl = document.getElementById('attendance-countdown-bar');
+            const confirmBtnEl = document.getElementById('confirm-attendance-checkout-btn');
             
             console.log('Countdown elements found:', {
                 countdownEl: !!countdownEl,
@@ -909,11 +982,11 @@
             }, 1000);
         }
 
-        function closeCheckoutModal() {
-            const modal = document.getElementById('checkout-modal');
+        function closeAttendanceCheckoutModal() {
+            const modal = document.getElementById('attendance-checkout-modal');
             if (!modal) return;
             
-            const modalContent = document.getElementById('checkout-modal-content');
+            const modalContent = document.getElementById('attendance-checkout-modal-content');
             
             // Animate out
             modal.classList.add('opacity-0');
@@ -934,7 +1007,7 @@
             }
         }
 
-        async function confirmCheckout() {
+        async function confirmAttendanceCheckout() {
             try {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]');
                 if (!csrfToken) {
@@ -942,6 +1015,8 @@
                     alert('Error: CSRF token not found');
                     return;
                 }
+                
+                console.log('Calling attendance check-out route:', attendanceCheckOutRoute);
                 
                 const response = await fetch(attendanceCheckOutRoute, {
                     method: 'POST',
@@ -954,9 +1029,10 @@
                 });
                 
                 const data = await response.json();
+                console.log('Attendance check-out response:', data);
                 
                 if (response.ok && data.success) {
-                    closeCheckoutModal();
+                    closeAttendanceCheckoutModal();
                     loadAttendanceStatus();
                     // Show success message
                     const banner = document.getElementById('attendance-banner');
@@ -1094,7 +1170,7 @@
             </div>
             <h2 class="text-2xl font-bold text-slate-800 mb-3">Shift Check-In Required</h2>
             <p class="text-slate-600 mb-8 text-lg">You must check in to start your shift before accessing the system.</p>
-            <button onclick="openFaceVerification()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+            <button onclick="handleForceCheckIn()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
                 Check In Now
             </button>
         </div>

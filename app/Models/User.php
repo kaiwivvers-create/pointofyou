@@ -96,12 +96,7 @@ class User extends Authenticatable
 
     public function getDashboardRouteAttribute(): string
     {
-        // Use database role's dashboard_route if available
-        if ($this->dbRole && $this->dbRole->dashboard_route) {
-            return $this->dbRole->dashboard_route;
-        }
-
-        // Fallback to enum-based dashboard route
+        // Prioritize enum-based dashboard route for consistency
         return $this->role->dashboardRoute();
     }
 

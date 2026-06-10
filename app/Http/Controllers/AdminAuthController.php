@@ -34,7 +34,17 @@ class AdminAuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route($request->user()->dashboard_route));
+        $user = $request->user();
+        $dashboardRoute = $user->dashboard_route;
+        
+        // Log the redirect for debugging
+        \Log::info('User logged in', [
+            'user_id' => $user->id,
+            'role' => $user->role->value,
+            'dashboard_route' => $dashboardRoute,
+        ]);
+
+        return redirect()->intended(route($dashboardRoute));
     }
 
     public function destroy(Request $request): RedirectResponse
