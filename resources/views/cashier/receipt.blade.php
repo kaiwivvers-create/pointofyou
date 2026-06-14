@@ -47,7 +47,19 @@
     </div>
     <div class="receipt-item">
         <span>Paid By</span>
-        <span>{{ $order->cashier?->name ?? ($order->payment_method ? 'N/A' : 'Pending') }}</span>
+        <span>
+            @if ($order->cashier)
+                {{ $order->cashier->name }}
+            @elseif ($order->payment_method)
+                @if ($order->cafeTable && strtolower($order->cafeTable->name) !== 'walk-in' && strtolower($order->cafeTable->name) !== 'takeout')
+                    Table {{ $order->cafeTable->name }}
+                @else
+                    Order #{{ $order->order_number }}
+                @endif
+            @else
+                Pending
+            @endif
+        </span>
     </div>
     <div class="receipt-item text-lg">
         <span>Total</span>

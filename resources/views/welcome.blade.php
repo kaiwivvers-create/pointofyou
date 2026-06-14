@@ -1,6 +1,6 @@
 @php
     $brandSettings = \App\Models\BrandSettings::getSettings();
-    $favicon = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : asset('favicon.ico');
+    $favicon = $brandSettings->logo ? asset('app-storage/' . $brandSettings->logo) : asset('favicon.ico');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -19,7 +19,7 @@
         <div class="w-full px-4 sm:px-8 lg:px-14 py-4 flex items-center justify-between gap-4">
             <a href="https://bryan.rplkodingan.com" class="flex items-center gap-2 shrink-0">
                 @if ($brandSettings->logo)
-                    <img src="{{ asset('storage/' . $brandSettings->logo) }}" alt="{{ $brandSettings->app_name }}" class="w-8 h-8 rounded-lg object-cover">
+                    <img src="{{ asset('app-storage/' . $brandSettings->logo) }}" alt="{{ $brandSettings->app_name }}" class="w-8 h-8 rounded-lg object-cover">
                 @else
                     <span class="text-2xl" aria-hidden="true">{{ $brandSettings->logo_fallback }}</span>
                 @endif
@@ -144,7 +144,7 @@
             <div>
                 <p class="flex items-center gap-2 font-display text-xl font-semibold text-amber-50">
                     @if ($brandSettings->logo)
-                        <img src="{{ asset('storage/' . $brandSettings->logo) }}" alt="{{ $brandSettings->app_name }}" class="w-8 h-8 rounded-lg object-cover">
+                        <img src="{{ asset('app-storage/' . $brandSettings->logo) }}" alt="{{ $brandSettings->app_name }}" class="w-8 h-8 rounded-lg object-cover">
                     @else
                         <span aria-hidden="true">{{ $brandSettings->logo_fallback }}</span>
                     @endif
@@ -188,6 +188,6 @@
             >Staff Login</a>
         </div>
     </footer>
-
+    @include('partials.translator', ['isFloating' => true])
 </body>
 </html>

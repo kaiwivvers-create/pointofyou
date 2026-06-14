@@ -254,7 +254,7 @@
         const currentIconDiv = document.getElementById('edit-current-icon');
         const currentIconImg = document.getElementById('current-icon-image');
         if (iconUrl) {
-            currentIconImg.src = iconUrl.startsWith('http') ? iconUrl : '{{ asset('storage/') }}' + iconUrl;
+            currentIconImg.src = iconUrl.startsWith('http') ? iconUrl : '{{ asset('app-storage') }}/' + iconUrl;
             currentIconDiv.classList.remove('hidden');
         } else {
             currentIconDiv.classList.add('hidden');

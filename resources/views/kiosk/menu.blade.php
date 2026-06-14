@@ -493,9 +493,9 @@
                             @php
                                 $isPacket = $category === 'packets';
                                 $imagePath = $item->image;
-                                // Ensure path starts with storage/
-                                if ($imagePath && !str_starts_with($imagePath, 'storage/')) {
-                                    $imagePath = 'storage/' . $imagePath;
+                                // Ensure path starts with app-storage/
+                                if ($imagePath && !str_starts_with($imagePath, 'app-storage/')) {
+                                    $imagePath = 'app-storage/' . $imagePath;
                                 }
                                 $img = $imagePath ? asset($imagePath) : 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80';
                                 if($category === 'drinks' && !$item->image) $img = 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=600&q=80';
@@ -743,10 +743,14 @@
 
                 @if(! $isTakeout)
                     <div class="mb-6">
-                        <label for="table_number" class="block text-sm font-bold text-stone-700 mb-2">Table number</label>
-                        <input type="text" id="table_number" name="table_number" form="kioskPaymentForm" required placeholder="e.g. 12"
-                            class="w-full px-4 py-4 bg-white border-2 border-amber-200/70 rounded-2xl focus:ring-0 focus:border-amber-500 font-medium text-stone-800 transition-colors placeholder:font-normal"
-                            autocomplete="off">
+                        <label for="table_number" class="block text-sm font-bold text-stone-700 mb-2">Select your table</label>
+                        <select id="table_number" name="table_number" form="kioskPaymentForm" required
+                            class="w-full px-4 py-4 bg-white border-2 border-amber-200/70 rounded-2xl focus:ring-0 focus:border-amber-500 font-medium text-stone-800 transition-colors">
+                            <option value="">-- Select a table --</option>
+                            @foreach($tables as $table)
+                                <option value="{{ $table->name }}">{{ $table->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 @endif
 
@@ -787,7 +791,7 @@
                     <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 sm:p-5 text-center">
                         <div class="w-36 h-36 sm:w-44 sm:h-44 mx-auto bg-white border-2 border-slate-200 rounded-2xl mb-3 sm:mb-4 overflow-auto flex items-center justify-center">
                             @if($paymentSettings->qr_code_image)
-                                <img src="{{ asset('storage/' . $paymentSettings->qr_code_image) }}" alt="QR Code" class="object-contain">
+                                <img src="{{ asset('app-storage/' . $paymentSettings->qr_code_image) }}" alt="QR Code" class="object-contain">
                             @else
                                 <svg class="size-10 sm:size-14 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h4v4H4V4zm8 0h4v4h-4V4zM4 12h4v4H4v-4zm8 8v-4h4v4h-4zm4-8h4v4h-4v-4zm0-8h4v4h-4V4zM8 8h8v8H8V8z" />
@@ -970,7 +974,7 @@
         // Create form and submit
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/kiosk/cart/update/${currentEditIndex}`;
+        form.action = `{{ url('/kiosk/cart/update') }}/${currentEditIndex}`;
 
         // Get CSRF token from the hidden input in the page
         const csrfToken = document.querySelector('input[name="_token"]')?.value;
@@ -1022,7 +1026,7 @@
     }
     
     function openItemModal(item, imgSrc) {
-        document.getElementById('itemForm').action = `/kiosk/cart/${item.id}`;
+        document.getElementById('itemForm').action = `{{ url('/kiosk/cart') }}/${item.id}`;
         document.getElementById('modalImg').src = imgSrc;
         document.getElementById('modalTitle').innerText = item.name;
         document.getElementById('modalDesc').innerText = item.description || '';
@@ -1096,7 +1100,7 @@
     }
 
     function openPacketModal(packet, imgSrc) {
-        document.getElementById('itemForm').action = `/kiosk/packet/${packet.id}/add`;
+        document.getElementById('itemForm').action = `{{ url('/kiosk/packet') }}/${packet.id}/add`;
         document.getElementById('modalImg').src = imgSrc;
         document.getElementById('modalTitle').innerText = packet.name;
         document.getElementById('modalDesc').innerText = packet.description || '';
@@ -1246,13 +1250,13 @@
 
             if (contentType && contentType.includes('application/json')) {
                 const data = await response.json();
-                window.location.href = data.redirect_url || '/kiosk/success';
+                window.location.href = data.redirect_url || '{{ url("/kiosk/success") }}';
             } else {
                 // If not JSON but successful, check for redirect
                 if (response.redirected) {
                     window.location.href = response.url;
                 } else {
-                    window.location.href = '/kiosk/success';
+                    window.location.href = '{{ url("/kiosk/success") }}';
                 }
             }
         } catch (error) {
@@ -1370,7 +1374,7 @@
         // Store promo in session via AJAX
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/kiosk/promo/apply';
+        form.action = '{{ url("/kiosk/promo/apply") }}';
 
         const csrfToken = document.querySelector('input[name="_token"]')?.value;
         if (csrfToken) {

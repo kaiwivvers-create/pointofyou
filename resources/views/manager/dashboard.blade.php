@@ -146,7 +146,7 @@
                 return;
             }
             
-            const chartData = {{ json_encode($monthlyChartData) }};
+            const chartData = {!! json_encode($monthlyChartData) !!};
             console.log('Chart data:', chartData);
             
             // Remove empty state logic - always try to render the chart

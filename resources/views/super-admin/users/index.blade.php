@@ -74,7 +74,7 @@
                         <tr>
                             <td>
                                 @if ($user->profile_picture)
-                                    <img src="{{ asset('storage/' . $user->profile_picture) }}" alt="{{ $user->name }}" class="size-10 rounded-full object-cover">
+                                    <img src="{{ asset('app-storage/' . $user->profile_picture) }}" alt="{{ $user->name }}" class="size-10 rounded-full object-cover">
                                 @else
                                     <div class="size-10 rounded-full flex items-center justify-center bg-slate-200 text-slate-600 font-semibold">
                                         {{ substr($user->name, 0, 1) }}

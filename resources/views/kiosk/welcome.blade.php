@@ -5,7 +5,7 @@
 @php
     $brandSettings = \App\Models\BrandSettings::getSettings();
     $appName = $brandSettings->app_name ?? 'Golden Crumb';
-    $brandLogo = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : null;
+    $brandLogo = $brandSettings->logo ? asset('app-storage/' . $brandSettings->logo) : null;
 @endphp
 
 <div class="relative min-h-screen w-full flex flex-col justify-center">

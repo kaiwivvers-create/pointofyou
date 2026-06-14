@@ -8,7 +8,7 @@
             <h1 class="staff-page-title">Staff Schedules & Attendance</h1>
             <p class="staff-page-subtitle">Manage work days, days off, and view check-in/check-out records.</p>
         </div>
-        <button onclick="openCreateModal()" class="staff-btn-primary">Add Schedule</button>
+        <a href="{{ route('staff-schedules.create') }}" class="staff-btn-primary">Add Schedule</a>
     </div>
 
     <x-flash />
@@ -19,64 +19,67 @@
         <button onclick="switchTab('attendance')" id="tab-attendance" class="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">Attendance Records</button>
     </div>
 
-    <!-- Schedules Tab -->
     <div id="schedules-tab" class="staff-table-wrap">
         <div class="overflow-x-auto">
             <table class="staff-table">
                 <thead>
                     <tr>
-                        <th>Scheduled For</th>
-                        <th>Date</th>
+                        <th>Role</th>
+                        <th>Day of Week</th>
                         <th>Type</th>
-                        <th>Expected Start</th>
-                        <th>Expected End</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
                         <th>Notes</th>
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @php
+                        $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    @endphp
                     @forelse ($schedules as $schedule)
                         <tr>
-                            <td class="font-semibold text-slate-900">
-                                @if($schedule->role)
-                                    <span class="text-emerald-600">{{ $schedule->role->label() }}</span>
-                                    <span class="text-xs text-slate-400">(All {{ $schedule->role->label() }})</span>
-                                @elseif($schedule->user)
-                                    {{ $schedule->user->name }}
-                                    <span class="text-xs text-slate-400">({{ $schedule->user->role->label() }})</span>
-                                @else
-                                    -
-                                @endif
-                            </td>
-                            <td class="text-slate-900">{{ $schedule->date->format('M d, Y') }}</td>
+                            <td class="font-semibold text-emerald-600">{{ $schedule->role->label() }}</td>
+                            <td class="text-slate-900 font-medium">{{ $days[$schedule->day_of_week] }}</td>
                             <td>
-                                @if ($schedule->type === 'work_day')
-                                    <span class="staff-badge-green">Work Day</span>
-                                @elseif ($schedule->type === 'day_off')
+                                @if ($schedule->is_day_off)
                                     <span class="staff-badge-blue">Day Off</span>
                                 @else
-                                    <span class="staff-badge-yellow">Holiday</span>
+                                    <span class="staff-badge-green">Work Day</span>
                                 @endif
                             </td>
-                            <td class="text-slate-900">{{ $schedule->expected_start_time ? $schedule->expected_start_time->format('H:i') : '09:00' }}</td>
-                            <td class="text-slate-900">{{ $schedule->expected_end_time ? $schedule->expected_end_time->format('H:i') : '17:00' }}</td>
-                            <td class="text-slate-600 max-w-xs truncate">{{ $schedule->notes ?? '-' }}</td>
+                            <td>{{ $schedule->expected_start_time ? $schedule->expected_start_time->format('H:i') : '-' }}</td>
+                            <td>{{ $schedule->expected_end_time ? $schedule->expected_end_time->format('H:i') : '-' }}</td>
+                            <td class="text-slate-500 max-w-xs truncate" title="{{ $schedule->notes }}">{{ $schedule->notes ?: '-' }}</td>
                             <td class="text-right">
-                                <form method="POST" action="{{ route('staff-schedules.destroy', $schedule) }}" class="inline">
+                                <form action="{{ route('staff-schedules.destroy', $schedule) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete this schedule?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="staff-link text-red-600">Delete</button>
+                                    <button type="submit" class="text-rose-600 hover:text-rose-900 p-2 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors">
+                                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
                                 </form>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-16 text-center text-slate-500">No schedules yet.</td>
+                            <td colspan="7" class="text-center py-12">
+                                <div class="inline-flex items-center justify-center size-12 rounded-full bg-slate-100 text-slate-400 mb-4">
+                                    <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
+                                <h3 class="text-sm font-semibold text-slate-900 mb-1">No schedules found</h3>
+                                <p class="text-sm text-slate-500">Get started by creating a new staff schedule.</p>
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+        @if($schedules->hasPages())
+            <div class="px-6 py-4 border-t border-slate-200">
+                {{ $schedules->links() }}
+            </div>
+        @endif
     </div>
 
     <!-- Attendance Tab -->
@@ -135,8 +138,8 @@
                         <tr>
                             <td class="font-semibold text-slate-900">{{ $attendance->employee->user->name ?? '-' }}</td>
                             <td class="text-slate-900">{{ $attendance->date->format('M d, Y') }}</td>
-                            <td class="text-slate-900">{{ $attendance->check_in ? $attendance->check_in->format('H:i') : '-' }}</td>
-                            <td class="text-slate-900">{{ $attendance->check_out ? $attendance->check_out->format('H:i') : '-' }}</td>
+                            <td class="text-slate-900">{{ $attendance->check_in ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : '-' }}</td>
+                            <td class="text-slate-900">{{ $attendance->check_out ? \Carbon\Carbon::parse($attendance->check_out)->format('H:i') : '-' }}</td>
                             <td>
                                 @if ($attendance->status === 'present')
                                     <span class="staff-badge-green">Present</span>
@@ -178,87 +181,6 @@
         </div>
     @endif
 
-    <!-- Create Modal -->
-    <div id="createModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] transition-opacity duration-200">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 transform transition-all duration-200 scale-95 opacity-0" id="createModalContent">
-            <div class="p-6 border-b border-slate-200">
-                <h2 class="text-xl font-semibold text-slate-900">Add Schedule</h2>
-            </div>
-            <form method="POST" action="{{ route('staff-schedules.store') }}" class="p-6">
-                @csrf
-                <div class="mb-4">
-                    <label for="user_id" class="staff-label">Employee</label>
-                    <select id="user_id" name="user_id" required class="staff-input">
-                        <option value="">Select employee</option>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->role->label() }})</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="mb-4">
-                    <label for="date" class="staff-label">Date</label>
-                    <input type="date" id="date" name="date" required class="staff-input">
-                </div>
-
-                <div class="mb-4">
-                    <label for="type" class="staff-label">Type</label>
-                    <select id="type" name="type" required class="staff-input">
-                        <option value="work_day">Work Day</option>
-                        <option value="day_off">Day Off</option>
-                        <option value="holiday">Holiday</option>
-                    </select>
-                </div>
-
-                <div class="mb-4">
-                    <label for="expected_start_time" class="staff-label">Expected Start Time</label>
-                    <input type="time" id="expected_start_time" name="expected_start_time" value="09:00" class="staff-input">
-                    <p class="text-xs text-slate-500 mt-1">Default: 9:00 AM</p>
-                </div>
-
-                <div class="mb-4">
-                    <label for="expected_end_time" class="staff-label">Expected End Time</label>
-                    <input type="time" id="expected_end_time" name="expected_end_time" value="17:00" class="staff-input">
-                    <p class="text-xs text-slate-500 mt-1">Default: 5:00 PM</p>
-                </div>
-
-                <div class="mb-4">
-                    <label for="notes" class="staff-label">Notes (Optional)</label>
-                    <textarea id="notes" name="notes" rows="3" maxlength="1000" class="staff-input" placeholder="Any additional notes..."></textarea>
-                </div>
-
-                <div class="flex justify-end gap-3">
-                    <button type="button" onclick="closeCreateModal()" class="staff-btn-secondary">Cancel</button>
-                    <button type="submit" class="staff-btn-primary">Create Schedule</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        function openCreateModal() {
-            const modal = document.getElementById('createModal');
-            const content = document.getElementById('createModalContent');
-            
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
-
-        function closeCreateModal() {
-            const modal = document.getElementById('createModal');
-            const content = document.getElementById('createModalContent');
-            
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
-            }, 200);
-        }
 
         function switchTab(tab) {
             const schedulesTab = document.getElementById('schedules-tab');
@@ -293,7 +215,7 @@
             tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-slate-500">Loading...</td></tr>';
 
             try {
-                const response = await fetch('/staff-schedules/attendance/filter', {
+                const response = await fetch('{{ url('/staff-schedules/attendance/filter') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,

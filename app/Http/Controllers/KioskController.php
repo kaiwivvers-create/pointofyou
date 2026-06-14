@@ -79,8 +79,9 @@ class KioskController extends Controller
         $cart = Session::get('kiosk_cart', []);
         $cartTotal = collect($cart)->sum('line_total');
         $promos = Promo::active()->ordered()->get();
+        $tables = CafeTable::where('is_active', true)->orderBy('name')->get();
 
-        return view('kiosk.menu', compact('menuItems', 'cart', 'cartTotal', 'promos'));
+        return view('kiosk.menu', compact('menuItems', 'cart', 'cartTotal', 'promos', 'tables'));
     }
 
     private function unavailableCartItems(array $cart): array
@@ -292,8 +293,10 @@ class KioskController extends Controller
         if (empty(Session::get('kiosk_cart'))) {
             return redirect()->route('kiosk.menu')->with('error', 'Cart is empty.');
         }
+        $tables = CafeTable::where('is_active', true)->orderBy('name')->get();
         return view('kiosk.checkout', [
             'orderType' => Session::get('kiosk_order_type', 'takeout'),
+            'tables' => $tables,
         ]);
     }
 

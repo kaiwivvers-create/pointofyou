@@ -34,7 +34,7 @@ class OrderInventoryService
             $requiredQuantity = $totalItemQuantity * max(1, (int) $product->consume_per_item);
 
             if ($requiredQuantity > $product->stock_quantity) {
-                throw new RuntimeException("Not enough {$product->name} in inventory for this takeout order.");
+                throw new RuntimeException("Insufficient stock for takeout supply: {$product->name}. Required: {$requiredQuantity}, Available: {$product->stock_quantity}");
             }
         }
 
@@ -113,7 +113,7 @@ class OrderInventoryService
             $requiredQuantity = $requirement['quantity'];
 
             if ($requiredQuantity > $product->stock_quantity) {
-                throw new RuntimeException("Not enough {$product->name} in inventory. Required: {$requiredQuantity} {$product->unit}, Available: {$product->stock_quantity} {$product->unit}");
+                throw new RuntimeException("Insufficient raw material stock for {$product->name}. Required: {$requiredQuantity} {$product->unit}, Available: {$product->stock_quantity} {$product->unit}");
             }
         }
 
@@ -156,7 +156,7 @@ class OrderInventoryService
             $requiredQuantity = $orderItem->quantity;
 
             if ($requiredQuantity > $gift->stock_quantity) {
-                throw new RuntimeException("Not enough {$gift->name} in stock. Required: {$requiredQuantity}, Available: {$gift->stock_quantity}");
+                throw new RuntimeException("Insufficient stock for gift: {$gift->name}. Required: {$requiredQuantity}, Available: {$gift->stock_quantity}");
             }
 
             if ($requiredQuantity <= 0) {

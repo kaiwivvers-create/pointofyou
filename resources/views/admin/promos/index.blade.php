@@ -39,7 +39,7 @@
                             </td>
                             <td>
                                 @if ($promo->image)
-                                    <img src="{{ asset('storage/' . $promo->image) }}" alt="{{ $promo->title }}" class="w-24 h-12 object-cover rounded-lg border border-slate-200">
+                                    <img src="{{ asset('app-storage/' . $promo->image) }}" alt="{{ $promo->title }}" class="w-24 h-12 object-cover rounded-lg border border-slate-200">
                                 @else
                                     <div class="w-24 h-12 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 text-xs">No image</div>
                                 @endif

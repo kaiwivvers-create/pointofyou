@@ -110,10 +110,10 @@
                                     <div class="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
                                         <div>
                                             <p class="font-semibold text-slate-900">{{ $shift->user ? $shift->user->name : '-' }}</p>
-                                            <p class="text-sm text-slate-600">Clocked in since {{ $shift->check_in->format('H:i') }}</p>
+                                            <p class="text-sm text-slate-600">Clocked in since {{ \Carbon\Carbon::parse($shift->check_in)->format('H:i') }}</p>
                                         </div>
                                         <div class="text-right">
-                                            <span class="text-slate-700">Hours worked: {{ $shift->check_in->diffInMinutes(now()) / 60 }}h</span>
+                                            <span class="text-slate-700">Hours worked: {{ round(\Carbon\Carbon::parse($shift->check_in)->diffInMinutes(now()) / 60, 1) }}h</span>
                                         </div>
                                     </div>
                                 @endforeach
@@ -381,7 +381,7 @@
 
             // Update hours worked if checked in
             @if ($attendance && $attendance->check_in)
-                const checkInTime = new Date('{{ $attendance->check_in->format('Y-m-d H:i:s') }}');
+                const checkInTime = new Date('{{ \Carbon\Carbon::parse(today()->format("Y-m-d") . " " . $attendance->check_in)->format("Y-m-d H:i:s") }}');
                 const diffMs = now - checkInTime;
                 const hours = Math.floor(diffMs / (1000 * 60 * 60));
                 const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -395,7 +395,7 @@
             const ctx = document.getElementById('incomeChart');
             if (!ctx) return;
             
-            const chartData = {{ json_encode($monthlyChartData) }};
+            const chartData = {!! json_encode($monthlyChartData) !!};
             
             const config = {
                 type: 'line',

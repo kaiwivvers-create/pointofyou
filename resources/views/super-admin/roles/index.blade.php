@@ -219,7 +219,7 @@
             const modal = document.getElementById('editModal');
             const content = document.getElementById('editModalContent');
             const form = document.getElementById('editForm');
-            form.action = '/super-admin/roles/' + role.id;
+            form.action = '{{ url("/super-admin/roles") }}/' + role.id;
             
             form.querySelector('[name="name"]').value = role.name;
             form.querySelector('[name="slug"]').value = role.slug;

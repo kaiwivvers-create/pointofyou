@@ -41,7 +41,7 @@
                     @if ($settings->logo)
                         <div class="mt-2" id="current-logo-wrap">
                             <p class="text-sm text-slate-600 mb-1">Current logo:</p>
-                            <img src="{{ asset('storage/' . $settings->logo) }}" alt="Logo" class="h-16 w-16 object-cover rounded-lg" id="current-logo-img">
+                            <img src="{{ asset('app-storage/' . $settings->logo) }}" alt="Logo" class="h-16 w-16 object-cover rounded-lg" id="current-logo-img">
                         </div>
                     @endif
                     <div id="crop-preview-wrap" class="mt-2 hidden">
@@ -160,7 +160,7 @@
                     <div class="flex items-center gap-3 mb-6 pb-4 border-b" style="border-color: {{ $settings->primary_color }}40;">
                         <div id="preview-logo" class="w-10 h-10 rounded-lg flex items-center justify-center text-xl font-semibold text-white" style="background-color: {{ $settings->primary_color }};">
                             @if ($settings->logo)
-                                <img src="{{ asset('storage/' . $settings->logo) }}" alt="Logo" class="w-full h-full object-cover rounded-lg">
+                                <img src="{{ asset('app-storage/' . $settings->logo) }}" alt="Logo" class="w-full h-full object-cover rounded-lg">
                             @else
                                 {{ $settings->logo_fallback }}
                             @endif
@@ -241,7 +241,7 @@
     </div>
 
     <script>
-        let uploadedLogoUrl = '{{ $settings->logo ? asset('storage/' . $settings->logo) : '' }}';
+        let uploadedLogoUrl = '{{ $settings->logo ? asset('app-storage/' . $settings->logo) : '' }}';
         let cropper = null;
 
         function updatePreview() {

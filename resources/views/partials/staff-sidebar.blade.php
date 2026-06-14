@@ -340,4 +340,6 @@
         @endif
         
     </div>
+    
+    @include('partials.translator')
 </div>

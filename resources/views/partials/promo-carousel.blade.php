@@ -14,7 +14,7 @@
         @if($promos->count() === 1)
             @php
                 $promo = $promos->first();
-                $promoImage = $promo->image ? asset('storage/' . $promo->image) : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&q=80';
+                $promoImage = $promo->image ? asset('app-storage/' . $promo->image) : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&q=80';
                 $promoTitle = $promo->title ?: 'Special promotion';
                 $promoDescription = $promo->description ?: 'Limited-time offer available now.';
                 $promo->load('rules.buyItem', 'rules.getItem');
@@ -79,7 +79,7 @@
                     @for ($repeat = 0; $repeat < 5; $repeat++)
                         @foreach($promos as $promo)
                             @php
-                                $promoImage = $promo->image ? asset('storage/' . $promo->image) : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&q=80';
+                                $promoImage = $promo->image ? asset('app-storage/' . $promo->image) : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&q=80';
                                 $promoTitle = $promo->title ?: 'Special promotion';
                                 $promoDescription = $promo->description ?: 'Limited-time offer available now.';
                                 $promo->load('rules.buyItem', 'rules.getItem');

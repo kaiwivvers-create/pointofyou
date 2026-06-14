@@ -32,7 +32,7 @@
                     <label class="staff-label" for="image">Image</label>
                     <input type="file" id="image" name="image" class="staff-input" accept="image/*">
                     @if ($packet->image)
-                        <p class="mt-2 text-sm text-slate-600">Current: <img src="{{ asset('storage/' . $packet->image) }}" alt="{{ $packet->name }}" class="inline-block w-16 h-16 object-cover rounded border border-slate-200"></p>
+                        <p class="mt-2 text-sm text-slate-600">Current: <img src="{{ asset('app-storage/' . $packet->image) }}" alt="{{ $packet->name }}" class="inline-block w-16 h-16 object-cover rounded border border-slate-200"></p>
                     @endif
                 </div>
 

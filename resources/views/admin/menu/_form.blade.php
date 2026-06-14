@@ -12,7 +12,7 @@
             @if ($isEdit && $menuItem?->image)
                 <div class="mt-2">
                     <p class="text-xs text-slate-500 mb-1">Current image:</p>
-                    <img src="{{ asset('storage/' . $menuItem->image) }}" alt="Current image" class="w-32 h-32 object-cover rounded-lg border border-slate-200">
+                    <img src="{{ asset('app-storage/' . $menuItem->image) }}" alt="Current image" class="w-32 h-32 object-cover rounded-lg border border-slate-200">
                 </div>
             @endif
             <div id="imagePreview-{{ $prefix }}" class="mt-2 hidden">

@@ -16,7 +16,7 @@ class DatabaseManagementController extends Controller
     public function index()
     {
         $backupFiles = [];
-        $backupPath = storage_path('app/backups');
+        $backupPath = storage_path('app/private/backups');
         
         if (file_exists($backupPath)) {
             $backupFiles = collect(glob($backupPath . '/*.{sql,sqlite,json}', GLOB_BRACE))
@@ -38,7 +38,7 @@ class DatabaseManagementController extends Controller
         try {
             $format = $request->input('format', 'sqlite');
             $filename = 'backup_' . now()->format('Y_m_d_His') . '.' . $format;
-            $path = storage_path('app/backups/' . $filename);
+            $path = storage_path('app/private/backups/' . $filename);
 
             if (!file_exists(dirname($path))) {
                 mkdir(dirname($path), 0755, true);

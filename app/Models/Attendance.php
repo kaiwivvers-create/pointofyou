@@ -22,8 +22,6 @@ class Attendance extends Model
 
     protected $casts = [
         'date' => 'date',
-        'check_in' => 'datetime',
-        'check_out' => 'datetime',
         'hours_worked' => 'decimal:2',
         'overtime_hours' => 'decimal:2',
     ];
@@ -31,5 +29,17 @@ class Attendance extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function user()
+    {
+        return $this->hasOneThrough(
+            User::class,
+            Employee::class,
+            'id', // Foreign key on Employee table
+            'id', // Foreign key on User table
+            'employee_id', // Local key on Attendance table
+            'user_id' // Local key on Employee table
+        );
     }
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     @php
         $brandSettings = \App\Models\BrandSettings::getSettings();
-        $favicon = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : asset('favicon.ico');
+        $favicon = $brandSettings->logo ? asset('app-storage/' . $brandSettings->logo) : asset('favicon.ico');
         $appName = $brandSettings->app_name ?? config('app.name');
     @endphp
     <title>Kiosk - {{ $appName }}</title>
@@ -58,5 +58,6 @@
 </head>
 <body class="h-screen bg-[#faf6f0] selection:bg-amber-500 selection:text-white flex flex-col overflow-auto">
     @yield('content')
+    @include('partials.translator', ['isFloating' => true])
 </body>
 </html>

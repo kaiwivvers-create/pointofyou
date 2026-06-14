@@ -10,25 +10,21 @@ class StaffSchedule extends Model
     use LogsActivity;
 
     protected $fillable = [
-        'user_id',
         'role_id',
-        'date',
-        'type',
+        'day_of_week',
+        'is_day_off',
         'expected_start_time',
         'expected_end_time',
         'notes',
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'day_of_week' => 'integer',
+        'is_day_off' => 'boolean',
         'expected_start_time' => 'datetime',
         'expected_end_time' => 'datetime',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function role()
     {

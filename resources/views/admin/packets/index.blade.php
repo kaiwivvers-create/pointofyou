@@ -48,9 +48,9 @@
                                 @if ($packet->image)
                                     @php
                                         $imagePath = $packet->image;
-                                        // Ensure path starts with storage/
-                                        if (!str_starts_with($imagePath, 'storage/')) {
-                                            $imagePath = 'storage/' . $imagePath;
+                                        // Ensure path starts with app-storage/
+                                        if (!str_starts_with($imagePath, 'app-storage/')) {
+                                            $imagePath = 'app-storage/' . $imagePath;
                                         }
                                     @endphp
                                     <img src="{{ asset($imagePath) }}" alt="{{ $packet->name }}" class="w-16 h-16 object-cover rounded-lg border border-slate-200" onerror="console.error('Image failed to load:', this.src)">
@@ -352,10 +352,12 @@
             if (packet.image) {
                 document.getElementById('edit-image-preview').classList.remove('hidden');
                 let imagePath = packet.image;
-                if (!imagePath.startsWith('http') && !imagePath.startsWith('/storage/')) {
-                    imagePath = '/storage/' + imagePath;
+                if (!imagePath.startsWith('http')) {
+                    let cleanPath = imagePath.replace(/^\/?app-storage\//, '').replace(/^\/+/, '');
+                    document.getElementById('edit-current-image').src = '{{ asset('app-storage') }}/' + cleanPath;
+                } else {
+                    document.getElementById('edit-current-image').src = imagePath;
                 }
-                document.getElementById('edit-current-image').src = imagePath.startsWith('http') ? imagePath : '{{ asset('') }}' + imagePath;
             } else {
                 document.getElementById('edit-image-preview').classList.add('hidden');
             }

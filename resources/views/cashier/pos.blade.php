@@ -196,8 +196,27 @@
                 <p class="text-4xl font-bold text-blue-600" id="checkout-total-display">$0.00</p>
             </div>
 
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                Walk-in order. No table will be assigned.
+            <!-- Order Type -->
+            <div>
+                <p class="text-sm font-semibold text-slate-700 mb-2">Order Type</p>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <button type="button" onclick="setOrderType('walk-in')" id="type-walk-in" class="py-2 border-2 border-blue-500 bg-blue-50 text-blue-700 rounded-lg font-medium text-sm transition-colors">Walk-in</button>
+                    <button type="button" onclick="setOrderType('dine-in')" id="type-dine-in" class="py-2 border-2 border-slate-200 text-slate-600 rounded-lg font-medium text-sm hover:border-slate-300 transition-colors">Dine-in (Table)</button>
+                </div>
+                
+                <div id="table-selection-container" class="hidden">
+                    <p class="text-sm font-semibold text-slate-700 mb-2">Select Table</p>
+                    <select id="checkout-table-id" class="w-full rounded-lg border-slate-200 p-2.5 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">-- Select Table --</option>
+                        @isset($tables)
+                            @foreach($tables as $table)
+                                @if(strtolower($table->name) !== 'walk-in' && strtolower($table->name) !== 'takeout')
+                                    <option value="{{ $table->id }}">{{ $table->name }}</option>
+                                @endif
+                            @endforeach
+                        @endisset
+                    </select>
+                </div>
             </div>
 
             <!-- Payment Method -->
@@ -519,10 +538,20 @@
             alert('Note: Camera access on mobile devices requires HTTPS. If the scanner doesn\'t work, please use the manual barcode input below.');
         }
 
-        // Initialize the scanner
-        if (!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5Qrcode("reader");
+        // Clean up any existing scanner instance before starting a new one
+        if (html5QrcodeScanner && isScanning) {
+            try {
+                await html5QrcodeScanner.stop();
+                await html5QrcodeScanner.clear();
+                isScanning = false;
+            } catch (err) {
+                console.warn('Error cleaning up previous scanner:', err);
+            }
+            html5QrcodeScanner = null;
         }
+
+        // Initialize a new scanner instance
+        html5QrcodeScanner = new Html5Qrcode("reader");
 
         // Get available cameras
         try {
@@ -583,7 +612,11 @@
             isScanning = true;
         } catch (err) {
             console.error("Error starting scanner:", err);
-            alert("Unable to start camera scanner. Please use the manual barcode input below.");
+            if (err.name === 'NotReadableError') {
+                alert('Camera is already in use by another application. Please close other apps that might be using the camera, or use the manual barcode input below.');
+            } else {
+                alert("Unable to start camera scanner. Please use the manual barcode input below.");
+            }
             isScanning = false;
         }
     }
@@ -661,7 +694,7 @@
         }, 10);
 
         // Check if there are active sessions
-        const response = await fetch('/device-sessions/active');
+        const response = await fetch('{{ url('/device-sessions/active') }}');
         const data = await response.json();
 
         if (data.sessions && data.sessions.length > 0) {
@@ -705,7 +738,7 @@
 
     async function createDeviceSession() {
         try {
-            const response = await fetch('/device-sessions', {
+            const response = await fetch('{{ url('/device-sessions') }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -764,7 +797,7 @@
     async function loadConnectedDevices() {
         try {
             console.log('Loading connected devices for modal...');
-            const response = await fetch('/device-sessions/active');
+            const response = await fetch('{{ url('/device-sessions/active') }}');
             const data = await response.json();
 
             console.log('Connected devices response:', data);
@@ -822,7 +855,7 @@
         try {
             console.log('Loading active sessions...');
             // First, check for active sessions in the database
-            const response = await fetch('/device-sessions/active');
+            const response = await fetch('{{ url('/device-sessions/active') }}');
             const data = await response.json();
 
             console.log('Active sessions response:', data);
@@ -842,7 +875,7 @@
                     currentSessionCode = savedSessionCode;
                     console.log('Restored session code from localStorage:', currentSessionCode);
                     // Verify it's still valid by checking the database
-                    const verifyResponse = await fetch(`/device-sessions/${currentSessionCode}`);
+                    const verifyResponse = await fetch(`{{ url('/device-sessions') }}/${currentSessionCode}`);
                     if (verifyResponse.ok) {
                         console.log('Session is still valid, starting polling...');
                         startDevicePolling();
@@ -900,7 +933,7 @@
 
     async function disconnectDevice(sessionCode) {
         try {
-            const response = await fetch(`/device-sessions/${sessionCode}/deactivate`, {
+            const response = await fetch(`{{ url('/device-sessions') }}/${sessionCode}/deactivate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -924,7 +957,7 @@
                 await loadConnectedDevices();
 
                 // Check if there are any remaining sessions
-                const checkResponse = await fetch('/device-sessions/active');
+                const checkResponse = await fetch('{{ url('/device-sessions/active') }}');
                 const checkData = await checkResponse.json();
 
                 if (!checkData.sessions || checkData.sessions.length === 0) {
@@ -957,22 +990,36 @@
         }, 2000);
     }
 
+    let devicePollErrorCount = 0;
+
     async function checkDeviceCartItems() {
         try {
             if (!currentSessionCode) {
-                console.log('No session code set, skipping poll');
                 return;
             }
             
-            const response = await fetch(`/device-sessions/${currentSessionCode}/cart-items`);
-            const data = await response.json();
+            const response = await fetch(`{{ url('/device-sessions') }}/${currentSessionCode}/cart-items`);
             
-            console.log('Device cart items response:', data);
+            // Check if we got a JSON response (not an HTML redirect/error page)
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                devicePollErrorCount++;
+                if (devicePollErrorCount >= 3) {
+                    console.warn('Device polling stopped: server is not returning JSON (likely session expired). Errors:', devicePollErrorCount);
+                    if (devicePollingInterval) {
+                        clearInterval(devicePollingInterval);
+                        devicePollingInterval = null;
+                    }
+                }
+                return;
+            }
+
+            const data = await response.json();
+            devicePollErrorCount = 0; // Reset on success
             
             if (data.items && data.items.length > 0) {
                 console.log('Adding items to cart:', data.items);
                 data.items.forEach(item => {
-                    // Create a cart item directly from the device session data
                     const cartItem = {
                         id: item.id,
                         name: item.name,
@@ -981,12 +1028,11 @@
                         type: item.type,
                         quantity: 1
                     };
-                    console.log('Adding cart item:', cartItem);
                     addToCart(cartItem);
                 });
                 
                 // Clear the device session cart after adding to POS cart
-                await fetch(`/device-sessions/${currentSessionCode}/clear-cart`, {
+                await fetch(`{{ url('/device-sessions') }}/${currentSessionCode}/clear-cart`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -995,7 +1041,14 @@
                 });
             }
         } catch (error) {
-            console.error('Error checking device cart items:', error);
+            devicePollErrorCount++;
+            if (devicePollErrorCount >= 3) {
+                console.warn('Device polling stopped due to repeated errors:', error.message);
+                if (devicePollingInterval) {
+                    clearInterval(devicePollingInterval);
+                    devicePollingInterval = null;
+                }
+            }
         }
     }
 
@@ -1288,7 +1341,7 @@
                 </div>
             `;
         } else if (method === 'qr') {
-            const qrImage = paymentSettings.qr_code_image ? '/storage/' + paymentSettings.qr_code_image : null;
+            const qrImage = paymentSettings.qr_code_image ? '/app-storage/' + paymentSettings.qr_code_image : null;
             const qrContent = qrImage 
                 ? `<img src="${qrImage}" class="w-48 h-48 mx-auto object-contain mb-3" alt="QR Code">`
                 : `<div class="w-48 h-48 mx-auto bg-slate-100 flex items-center justify-center text-slate-400 mb-3"><span class="text-xs">No QR configured</span></div>`;
@@ -1334,8 +1387,41 @@
         }
     }
 
+    let currentOrderType = 'walk-in';
+
+    function setOrderType(type) {
+        currentOrderType = type;
+        
+        const walkInBtn = document.getElementById('type-walk-in');
+        const dineInBtn = document.getElementById('type-dine-in');
+        const tableContainer = document.getElementById('table-selection-container');
+        
+        walkInBtn.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700', 'border-slate-200', 'text-slate-600');
+        dineInBtn.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700', 'border-slate-200', 'text-slate-600');
+        
+        if (type === 'walk-in') {
+            walkInBtn.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
+            dineInBtn.classList.add('border-slate-200', 'text-slate-600');
+            tableContainer.classList.add('hidden');
+        } else {
+            dineInBtn.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
+            walkInBtn.classList.add('border-slate-200', 'text-slate-600');
+            tableContainer.classList.remove('hidden');
+        }
+    }
+
     async function submitOrder(forceLater = false) {
         if (cart.length === 0 || isSubmitting) return;
+
+        let selectedTableId = null;
+        if (currentOrderType === 'dine-in') {
+            const tableSelect = document.getElementById('checkout-table-id');
+            if (!tableSelect.value) {
+                alert('Please select a table for Dine-in orders.');
+                return;
+            }
+            selectedTableId = tableSelect.value;
+        }
 
         const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const tax = subtotal * taxRate;
@@ -1370,8 +1456,8 @@
                 quantity: item.quantity,
                 type: item.type
             })),
-            order_type: 'walk-in',
-            table_id: null,
+            order_type: currentOrderType,
+            table_id: selectedTableId,
             subtotal: subtotal,
             tax: tax,
             total: total,

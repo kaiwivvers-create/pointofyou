@@ -61,13 +61,13 @@
         }
 
         function onScanFailure(error) {
-            // Handle scan failure, usually better to ignore and keep scanning
-            console.log('Scan error:', error);
+            // Suppress the "No MultiFormat Readers were able to detect the code" warning
+            // as this is normally thrown every frame there is no barcode/QR code visible.
         }
 
         async function addToCart(barcode) {
             try {
-                const response = await fetch(`/device-sessions/${sessionCode}/add-to-cart`, {
+                const response = await fetch(`{{ url('/device-sessions') }}/${sessionCode}/add-to-cart`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -202,5 +202,6 @@
             startScanner();
         });
     </script>
+    @include('partials.translator', ['isFloating' => true])
 </body>
 </html>

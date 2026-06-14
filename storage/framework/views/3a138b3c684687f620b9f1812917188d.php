@@ -1,0 +1,1240 @@
+<?php
+    $brandSettings = \App\Models\BrandSettings::getSettings();
+    $favicon = $brandSettings->logo ? asset('app-storage/' . $brandSettings->logo) : asset('favicon.ico');
+?>
+<!DOCTYPE html>
+<html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <title><?php echo $__env->yieldContent('title', 'Staff'); ?> — <?php echo e($brandSettings->app_name); ?></title>
+    <link rel="icon" type="image/x-icon" href="<?php echo e($favicon); ?>">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        :root {
+            --primary-color: <?php echo e($brandSettings->primary_color); ?>;
+            --primary-font-color: <?php echo e($brandSettings->primary_font_color); ?>;
+            --secondary-color: <?php echo e($brandSettings->secondary_color); ?>;
+            --accent-color: <?php echo e($brandSettings->accent_color); ?>;
+        }
+        .text-primary-font {
+            color: var(--primary-font-color) !important;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-slate-900 bg-slate-50 min-h-screen">
+    <div class="flex min-h-screen">
+        
+        <aside class="hidden lg:flex w-72 shrink-0 flex-col fixed top-0 left-0 h-full overflow-hidden" style="background-color: <?php echo e($brandSettings->secondary_color); ?>; border-right: 1px solid <?php echo e($brandSettings->primary_color); ?>40;">
+            <div class="p-6 pb-4 flex-shrink-0">
+                <a href="<?php echo e(url('/')); ?>" class="flex items-center gap-3 rounded-lg p-2 -m-2 transition-colors" style="--hover-bg: <?php echo e($brandSettings->primary_color); ?>18;" onmouseenter="this.style.backgroundColor=this.style.getPropertyValue('--hover-bg')" onmouseleave="this.style.backgroundColor=''">
+                    <?php if($brandSettings->logo): ?>
+                        <img src="<?php echo e(asset('app-storage/' . $brandSettings->logo)); ?>" alt="<?php echo e($brandSettings->app_name); ?>" class="size-10 rounded-lg object-cover">
+                    <?php else: ?>
+                        <div class="flex size-10 items-center justify-center rounded-lg text-xl font-semibold" style="background-color: <?php echo e($brandSettings->primary_color); ?>30; color: <?php echo e($brandSettings->primary_font_color); ?>;">
+                            <?php echo e($brandSettings->logo_fallback); ?>
+
+                        </div>
+                    <?php endif; ?>
+                    <div>
+                        <span class="font-sans text-lg font-semibold leading-tight block" style="color: <?php echo e($brandSettings->primary_font_color); ?>;"><?php echo e($brandSettings->app_name); ?></span>
+                        <span class="text-xs" style="color: <?php echo e($brandSettings->primary_font_color); ?>99;">Staff portal</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="mx-6 mb-5 rounded-lg px-4 py-3 shadow-sm flex-shrink-0" style="background-color: <?php echo e($brandSettings->primary_color); ?>12; border: 1px solid <?php echo e($brandSettings->primary_color); ?>30;">
+                <p class="text-sm font-semibold truncate" style="color: <?php echo e($brandSettings->primary_font_color); ?>;"><?php echo e(Auth::user()->name); ?></p>
+                <p class="text-xs mt-0.5" style="color: <?php echo e($brandSettings->primary_font_color); ?>99;"><?php echo e(Auth::user()->role->label()); ?></p>
+            </div>
+
+            <div class="flex-1 px-4 pb-4 overflow-y-auto">
+                <?php echo $__env->make('partials.staff-sidebar', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+            </div>
+
+            <div class="p-4 mx-2 mb-2 no-print flex-shrink-0" style="border-top: 1px solid <?php echo e($brandSettings->primary_color); ?>30;">
+                <button onclick="openProfileModal()" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
+                    style="color: <?php echo e($brandSettings->primary_font_color); ?>;"
+                    onmouseenter="this.style.backgroundColor='<?php echo e($brandSettings->primary_color); ?>18'"
+                    onmouseleave="this.style.backgroundColor=''">
+                    <?php
+                        $sidebarPfp = Auth::user()->profile_picture
+                            ?? (Auth::user()->employee ? Auth::user()->employee->profile_picture : null);
+                    ?>
+                    <?php if($sidebarPfp): ?>
+                        <img src="<?php echo e(asset('app-storage/' . $sidebarPfp)); ?>" alt="<?php echo e(Auth::user()->name); ?>" class="size-8 rounded-full object-cover select-none pointer-events-none">
+                    <?php else: ?>
+                        <div class="size-8 rounded-full flex items-center justify-center text-sm font-semibold select-none pointer-events-none" style="background-color: <?php echo e($brandSettings->primary_color); ?>30; color: <?php echo e($brandSettings->primary_font_color); ?>;">
+                            <?php echo e(substr(Auth::user()->name, 0, 1)); ?>
+
+                        </div>
+                    <?php endif; ?>
+                    <div class="text-left">
+                        <p class="font-medium"><?php echo e(Auth::user()->name); ?></p>
+                        <p class="text-xs opacity-75"><?php echo e(Auth::user()->role->label()); ?></p>
+                    </div>
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col min-w-0 lg:ml-72 w-full">
+            
+            <header class="lg:hidden flex-shrink-0 border-b border-slate-200 bg-white sticky top-0 z-30">
+                <div class="px-2 py-1 flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-sans font-semibold text-slate-900 truncate text-[10px]"><?php echo e($brandSettings->app_name); ?></p>
+                    </div>
+                    <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="shrink-0 text-[10px] font-semibold text-slate-700 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200">Menu</button>
+                    <form method="POST" action="<?php echo e(route('admin.logout')); ?>" class="no-print">
+                        <?php echo csrf_field(); ?>
+                        <button type="submit" class="shrink-0 text-[10px] font-semibold text-slate-700 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200">Sign out</button>
+                    </form>
+                </div>
+                <div id="mobile-nav" class="px-2 pb-1 overflow-x-auto hidden">
+                    <?php echo $__env->make('partials.staff-sidebar-mobile', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                </div>
+            </header>
+
+            <main class="flex-1 p-1 sm:p-4 lg:p-10 w-full overflow-auto">
+                <?php
+                    $user = auth()->user();
+                    // Show banner if user has a paid dbRole OR if their enum role is a paid role (Cashier, Manager, Chef)
+                    $paidEnumRoles = ['cashier', 'manager', 'chef'];
+                    $showAttendanceBanner = $user && (
+                        ($user->dbRole && $user->dbRole->is_paid) ||
+                        in_array($user->role->value, $paidEnumRoles)
+                    );
+                ?>
+                <!-- Attendance Check-in/Check-out Banner -->
+                <?php if($showAttendanceBanner): ?>
+                <div id="attendance-banner" class="mb-2 sm:mb-6 p-2 sm:p-4 rounded-lg bg-slate-100 border border-slate-200">
+                    <div class="flex items-center justify-between gap-2 sm:gap-4">
+                        <div>
+                            <p class="text-xs sm:text-sm font-semibold text-slate-900">Attendance Tracking</p>
+                            <p id="attendance-status" class="text-[10px] sm:text-xs text-slate-600">Loading status...</p>
+                        </div>
+                        <div class="flex gap-1 sm:gap-2">
+                            <button id="check-in-btn" onclick="attendanceCheckIn()" class="staff-btn-primary text-[10px] sm:text-sm">Check In</button>
+                            <button id="check-out-btn" onclick="attendanceCheckOut()" class="staff-btn-secondary text-[10px] sm:text-sm hidden">Check Out</button>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php echo $__env->yieldContent('content'); ?>
+            </main>
+        </div>
+    </div>
+
+    <?php echo $__env->yieldPushContent('modals'); ?>
+    <?php echo $__env->yieldPushContent('scripts'); ?>
+
+    <!-- Face API.js for face detection -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+    <?php echo $__env->make('partials.chatbot', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+    
+    <div class="lg:hidden">
+        <?php echo $__env->make('partials.translator', ['isFloating' => true], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+    </div>
+
+    <!-- Attendance Check-out Confirmation Modal -->
+    <div id="attendance-checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="attendance-checkout-modal-content">
+            <h2 class="text-xl font-semibold text-slate-900 mb-4">Confirm Check Out</h2>
+            <p class="text-slate-600 mb-4">Are you sure you want to check out? This action cannot be undone.</p>
+            
+            <div class="mb-4">
+                <p id="attendance-countdown-text" class="text-sm text-slate-500 mb-2">Please wait <span id="attendance-countdown" class="font-bold text-red-600">5</span> seconds before confirming...</p>
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                    <div id="attendance-countdown-bar" class="bg-red-600 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="closeAttendanceCheckoutModal()" class="flex-1 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">Cancel</button>
+                <button id="confirm-attendance-checkout-btn" onclick="confirmAttendanceCheckout()" disabled class="flex-1 py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300" style="background-color: #cbd5e1; color: #64748b;">Confirm Check Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Face Verification Modal -->
+    <div id="face-verification-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="face-verification-modal-content">
+            <h2 class="text-xl font-semibold text-slate-900 mb-4">Face Verification</h2>
+            <p class="text-slate-600 mb-4">Please position your face in the center of the frame for verification.</p>
+            
+            <div class="relative mb-4">
+                <video id="face-video" class="w-full rounded-lg bg-slate-900" autoplay playsinline></video>
+                <canvas id="face-canvas" class="hidden"></canvas>
+                <div id="face-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/50">
+                    <div class="text-white text-center">
+                        <svg class="animate-spin h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p>Loading camera...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="face-status" class="mb-4 bg-slate-100 text-slate-700 px-4 py-3 rounded-lg text-center hidden">
+                <span id="face-status-text">Detecting face...</span>
+            </div>
+            
+            <div class="flex gap-3 relative z-10">
+                <button id="capture-face-btn" onclick="captureFace()" disabled class="w-full py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer">Capture & Verify</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div id="profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="profile-modal-content">
+            <h2 class="text-xl font-semibold text-slate-900 mb-6">Profile Settings</h2>
+
+            <form method="POST" action="<?php echo e(route('profile.update')); ?>" enctype="multipart/form-data" id="profile-form">
+                <?php echo csrf_field(); ?>
+                <?php echo method_field('PUT'); ?>
+
+                <!-- Profile Picture -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Profile Picture</label>
+
+                    <!-- Current Profile Picture / Preview -->
+                    <div class="flex justify-center mb-4">
+                        <?php if(Auth::user()->profile_picture): ?>
+                            <img id="current-profile-picture" src="<?php echo e(asset('app-storage/' . Auth::user()->profile_picture)); ?>" alt="<?php echo e(Auth::user()->name); ?>" class="size-20 rounded-full object-cover select-none pointer-events-none">
+                        <?php else: ?>
+                            <div id="current-profile-picture" class="size-20 rounded-full flex items-center justify-center text-2xl font-semibold bg-slate-200 text-slate-600 select-none pointer-events-none">
+                                <?php echo e(substr(Auth::user()->name, 0, 1)); ?>
+
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- File Input -->
+                    <div class="flex justify-center">
+                        <label for="profile-picture-input" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition-colors">
+                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Choose File
+                        </label>
+                        <input type="file" name="profile_picture" id="profile-picture-input" accept="image/*" class="hidden">
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1 text-center">JPG, PNG, GIF up to 2MB</p>
+
+                    <!-- Face Recognition Setup Button -->
+                    <div class="flex justify-center mt-3">
+                        <button type="button" onclick="openFaceRecognitionModal()" class="w-full flex items-center justify-center space-x-2 py-3 px-4 border border-blue-200 text-blue-700 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors font-medium">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span><?php echo e(!empty(Auth::user()->face_descriptor) ? 'Retake Face Verification' : 'Setup Face Recognition'); ?></span>
+                        </button>
+                    </div>
+
+                    <!-- Cropper Modal -->
+                    <div id="cropper-modal" class="hidden mt-4">
+                        <div class="border border-slate-300 rounded-lg overflow-hidden mb-4 flex justify-center" style="max-height: 400px;">
+                            <img id="image-to-crop" src="" alt="Crop image" class="max-w-full">
+                        </div>
+                        <div class="flex items-center justify-center gap-4 mb-4">
+                            <div class="text-sm text-slate-600">Preview:</div>
+                            <div class="size-20 rounded-full overflow-hidden border-2 border-slate-300">
+                                <img id="crop-preview" src="" alt="Preview" class="w-full h-full object-cover">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="cancelCrop()" class="flex-1 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Cancel</button>
+                            <button type="button" onclick="confirmCrop()" class="flex-1 py-2 rounded-lg font-medium text-white bg-slate-900 hover:bg-slate-800 transition-colors">Crop & Save</button>
+                        </div>
+                    </div>
+
+                    <!-- Hidden input for cropped image -->
+                    <input type="hidden" name="cropped_profile_picture" id="cropped-profile-picture">
+                </div>
+
+                <!-- Name -->
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-slate-700 mb-2">Name</label>
+                    <input type="text" name="name" id="name" value="<?php echo e(Auth::user()->name); ?>" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+                </div>
+
+                <!-- Password -->
+                <div class="mb-4">
+                    <label for="password" class="block text-sm font-medium text-slate-700 mb-2">New Password (optional)</label>
+                    <input type="password" name="password" id="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent" placeholder="Leave blank to keep current password">
+                </div>
+
+                <!-- Password Confirmation -->
+                <div class="mb-6">
+                    <label for="password_confirmation" class="block text-sm font-medium text-slate-700 mb-2">Confirm New Password</label>
+                    <input type="password" name="password_confirmation" id="password_confirmation" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent" placeholder="Leave blank to keep current password">
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeProfileModal()" class="flex-1 py-3 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 rounded-lg font-medium text-white bg-slate-900 hover:bg-slate-800 transition-colors">Save Changes</button>
+                </div>
+            </form>
+
+            <div class="mt-4 pt-4 border-t border-slate-200">
+                <form method="POST" action="<?php echo e(route('admin.logout')); ?>">
+                    <?php echo csrf_field(); ?>
+                    <button type="submit" class="w-full py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors">Sign Out</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Face Recognition Setup Modal -->
+    <div id="face-recognition-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 transform scale-95 transition-transform duration-300" id="face-recognition-modal-content">
+            <h2 class="text-xl font-semibold text-slate-900 mb-4">Face Recognition Setup</h2>
+            <p class="text-slate-600 mb-4">Capture a clear photo of your face for identity verification during clock-in.</p>
+            
+            <div class="relative mb-4">
+                <video id="face-recognition-video" class="w-full rounded-lg bg-slate-900" autoplay playsinline></video>
+                <canvas id="face-recognition-canvas" class="hidden"></canvas>
+                <div id="face-recognition-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/50">
+                    <div class="text-white text-center">
+                        <svg class="animate-spin h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p>Loading camera...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="face-recognition-status" class="mb-4 bg-slate-100 text-slate-700 px-4 py-3 rounded-lg text-center hidden">
+                <span id="face-recognition-status-text">Detecting face...</span>
+            </div>
+            
+            <div class="flex gap-3 relative z-10">
+                <button id="capture-recognition-btn" onclick="captureRecognitionFace()" disabled class="w-full py-3 rounded-lg font-medium text-white disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 cursor-pointer">Capture Face</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store routes as JavaScript variables
+        const attendanceCheckInRoute = "<?php echo e(route('attendance.check-in')); ?>";
+        const attendanceCheckOutRoute = "<?php echo e(route('attendance.check-out')); ?>";
+        const attendanceStatusRoute = "<?php echo e(route('attendance.status')); ?>";
+
+        // Face recognition variables
+        let faceRecognitionStream = null;
+        let faceRecognitionModelsLoaded = false;
+        let userFaceDescriptor = null;
+        let hasFaceRecognition = false;
+
+        // Attendance Check-in/Check-out
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAttendanceStatus();
+            loadFaceRecognitionModels();
+            loadUserFaceDescriptor();
+        });
+
+        async function loadAttendanceStatus() {
+            try {
+                const response = await fetch(attendanceStatusRoute);
+                const data = await response.json();
+                
+                console.log('Attendance status data:', data);
+                
+                const banner = document.getElementById('attendance-banner');
+                const statusText = document.getElementById('attendance-status');
+                const checkInBtn = document.getElementById('check-in-btn');
+                const checkOutBtn = document.getElementById('check-out-btn');
+
+                if (!banner) {
+                    console.error('Attendance banner not found');
+                    return;
+                }
+
+                if (data.status === 'no_employee') {
+                    statusText.textContent = 'No employee record found. Please contact admin.';
+                    checkInBtn.classList.add('hidden');
+                    checkOutBtn.classList.add('hidden');
+                    return;
+                }
+
+                banner.classList.remove('hidden');
+
+                if (data.status === 'not_checked_in') {
+                    statusText.textContent = 'Not checked in today';
+                    checkInBtn.classList.remove('hidden');
+                    checkOutBtn.classList.add('hidden');
+                    
+                    // Show force check-in overlay after face verification
+                    const overlay = document.getElementById('force-checkin-overlay');
+                    if (overlay) {
+                        overlay.classList.remove('hidden');
+                        overlay.classList.add('flex');
+                    }
+                } else if (data.status === 'checked_in') {
+                    statusText.textContent = `Checked in at ${data.check_in_time}`;
+                    checkInBtn.classList.add('hidden');
+                    checkOutBtn.classList.remove('hidden');
+                    
+                    // Hide force check-in overlay
+                    const overlay = document.getElementById('force-checkin-overlay');
+                    if (overlay) {
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
+                    }
+                } else if (data.status === 'checked_out') {
+                    statusText.textContent = `Checked out at ${data.check_out_time} (${data.hours_worked} hours)`;
+                    checkInBtn.classList.add('hidden');
+                    checkOutBtn.classList.add('hidden');
+                    
+                    // Hide force check-in overlay
+                    const overlay = document.getElementById('force-checkin-overlay');
+                    if (overlay) {
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
+                    }
+                } else if (data.status === 'error') {
+                    statusText.textContent = 'Error loading status';
+                    checkInBtn.classList.remove('hidden');
+                    checkOutBtn.classList.add('hidden');
+                } else {
+                    // Unknown status, default to showing check-in button
+                    console.warn('Unknown attendance status:', data.status);
+                    statusText.textContent = 'Status unknown';
+                    checkInBtn.classList.remove('hidden');
+                    checkOutBtn.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading attendance status:', error);
+            }
+        }
+
+        async function attendanceCheckIn() {
+            console.log('attendanceCheckIn called');
+            console.log('hasFaceRecognition:', hasFaceRecognition);
+            console.log('userFaceDescriptor:', userFaceDescriptor);
+            
+            // Wait for face descriptor to load if not loaded yet
+            if (userFaceDescriptor === null && !hasFaceRecognition) {
+                console.log('Face descriptor not loaded, reloading...');
+                await loadUserFaceDescriptor();
+                console.log('After reload - hasFaceRecognition:', hasFaceRecognition, 'userFaceDescriptor:', userFaceDescriptor);
+            }
+            
+            // Check if user has face recognition set up
+            if (!hasFaceRecognition || !userFaceDescriptor) {
+                console.log('No face recognition set up, showing setup modal');
+                // User doesn't have face recognition set up, show setup modal
+                openFaceRecognitionModal();
+            } else {
+                console.log('Face recognition set up, showing verification modal');
+                // User has face recognition set up, show verification modal
+                openFaceVerification();
+            }
+        }
+
+        async function handleForceCheckIn() {
+            console.log('handleForceCheckIn called');
+            // Hide the force check-in overlay
+            const overlay = document.getElementById('force-checkin-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }
+            // Then proceed with normal check-in flow (face verification)
+            await attendanceCheckIn();
+        }
+
+        // Face Verification
+        let videoStream = null;
+        let faceDetectionInterval = null;
+        let isFaceDetected = false;
+
+        async function openFaceVerification() {
+            const modal = document.getElementById('face-verification-modal');
+            const modalContent = document.getElementById('face-verification-modal-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+
+            // Start camera
+            await startCamera();
+        }
+
+        async function closeFaceVerification() {
+            const modal = document.getElementById('face-verification-modal');
+            const modalContent = document.getElementById('face-verification-modal-content');
+            
+            // Stop camera
+            stopCamera();
+            
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        async function startCamera() {
+            const video = document.getElementById('face-video');
+            const loading = document.getElementById('face-loading');
+            const status = document.getElementById('face-status');
+            const statusText = document.getElementById('face-status-text');
+            const captureBtn = document.getElementById('capture-face-btn');
+            
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                
+                video.srcObject = videoStream;
+                
+                video.onloadedmetadata = () => {
+                    loading.classList.add('hidden');
+                    status.classList.remove('hidden');
+                    statusText.textContent = 'Position your face in the center';
+                    
+                    // Start face detection
+                    startFaceDetection();
+                };
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                loading.classList.add('hidden');
+                status.classList.remove('hidden');
+                statusText.textContent = 'Camera access denied. Please allow camera access.';
+                alert('Unable to access camera. Please allow camera permissions and try again.');
+            }
+        }
+
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            if (faceDetectionInterval) {
+                clearInterval(faceDetectionInterval);
+                faceDetectionInterval = null;
+            }
+            
+            isFaceDetected = false;
+            const captureBtn = document.getElementById('capture-face-btn');
+            if (captureBtn) captureBtn.disabled = true;
+        }
+
+        async function startFaceDetection() {
+            const video = document.getElementById('face-video');
+            const canvas = document.getElementById('face-canvas');
+            const statusText = document.getElementById('face-status-text');
+            const captureBtn = document.getElementById('capture-face-btn');
+            
+            // Load face detection models
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+            } catch (err) {
+                console.error('Error loading face detection models:', err);
+                statusText.textContent = 'Face detection unavailable. Proceeding without verification.';
+                captureBtn.disabled = false;
+                return;
+            }
+
+            // Detect faces continuously
+            faceDetectionInterval = setInterval(async () => {
+                if (!videoStream) return;
+
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+                
+                if (detections.length > 0) {
+                    isFaceDetected = true;
+                    statusText.textContent = 'Face detected! Ready to capture.';
+                    statusText.classList.add('text-emerald-400');
+                    statusText.classList.remove('text-amber-400');
+                    captureBtn.disabled = false;
+                } else {
+                    isFaceDetected = false;
+                    statusText.textContent = 'No face detected. Please position your face in the center.';
+                    statusText.classList.add('text-amber-400');
+                    statusText.classList.remove('text-emerald-400');
+                    captureBtn.disabled = true;
+                }
+            }, 500);
+        }
+
+        async function captureFace() {
+            const video = document.getElementById('face-video');
+            const canvas = document.getElementById('face-canvas');
+            const statusText = document.getElementById('face-status-text');
+            
+            // Capture image
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to base64
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            // Verify face is present
+            if (!isFaceDetected) {
+                statusText.textContent = 'No face detected. Please try again.';
+                return;
+            }
+
+            // If user has face recognition set up, verify identity
+            if (userFaceDescriptor) {
+                const verificationResult = await verifyFaceIdentity(canvas);
+                if (!verificationResult.match) {
+                    openFaceFailureModal(verificationResult.percentage);
+                    // Don't close camera modal, but wait for user to try again
+                    return;
+                }
+                statusText.textContent = `Identity verified! (${verificationResult.percentage}% similarity). Proceeding with check-in...`;
+                // Pause for 4 seconds to let user read the percentage
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                // Only close modal after successful verification
+                closeFaceVerification();
+            }
+            
+            // Proceed with check-in
+            await performCheckIn(imageData);
+        }
+
+        async function verifyFaceIdentity(canvas) {
+            try {
+                // Load face recognition models if not loaded
+                if (!faceRecognitionModelsLoaded) {
+                    await loadFaceRecognitionModels();
+                }
+
+                // Detect face and get descriptor with better accuracy
+                const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                
+                if (!detection) {
+                    console.log('No face detected for verification');
+                    return { match: false, percentage: 0 };
+                }
+
+                const capturedDescriptor = detection.descriptor;
+                
+                // Calculate Euclidean distance between descriptors
+                const distance = faceapi.euclideanDistance(capturedDescriptor, userFaceDescriptor);
+                
+                console.log('Face recognition distance:', distance);
+                
+                // Convert distance to percentage (0.6 threshold = 0%, 0 distance = 100%)
+                const threshold = 0.6;
+                const percentage = Math.max(0, Math.round((1 - distance / threshold) * 100));
+                
+                console.log('Face match percentage:', percentage);
+                
+                // Require at least 50% match for verification
+                const minimumMatchPercentage = 50;
+                const match = percentage >= minimumMatchPercentage;
+                
+                console.log('Face verification result:', { match, percentage, minimumMatchPercentage });
+                
+                return { match, percentage };
+            } catch (err) {
+                console.error('Error verifying face identity:', err);
+                return { match: false, percentage: 0 };
+            }
+        }
+
+        async function performCheckIn(faceImage) {
+            try {
+                const response = await fetch(attendanceCheckInRoute, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        face_image: faceImage
+                    }),
+                });
+                
+                if (response.ok) {
+                    closeFaceVerification();
+                    // Wait a moment for the database to update
+                    setTimeout(() => {
+                        loadAttendanceStatus();
+                    }, 500);
+                    // Show success message
+                    const banner = document.getElementById('attendance-banner');
+                    banner.classList.add('bg-emerald-50', 'border-emerald-200');
+                    setTimeout(() => {
+                        banner.classList.remove('bg-emerald-50', 'border-emerald-200');
+                    }, 3000);
+                } else {
+                    alert('Error checking in. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error checking in:', error);
+                alert('Error checking in. Please try again.');
+            }
+        }
+
+        // Face Recognition Setup Functions
+        async function loadFaceRecognitionModels() {
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+                faceRecognitionModelsLoaded = true;
+                console.log('Face recognition models loaded');
+            } catch (err) {
+                console.error('Error loading face recognition models:', err);
+            }
+        }
+
+        async function loadUserFaceDescriptor() {
+            try {
+                const response = await fetch('<?php echo e(url('/profile/user-face-descriptor')); ?>');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Face descriptor API response:', data);
+                    hasFaceRecognition = data.has_face_recognition || false;
+                    if (data.face_descriptor) {
+                        userFaceDescriptor = new Float32Array(JSON.parse(data.face_descriptor));
+                        console.log('User face descriptor loaded successfully');
+                    } else {
+                        console.log('No face descriptor found in response');
+                        userFaceDescriptor = null;
+                    }
+                } else {
+                    console.log('Face descriptor API request failed');
+                    userFaceDescriptor = null;
+                    hasFaceRecognition = false;
+                }
+            } catch (err) {
+                console.error('Error loading user face descriptor:', err);
+                userFaceDescriptor = null;
+                hasFaceRecognition = false;
+            }
+            console.log('Final userFaceDescriptor value:', userFaceDescriptor);
+            console.log('Final hasFaceRecognition value:', hasFaceRecognition);
+        }
+
+        function openFaceRecognitionModal() {
+            const modal = document.getElementById('face-recognition-modal');
+            const content = document.getElementById('face-recognition-modal-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+
+            startFaceRecognitionCamera();
+        }
+
+        function closeFaceRecognitionModal() {
+            const modal = document.getElementById('face-recognition-modal');
+            const content = document.getElementById('face-recognition-modal-content');
+            
+            stopFaceRecognitionCamera();
+            
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        async function startFaceRecognitionCamera() {
+            const video = document.getElementById('face-recognition-video');
+            const loading = document.getElementById('face-recognition-loading');
+            const status = document.getElementById('face-recognition-status');
+            const statusText = document.getElementById('face-recognition-status-text');
+            const captureBtn = document.getElementById('capture-recognition-btn');
+            
+            try {
+                faceRecognitionStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                
+                video.srcObject = faceRecognitionStream;
+                
+                video.onloadedmetadata = () => {
+                    loading.classList.add('hidden');
+                    status.classList.remove('hidden');
+                    statusText.textContent = 'Position your face in the center';
+                    
+                    // Start face detection for recognition setup
+                    startFaceRecognitionDetection();
+                };
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                loading.classList.add('hidden');
+                status.classList.remove('hidden');
+                statusText.textContent = 'Camera access denied. Please allow camera access.';
+                alert('Unable to access camera. Please allow camera permissions and try again.');
+            }
+        }
+
+        function stopFaceRecognitionCamera() {
+            if (faceRecognitionStream) {
+                faceRecognitionStream.getTracks().forEach(track => track.stop());
+                faceRecognitionStream = null;
+            }
+        }
+
+        async function startFaceRecognitionDetection() {
+            const video = document.getElementById('face-recognition-video');
+            const statusText = document.getElementById('face-recognition-status-text');
+            const captureBtn = document.getElementById('capture-recognition-btn');
+            
+            if (!faceRecognitionModelsLoaded) {
+                await loadFaceRecognitionModels();
+            }
+
+            // Detect faces continuously
+            const detectionInterval = setInterval(async () => {
+                if (!faceRecognitionStream) {
+                    clearInterval(detectionInterval);
+                    return;
+                }
+
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+                
+                if (detections.length > 0) {
+                    statusText.textContent = 'Face detected! Ready to capture.';
+                    statusText.classList.add('text-emerald-400');
+                    statusText.classList.remove('text-amber-400');
+                    captureBtn.disabled = false;
+                } else {
+                    statusText.textContent = 'No face detected. Please position your face in the center.';
+                    statusText.classList.add('text-amber-400');
+                    statusText.classList.remove('text-emerald-400');
+                    captureBtn.disabled = true;
+                }
+            }, 500);
+        }
+
+        async function captureRecognitionFace() {
+            const video = document.getElementById('face-recognition-video');
+            const canvas = document.getElementById('face-recognition-canvas');
+            const statusText = document.getElementById('face-recognition-status-text');
+            
+            // Capture image
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to base64
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            // Generate face descriptor
+            try {
+                const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                
+                if (detection) {
+                    const descriptor = Array.from(detection.descriptor);
+                    
+                    // Check if we are doing this during force check-in
+                    const isForcedCheckin = !document.getElementById('force-checkin-overlay').classList.contains('hidden');
+                    
+                    // Send to server
+                    await saveFaceDescriptor(imageData, descriptor, isForcedCheckin);
+                } else {
+                    statusText.textContent = 'No face detected. Please try again.';
+                }
+            } catch (err) {
+                console.error('Error generating face descriptor:', err);
+                statusText.textContent = 'Error processing face. Please try again.';
+            }
+        }
+
+        async function saveFaceDescriptor(imageData, descriptor, shouldAutoCheckIn = false) {
+            try {
+                const response = await fetch('<?php echo e(url('/profile/face-descriptor')); ?>', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        face_descriptor: JSON.stringify(descriptor)
+                    }),
+                });
+                
+                if (response.ok) {
+                    closeFaceRecognitionModal();
+                    // Reload the face descriptor
+                    await loadUserFaceDescriptor();
+                    // Now proceed with check-in if needed
+                    if (shouldAutoCheckIn) {
+                        await performCheckIn(imageData);
+                    } else {
+                        alert('Face Verification successfully saved!');
+                    }
+                } else {
+                    alert('Error saving face data. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error saving face descriptor:', error);
+                alert('Error saving face data. Please try again.');
+            }
+        }
+
+        let countdownInterval = null;
+        let countdownValue = 5;
+
+        function attendanceCheckOut() {
+            // Check if user is already checked out
+            const statusText = document.getElementById('attendance-status');
+            if (statusText && statusText.textContent.includes('Checked out')) {
+                alert('You are already checked out.');
+                return;
+            }
+            
+            // Check if modal exists
+            const modal = document.getElementById('attendance-checkout-modal');
+            if (!modal) {
+                console.error('Attendance checkout modal not found');
+                return;
+            }
+            
+            // Clear any existing countdown
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            // Show modal with animation
+            const modalContent = document.getElementById('attendance-checkout-modal-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Trigger animation
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+            
+            // Reset countdown
+            countdownValue = 5;
+            const countdownEl = document.getElementById('attendance-countdown');
+            const countdownTextEl = document.getElementById('attendance-countdown-text');
+            const countdownBarEl = document.getElementById('attendance-countdown-bar');
+            const confirmBtnEl = document.getElementById('confirm-attendance-checkout-btn');
+            
+            console.log('Countdown elements found:', {
+                countdownEl: !!countdownEl,
+                countdownTextEl: !!countdownTextEl,
+                countdownBarEl: !!countdownBarEl,
+                confirmBtnEl: !!confirmBtnEl
+            });
+            
+            if (countdownTextEl) countdownTextEl.innerHTML = 'Please wait <span class="font-bold text-red-600">' + countdownValue + '</span> seconds before confirming...';
+            if (countdownBarEl) countdownBarEl.style.width = '100%';
+            if (confirmBtnEl) {
+                confirmBtnEl.disabled = true;
+                confirmBtnEl.style.backgroundColor = '#cbd5e1';
+                confirmBtnEl.style.color = '#64748b';
+            }
+            
+            // Start countdown
+            console.log('Starting countdown with value:', countdownValue);
+            countdownInterval = setInterval(() => {
+                countdownValue--;
+                console.log('Countdown tick:', countdownValue);
+                if (countdownTextEl) {
+                    countdownTextEl.innerHTML = 'Please wait <span class="font-bold text-red-600">' + countdownValue + '</span> seconds before confirming...';
+                    console.log('Updated countdown text to:', countdownValue);
+                }
+                if (countdownBarEl) countdownBarEl.style.width = `${(countdownValue / 5) * 100}%`;
+                
+                if (countdownValue <= 0) {
+                    clearInterval(countdownInterval);
+                    console.log('Countdown finished');
+                    if (confirmBtnEl) {
+                        confirmBtnEl.disabled = false;
+                        confirmBtnEl.style.backgroundColor = '#dc2626';
+                        confirmBtnEl.style.color = '#ffffff';
+                    }
+                    if (countdownTextEl) countdownTextEl.textContent = 'You can now confirm your check out';
+                }
+            }, 1000);
+        }
+
+        function closeAttendanceCheckoutModal() {
+            const modal = document.getElementById('attendance-checkout-modal');
+            if (!modal) return;
+            
+            const modalContent = document.getElementById('attendance-checkout-modal-content');
+            
+            // Animate out
+            modal.classList.add('opacity-0');
+            if (modalContent) {
+                modalContent.classList.remove('scale-100');
+                modalContent.classList.add('scale-95');
+            }
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+            
+            // Clear countdown
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        async function confirmAttendanceCheckout() {
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (!csrfToken) {
+                    console.error('CSRF token not found');
+                    alert('Error: CSRF token not found');
+                    return;
+                }
+                
+                console.log('Calling attendance check-out route:', attendanceCheckOutRoute);
+                
+                const response = await fetch(attendanceCheckOutRoute, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken.content,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                });
+                
+                const data = await response.json();
+                console.log('Attendance check-out response:', data);
+                
+                if (response.ok && data.success) {
+                    closeAttendanceCheckoutModal();
+                    loadAttendanceStatus();
+                    // Show success message
+                    const banner = document.getElementById('attendance-banner');
+                    if (banner) {
+                        banner.classList.add('bg-emerald-50', 'border-emerald-200');
+                        setTimeout(() => {
+                            banner.classList.remove('bg-emerald-50', 'border-emerald-200');
+                        }, 3000);
+                    }
+                } else {
+                    alert(data.message || 'Error checking out. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error checking out:', error);
+                alert('Error checking out. Please try again.');
+            }
+        }
+
+
+
+        // Profile Modal
+        window.openProfileModal = function() {
+            const modal = document.getElementById('profile-modal');
+            const modalContent = document.getElementById('profile-modal-content');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        window.closeProfileModal = function() {
+            const modal = document.getElementById('profile-modal');
+            const modalContent = document.getElementById('profile-modal-content');
+
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('profile-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeProfileModal();
+            }
+        });
+
+        // Image Cropping
+        let cropper = null;
+        const profilePictureInput = document.getElementById('profile-picture-input');
+        const cropperModal = document.getElementById('cropper-modal');
+        const imageToCrop = document.getElementById('image-to-crop');
+        const cropPreview = document.getElementById('crop-preview');
+        const croppedProfilePicture = document.getElementById('cropped-profile-picture');
+        const currentProfilePicture = document.getElementById('current-profile-picture');
+
+        profilePictureInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    imageToCrop.src = event.target.result;
+                    cropperModal.classList.remove('hidden');
+
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+
+                    cropper = new Cropper(imageToCrop, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        minCropBoxWidth: 200,
+                        minCropBoxHeight: 200,
+                        crop: function(event) {
+                            const canvas = cropper.getCroppedCanvas({
+                                width: 200,
+                                height: 200,
+                            });
+                            cropPreview.src = canvas.toDataURL();
+                        },
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function confirmCrop() {
+            if (cropper) {
+                const canvas = cropper.getCroppedCanvas({
+                    width: 200,
+                    height: 200,
+                });
+
+                canvas.toBlob(function(blob) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        croppedProfilePicture.value = event.target.result;
+                        // Update the center image with the cropped preview
+                        currentProfilePicture.src = cropPreview.src;
+                        // Clear the file input to prevent conflicts
+                        profilePictureInput.value = '';
+                    };
+                    reader.readAsDataURL(blob);
+                });
+
+                cropper.destroy();
+                cropper = null;
+                cropperModal.classList.add('hidden');
+            }
+        }
+
+        function cancelCrop() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            cropperModal.classList.add('hidden');
+            profilePictureInput.value = '';
+        }
+    </script>
+    <!-- Force Check In Overlay -->
+    <div id="force-checkin-overlay" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[9990] hidden flex-col items-center justify-center transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 text-center transform transition-transform duration-300 scale-100">
+            <div class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <svg class="w-12 h-12 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-3">Shift Check-In Required</h2>
+            <p class="text-slate-600 mb-8 text-lg">You must check in to start your shift before accessing the system.</p>
+            <button onclick="handleForceCheckIn()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+                <?php echo e(!empty(Auth::user()->face_descriptor) ? 'Check In Now' : 'Set up Face Verification & Check In'); ?>
+
+            </button>
+        </div>
+    </div>
+
+    <!-- Face Failure Modal -->
+    <div id="face-failure-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[9999] hidden flex-col items-center justify-center transition-opacity duration-300">
+        <div id="face-failure-modal-content" class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 mx-4 transform scale-95 transition-all duration-300 relative text-center">
+            <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Verification Failed</h2>
+            <p id="face-failure-message" class="text-slate-500 mb-6 font-medium">Match: 0% (Required: 50%)</p>
+            <button onclick="closeFaceFailureModal()" class="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-lg transition-colors">
+                Try Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function openFaceFailureModal(percentage) {
+            const modal = document.getElementById('face-failure-modal');
+            const content = document.getElementById('face-failure-modal-content');
+            document.getElementById('face-failure-message').innerText = `Match: ${percentage}% (Required: 50%)`;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeFaceFailureModal() {
+            const modal = document.getElementById('face-failure-modal');
+            const content = document.getElementById('face-failure-modal-content');
+            
+            modal.classList.add('opacity-0');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+    </script>
+
+</body>
+</html>
+<?php /**PATH C:\Users\cindy\OneDrive\Documents\tick B\pplg\writing hting\pointofyou\pointofyou\resources\views/layouts/staff.blade.php ENDPATH**/ ?>

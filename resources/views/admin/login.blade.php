@@ -20,7 +20,7 @@
             <div class="text-center mb-8">
                 <a href="{{ url('/') }}" class="inline-flex items-center gap-2 hover:opacity-80 transition-opacity">
                     @if ($settings->logo)
-                        <img src="{{ asset('storage/' . $settings->logo) }}" alt="{{ $settings->app_name }}" class="w-10 h-10 object-cover rounded-lg">
+                        <img src="{{ asset('app-storage/' . $settings->logo) }}" alt="{{ $settings->app_name }}" class="w-10 h-10 object-cover rounded-lg">
                     @else
                         <div class="flex w-10 h-10 items-center justify-center rounded-lg text-lg font-semibold" style="background-color: {{ $settings->primary_color }}30; color: {{ $settings->primary_font_color }};">
                             {{ $settings->logo_fallback }}

@@ -56,16 +56,43 @@ class PayrollController extends Controller
         return view('payroll.salaries', compact('salaries', 'employees'));
     }
 
-    public function attendance()
+    public function attendance(Request $request)
     {
-        $attendance = Attendance::whereHas('employee', function ($query) {
+        $startDate = $request->input('start_date', today()->format('Y-m-d'));
+        $endDate = $request->input('end_date', today()->format('Y-m-d'));
+        $employeeId = $request->input('employee_id');
+
+        $query = Attendance::whereHas('employee', function ($query) {
             $query->whereHas('user', function ($query) {
                 $query->whereHas('dbRole', function ($query) {
                     $query->where('is_paid', true);
                 });
             });
-        })->with('employee')->latest()->paginate(20);
-        return view('payroll.attendance', compact('attendance'));
+        })->with('employee.user');
+
+        if ($startDate) {
+            $query->whereDate('date', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->whereDate('date', '<=', $endDate);
+        }
+
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        }
+
+        $attendance = $query->orderBy('date', 'desc')->paginate(20);
+
+        $employees = Employee::whereNotNull('user_id')
+            ->whereHas('user', function ($query) {
+                $query->whereNotNull('role_id')
+                      ->whereHas('dbRole', function ($query) {
+                          $query->where('is_paid', true);
+                      });
+            })->get();
+
+        return view('payroll.attendance', compact('attendance', 'employees', 'startDate', 'endDate', 'employeeId'));
     }
 
     public function storeEmployee(Request $request)

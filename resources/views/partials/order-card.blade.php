@@ -21,7 +21,7 @@
     <div class="mb-3">
         @foreach($order->items as $item)
             <div class="flex justify-between items-center text-sm py-1 border-b border-slate-100 last:border-0">
-                <span>{{ $item->quantity }}x {{ $item->menuItem->name }}</span>
+                <span>{{ $item->quantity }}x {{ $item->menuItem->name ?? 'Deleted Item' }}</span>
                 @if($item->notes)
                     <span class="text-xs text-slate-500">{{ $item->notes }}</span>
                 @endif

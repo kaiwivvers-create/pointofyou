@@ -33,7 +33,7 @@
                         <tr>
                             <td>
                                 @if ($gift->image)
-                                    <img src="{{ asset('storage/' . $gift->image) }}" alt="{{ $gift->name }}" class="w-16 h-16 object-cover rounded-lg border border-slate-200">
+                                    <img src="{{ asset('app-storage/' . $gift->image) }}" alt="{{ $gift->name }}" class="w-16 h-16 object-cover rounded-lg border border-slate-200">
                                 @else
                                     <div class="w-16 h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 text-xs">No image</div>
                                 @endif
@@ -256,7 +256,7 @@
             
             if (gift.image) {
                 document.getElementById('edit-image-preview').classList.remove('hidden');
-                document.getElementById('edit-current-image').src = gift.image.startsWith('http') ? gift.image : '{{ asset('storage/') }}' + gift.image;
+                document.getElementById('edit-current-image').src = gift.image.startsWith('http') ? gift.image : '{{ asset('app-storage') }}/' + gift.image;
             } else {
                 document.getElementById('edit-image-preview').classList.add('hidden');
             }

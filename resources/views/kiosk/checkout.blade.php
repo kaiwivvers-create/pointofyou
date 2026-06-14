@@ -35,10 +35,14 @@
 
                         @if(! $isTakeout)
                             <div class="mb-6">
-                                <label for="table_number" class="block text-sm font-bold text-stone-700 mb-2">Table number</label>
-                                <input type="text" id="table_number" name="table_number" form="kioskPaymentForm" required maxlength="10" placeholder="e.g. 12"
-                                    class="w-full px-4 py-4 bg-white border-2 border-amber-200/70 rounded-2xl focus:ring-0 focus:border-amber-500 font-medium text-stone-800 transition-colors placeholder:font-normal"
-                                    autocomplete="off">
+                                <label for="table_number" class="block text-sm font-bold text-stone-700 mb-2">Select your table</label>
+                                <select id="table_number" name="table_number" form="kioskPaymentForm" required
+                                    class="w-full px-4 py-4 bg-white border-2 border-amber-200/70 rounded-2xl focus:ring-0 focus:border-amber-500 font-medium text-stone-800 transition-colors">
+                                    <option value="">-- Select a table --</option>
+                                    @foreach($tables as $table)
+                                        <option value="{{ $table->name }}">{{ $table->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         @endif
 

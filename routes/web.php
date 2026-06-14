@@ -73,15 +73,27 @@ Route::get('/admin/login', [AdminAuthController::class, 'create'])->name('admin.
 Route::post('/admin/login', [AdminAuthController::class, 'store'])->name('admin.login.store')->middleware('guest');
 Route::get('/login', [AdminAuthController::class, 'create']);
 
+// TEMPORARY: Moved outside auth for hosting
+Route::get('/profile/user-face-descriptor', [ProfileController::class, 'getFaceDescriptor']);
+Route::get('/device-sessions/active', [DeviceSessionController::class, 'activeSessions']);
+
+// Fallback storage route for hosted environments where symlinks fail
+Route::get('/app-storage/{path}', function($path) {
+    $path = storage_path('app/public/' . $path);
+    if (!file_exists($path)) abort(404);
+    
+    // Set appropriate content type headers
+    $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+    return response()->file($path, ['Content-Type' => $mimeType]);
+})->where('path', '.*');
+
 Route::middleware('auth')->group(function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'destroy'])->name('admin.logout');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/face-descriptor', [ProfileController::class, 'saveFaceDescriptor'])->name('profile.face-descriptor');
-    Route::get('/api/user-face-descriptor', [ProfileController::class, 'getFaceDescriptor']);
     
     // Device session routes
     Route::post('/device-sessions', [DeviceSessionController::class, 'create']);
-    Route::get('/device-sessions/active', [DeviceSessionController::class, 'activeSessions']);
     Route::post('/device-sessions/{sessionCode}/deactivate', [DeviceSessionController::class, 'deactivate']);
     Route::get('/device-sessions/{sessionCode}', [DeviceSessionController::class, 'show']);
     Route::post('/device-sessions/{sessionCode}/add-to-cart', [DeviceSessionController::class, 'addToCart']);
@@ -308,7 +320,7 @@ Route::middleware('auth')->group(function () {
         })->name('dashboard')->middleware('role:owner,manager,admin,test');
 
         // Kitchen Dashboard (role-based, no permit required)
-        Route::get('kitchen', [CurrentOrdersController::class, 'dashboard'])->name('kitchen.dashboard')->middleware('role:chef');
+        Route::get('kitchen', [CurrentOrdersController::class, 'dashboard'])->name('kitchen.dashboard')->middleware('role:chef,owner,manager,super_admin');
 
         // Current Orders and Pickup Station (role-based for chef, permission-based for others)
         Route::get('current-orders', [CurrentOrdersController::class, 'index'])->name('current-orders.index')->middleware('permission:current_orders')->middleware('role:chef,owner,manager,super_admin');

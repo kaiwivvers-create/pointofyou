@@ -5,8 +5,8 @@
 @section('content')
     <div class="staff-page-header">
         <div>
-            <h1 class="staff-page-title">Add Schedule</h1>
-            <p class="staff-page-subtitle">Set work days, days off, or holidays for staff.</p>
+            <h1 class="staff-page-title">Add/Update Schedule</h1>
+            <p class="staff-page-subtitle">Set work days and recurring shifts for roles.</p>
         </div>
         <a href="{{ route('staff-schedules.index') }}" class="staff-btn-secondary">Back to Schedules</a>
     </div>
@@ -17,91 +17,85 @@
         <form method="POST" action="{{ route('staff-schedules.store') }}">
             @csrf
             
-            <div class="mb-6 p-4 bg-slate-50 rounded-lg">
-                <p class="text-sm font-semibold text-slate-700 mb-2">Schedule for:</p>
-                <div class="space-y-3">
-                    <div>
-                        <label for="role_id" class="staff-label">Role (Applies to all employees in this role)</label>
-                        <select id="role_id" name="role_id" class="staff-input" onchange="toggleEmployeeSelection()">
-                            <option value="">Select role (optional)</option>
-                            @foreach ($roles as $role)
-                                <option value="{{ $role->id }}">{{ $role->label() }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="text-center text-slate-400 text-sm">— OR —</div>
-                    <div>
-                        <label for="user_id" class="staff-label">Specific Employee</label>
-                        <select id="user_id" name="user_id" class="staff-input">
-                            <option value="">Select employee (optional)</option>
-                            @foreach ($users as $user)
-                                <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->role->label() }})</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <p class="text-xs text-slate-500 mt-2">Select either a role or a specific employee, but not both.</p>
+            <div class="mb-6">
+                <label for="role_id" class="staff-label">Role</label>
+                <select id="role_id" name="role_id" class="staff-input" required>
+                    <option value="">Select role</option>
+                    @foreach ($roles as $role)
+                        <option value="{{ $role->id }}">{{ $role->label() }}</option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-slate-500 mt-1">This schedule applies to all employees with this role.</p>
             </div>
 
             <div class="mb-6">
-                <label for="date" class="staff-label">Date</label>
-                <input type="date" id="date" name="date" required class="staff-input">
-            </div>
-
-            <div class="mb-6">
-                <label for="type" class="staff-label">Type</label>
-                <select id="type" name="type" required class="staff-input">
-                    <option value="work_day">Work Day</option>
-                    <option value="day_off">Day Off</option>
-                    <option value="holiday">Holiday</option>
+                <label for="day_of_week" class="staff-label">Day of Week</label>
+                <select id="day_of_week" name="day_of_week" class="staff-input" required>
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                    <option value="0">Sunday</option>
                 </select>
             </div>
 
             <div class="mb-6">
-                <label for="expected_start_time" class="staff-label">Expected Start Time</label>
-                <input type="time" id="expected_start_time" name="expected_start_time" value="09:00" class="staff-input">
-                <p class="text-xs text-slate-500 mt-1">Default: 9:00 AM</p>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="is_day_off" name="is_day_off" value="1" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-600" onchange="toggleTimeInputs()">
+                    <span class="text-sm font-medium text-slate-700">This is a regular Day Off</span>
+                </label>
             </div>
 
-            <div class="mb-6">
-                <label for="expected_end_time" class="staff-label">Expected End Time</label>
-                <input type="time" id="expected_end_time" name="expected_end_time" value="17:00" class="staff-input">
-                <p class="text-xs text-slate-500 mt-1">Default: 5:00 PM</p>
+            <div id="time-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="expected_start_time" class="staff-label">Start Time</label>
+                    <input type="time" id="expected_start_time" name="expected_start_time" class="staff-input">
+                </div>
+                <div>
+                    <label for="expected_end_time" class="staff-label">End Time</label>
+                    <input type="time" id="expected_end_time" name="expected_end_time" class="staff-input">
+                </div>
             </div>
 
             <div class="mb-6">
                 <label for="notes" class="staff-label">Notes (Optional)</label>
-                <textarea id="notes" name="notes" rows="3" maxlength="1000" class="staff-input" placeholder="Any additional notes..."></textarea>
+                <textarea id="notes" name="notes" rows="3" class="staff-input"></textarea>
             </div>
 
             <div class="flex justify-end gap-3">
                 <a href="{{ route('staff-schedules.index') }}" class="staff-btn-secondary">Cancel</a>
-                <button type="submit" class="staff-btn-primary">Create Schedule</button>
+                <button type="submit" class="staff-btn-primary">Save Schedule</button>
             </div>
         </form>
     </div>
 
     <script>
-        function toggleEmployeeSelection() {
-            const roleSelect = document.getElementById('role_id');
-            const userSelect = document.getElementById('user_id');
-            
-            if (roleSelect.value) {
-                userSelect.value = '';
-                userSelect.disabled = true;
+        function toggleTimeInputs() {
+            const isDayOff = document.getElementById('is_day_off').checked;
+            const timeInputs = document.getElementById('time-inputs');
+            const startInput = document.getElementById('expected_start_time');
+            const endInput = document.getElementById('expected_end_time');
+
+            if (isDayOff) {
+                timeInputs.style.opacity = '0.5';
+                startInput.disabled = true;
+                endInput.disabled = true;
+                startInput.value = '';
+                endInput.value = '';
+                startInput.removeAttribute('required');
+                endInput.removeAttribute('required');
             } else {
-                userSelect.disabled = false;
+                timeInputs.style.opacity = '1';
+                startInput.disabled = false;
+                endInput.disabled = false;
+                startInput.setAttribute('required', 'required');
+                endInput.setAttribute('required', 'required');
             }
         }
 
-        document.getElementById('user_id').addEventListener('change', function() {
-            const roleSelect = document.getElementById('role_id');
-            if (this.value) {
-                roleSelect.value = '';
-                roleSelect.disabled = true;
-            } else {
-                roleSelect.disabled = false;
-            }
-        });
+        // Initialize state
+        toggleTimeInputs();
     </script>
 @endsection

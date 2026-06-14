@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
         $brandSettings = \App\Models\BrandSettings::getSettings();
-        $favicon = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : asset('favicon.ico');
+        $favicon = $brandSettings->logo ? asset('app-storage/' . $brandSettings->logo) : asset('favicon.ico');
     @endphp
     <title>@yield('title', 'Menu') — {{ $brandSettings->app_name }}</title>
     <link rel="icon" type="image/x-icon" href="{{ $favicon }}">
@@ -60,5 +60,6 @@
         <x-flash />
     </div>
     @yield('content')
+    @include('partials.translator', ['isFloating' => true])
 </body>
 </html>

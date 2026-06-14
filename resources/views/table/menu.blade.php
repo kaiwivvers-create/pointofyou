@@ -298,9 +298,9 @@
                             @php
                                 $isPacket = $category === 'packets';
                                 $imagePath = $isPacket ? $item->image : $item->image;
-                                // Ensure path starts with storage/
-                                if ($imagePath && !str_starts_with($imagePath, 'storage/')) {
-                                    $imagePath = 'storage/' . $imagePath;
+                                // Ensure path starts with app-storage/
+                                if ($imagePath && !str_starts_with($imagePath, 'app-storage/')) {
+                                    $imagePath = 'app-storage/' . $imagePath;
                                 }
                                 $img = $imagePath ? asset($imagePath) : 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80';
                                 if($category === 'drinks' && !$item->image) $img = 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=600&q=80';
@@ -607,7 +607,7 @@
     let currentEditIndex = null;
 
     function openItemModal(item, imgSrc) {
-        document.getElementById('itemForm').action = `/table/cart/${item.id}`;
+        document.getElementById('itemForm').action = `{{ url('/table/cart') }}/${item.id}`;
         document.getElementById('modalImg').src = imgSrc;
         document.getElementById('modalTitle').innerText = item.name;
         document.getElementById('modalDesc').innerText = item.description || '';
@@ -680,7 +680,7 @@
     }
 
     function openPacketModal(packet, imgSrc) {
-        document.getElementById('packetForm').action = `/table/packet/${packet.id}`;
+        document.getElementById('packetForm').action = `{{ url('/table/packet') }}/${packet.id}`;
         document.getElementById('packetModalImg').src = imgSrc;
         document.getElementById('packetModalTitle').innerText = packet.name;
         document.getElementById('packetModalDesc').innerText = packet.description || '';
@@ -827,7 +827,7 @@
         // Create form and submit
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/table/cart/update/${currentEditIndex}`;
+        form.action = `{{ url('/table/cart/update') }}/${currentEditIndex}`;
 
         // Get CSRF token from the hidden input in the page
         const csrfToken = document.querySelector('input[name="_token"]')?.value;
@@ -1004,7 +1004,7 @@
         // Store promo in session via AJAX
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/table/promo/apply';
+        form.action = '{{ url("/table/promo/apply") }}';
 
         const csrfToken = document.querySelector('input[name="_token"]')?.value;
         if (csrfToken) {

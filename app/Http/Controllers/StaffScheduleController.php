@@ -11,43 +11,48 @@ class StaffScheduleController extends Controller
 {
     public function index()
     {
-        $schedules = StaffSchedule::with(['user', 'role'])
-            ->orderBy('date')
-            ->paginate(20);
+        $schedules = StaffSchedule::with(['role'])
+            ->orderBy('role_id')
+            ->orderBy('day_of_week')
+            ->paginate(50);
         
-        $users = User::whereNotNull('employee_id')->get();
         $roles = Role::all();
+        $users = User::whereNotNull('employee_id')->get();
         
-        return view('staff-schedules.index', compact('schedules', 'users', 'roles'));
+        return view('staff-schedules.index', compact('schedules', 'roles', 'users'));
     }
 
     public function create()
     {
-        $users = User::whereNotNull('employee_id')->get();
         $roles = Role::all();
-        return view('staff-schedules.create', compact('users', 'roles'));
+        return view('staff-schedules.create', compact('roles'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'role_id' => 'nullable|exists:roles,id',
-            'user_id' => 'nullable|exists:users,id',
-            'date' => 'required|date',
-            'type' => 'required|in:work_day,day_off,holiday',
+            'role_id' => 'required|exists:roles,id',
+            'day_of_week' => 'required|integer|min:0|max:6',
+            'is_day_off' => 'boolean',
             'expected_start_time' => 'nullable|date_format:H:i',
             'expected_end_time' => 'nullable|date_format:H:i|after:expected_start_time',
             'notes' => 'nullable|string',
         ]);
 
-        // Require either role_id or user_id
-        if (!$request->role_id && !$request->user_id) {
-            return redirect()->back()->with('error', 'Please select either a role or an employee.');
+        $validated['is_day_off'] = $request->has('is_day_off');
+
+        // Check if schedule already exists for this role and day
+        $existing = StaffSchedule::where('role_id', $validated['role_id'])
+            ->where('day_of_week', $validated['day_of_week'])
+            ->first();
+
+        if ($existing) {
+            $existing->update($validated);
+        } else {
+            StaffSchedule::create($validated);
         }
 
-        StaffSchedule::create($validated);
-
-        return redirect()->route('staff-schedules.index')->with('success', 'Schedule created successfully.');
+        return redirect()->route('staff-schedules.index')->with('success', 'Schedule saved successfully.');
     }
 
     public function destroy(StaffSchedule $staffSchedule)
@@ -84,8 +89,8 @@ class StaffScheduleController extends Controller
             return [
                 'employee_name' => $record->employee->user->name ?? '-',
                 'date' => $record->date->format('M d, Y'),
-                'check_in' => $record->check_in ? $record->check_in->format('H:i') : null,
-                'check_out' => $record->check_out ? $record->check_out->format('H:i') : null,
+                'check_in' => $record->check_in ? \Carbon\Carbon::parse($record->check_in)->format('H:i') : null,
+                'check_out' => $record->check_out ? \Carbon\Carbon::parse($record->check_out)->format('H:i') : null,
                 'status' => $record->status,
                 'hours_worked' => $record->hours_worked ? number_format($record->hours_worked, 2) : null,
                 'overtime_hours' => $record->overtime_hours ? number_format($record->overtime_hours, 2) : null,

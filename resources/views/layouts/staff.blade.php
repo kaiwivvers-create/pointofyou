@@ -1,6 +1,6 @@
 @php
     $brandSettings = \App\Models\BrandSettings::getSettings();
-    $favicon = $brandSettings->logo ? asset('storage/' . $brandSettings->logo) : asset('favicon.ico');
+    $favicon = $brandSettings->logo ? asset('app-storage/' . $brandSettings->logo) : asset('favicon.ico');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -35,7 +35,7 @@
             <div class="p-6 pb-4 flex-shrink-0">
                 <a href="{{ url('/') }}" class="flex items-center gap-3 rounded-lg p-2 -m-2 transition-colors" style="--hover-bg: {{ $brandSettings->primary_color }}18;" onmouseenter="this.style.backgroundColor=this.style.getPropertyValue('--hover-bg')" onmouseleave="this.style.backgroundColor=''">
                     @if ($brandSettings->logo)
-                        <img src="{{ asset('storage/' . $brandSettings->logo) }}" alt="{{ $brandSettings->app_name }}" class="size-10 rounded-lg object-cover">
+                        <img src="{{ asset('app-storage/' . $brandSettings->logo) }}" alt="{{ $brandSettings->app_name }}" class="size-10 rounded-lg object-cover">
                     @else
                         <div class="flex size-10 items-center justify-center rounded-lg text-xl font-semibold" style="background-color: {{ $brandSettings->primary_color }}30; color: {{ $brandSettings->primary_font_color }};">
                             {{ $brandSettings->logo_fallback }}
@@ -62,8 +62,12 @@
                     style="color: {{ $brandSettings->primary_font_color }};"
                     onmouseenter="this.style.backgroundColor='{{ $brandSettings->primary_color }}18'"
                     onmouseleave="this.style.backgroundColor=''">
-                    @if (Auth::user()->employee && Auth::user()->employee->profile_picture)
-                        <img src="{{ asset('storage/' . Auth::user()->employee->profile_picture) }}" alt="{{ Auth::user()->name }}" class="size-8 rounded-full object-cover select-none pointer-events-none">
+                    @php
+                        $sidebarPfp = Auth::user()->profile_picture
+                            ?? (Auth::user()->employee ? Auth::user()->employee->profile_picture : null);
+                    @endphp
+                    @if ($sidebarPfp)
+                        <img src="{{ asset('app-storage/' . $sidebarPfp) }}" alt="{{ Auth::user()->name }}" class="size-8 rounded-full object-cover select-none pointer-events-none">
                     @else
                         <div class="size-8 rounded-full flex items-center justify-center text-sm font-semibold select-none pointer-events-none" style="background-color: {{ $brandSettings->primary_color }}30; color: {{ $brandSettings->primary_font_color }};">
                             {{ substr(Auth::user()->name, 0, 1) }}
@@ -133,6 +137,10 @@
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
     @include('partials.chatbot')
+    
+    <div class="lg:hidden">
+        @include('partials.translator', ['isFloating' => true])
+    </div>
 
     <!-- Attendance Check-out Confirmation Modal -->
     <div id="attendance-checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
@@ -200,7 +208,7 @@
                     <!-- Current Profile Picture / Preview -->
                     <div class="flex justify-center mb-4">
                         @if (Auth::user()->profile_picture)
-                            <img id="current-profile-picture" src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="{{ Auth::user()->name }}" class="size-20 rounded-full object-cover select-none pointer-events-none">
+                            <img id="current-profile-picture" src="{{ asset('app-storage/' . Auth::user()->profile_picture) }}" alt="{{ Auth::user()->name }}" class="size-20 rounded-full object-cover select-none pointer-events-none">
                         @else
                             <div id="current-profile-picture" class="size-20 rounded-full flex items-center justify-center text-2xl font-semibold bg-slate-200 text-slate-600 select-none pointer-events-none">
                                 {{ substr(Auth::user()->name, 0, 1) }}
@@ -222,12 +230,9 @@
 
                     <!-- Face Recognition Setup Button -->
                     <div class="flex justify-center mt-3">
-                        <button type="button" onclick="openFaceRecognitionModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium hover:bg-blue-200 transition-colors">
-                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Setup Face Recognition
+                        <button type="button" onclick="openFaceRecognitionModal()" class="w-full flex items-center justify-center space-x-2 py-3 px-4 border border-blue-200 text-blue-700 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors font-medium">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span>{{ !empty(Auth::user()->face_descriptor) ? 'Retake Face Verification' : 'Setup Face Recognition' }}</span>
                         </button>
                     </div>
 
@@ -396,6 +401,10 @@
                 } else if (data.status === 'error') {
                     statusText.textContent = 'Error loading status';
                     checkInBtn.classList.remove('hidden');
+                    checkOutBtn.classList.add('hidden');
+                } else if (data.status === 'not_required') {
+                    statusText.textContent = 'Check-in not required for your role';
+                    checkInBtn.classList.add('hidden');
                     checkOutBtn.classList.add('hidden');
                 } else {
                     // Unknown status, default to showing check-in button
@@ -598,10 +607,8 @@
             if (userFaceDescriptor) {
                 const verificationResult = await verifyFaceIdentity(canvas);
                 if (!verificationResult.match) {
-                    statusText.textContent = `Face does not match (${verificationResult.percentage}% similarity, minimum 65% required). Please try again.`;
-                    statusText.classList.add('text-red-400');
-                    statusText.classList.remove('text-emerald-400', 'text-amber-400');
-                    // Don't close modal, let user try again
+                    openFaceFailureModal(verificationResult.percentage);
+                    // Don't close camera modal, but wait for user to try again
                     return;
                 }
                 statusText.textContent = `Identity verified! (${verificationResult.percentage}% similarity). Proceeding with check-in...`;
@@ -645,8 +652,8 @@
                 
                 console.log('Face match percentage:', percentage);
                 
-                // Require at least 65% match for verification
-                const minimumMatchPercentage = 65;
+                // Require at least 50% match for verification
+                const minimumMatchPercentage = 50;
                 const match = percentage >= minimumMatchPercentage;
                 
                 console.log('Face verification result:', { match, percentage, minimumMatchPercentage });
@@ -707,7 +714,7 @@
 
         async function loadUserFaceDescriptor() {
             try {
-                const response = await fetch('/api/user-face-descriptor');
+                const response = await fetch('{{ url('/profile/user-face-descriptor') }}');
                 if (response.ok) {
                     const data = await response.json();
                     console.log('Face descriptor API response:', data);
@@ -860,8 +867,11 @@
                 if (detection) {
                     const descriptor = Array.from(detection.descriptor);
                     
+                    // Check if we are doing this during force check-in
+                    const isForcedCheckin = !document.getElementById('force-checkin-overlay').classList.contains('hidden');
+                    
                     // Send to server
-                    await saveFaceDescriptor(imageData, descriptor);
+                    await saveFaceDescriptor(imageData, descriptor, isForcedCheckin);
                 } else {
                     statusText.textContent = 'No face detected. Please try again.';
                 }
@@ -871,9 +881,9 @@
             }
         }
 
-        async function saveFaceDescriptor(imageData, descriptor) {
+        async function saveFaceDescriptor(imageData, descriptor, shouldAutoCheckIn = false) {
             try {
-                const response = await fetch('/profile/face-descriptor', {
+                const response = await fetch('{{ url('/profile/face-descriptor') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -888,8 +898,12 @@
                     closeFaceRecognitionModal();
                     // Reload the face descriptor
                     await loadUserFaceDescriptor();
-                    // Now proceed with check-in
-                    openFaceVerification();
+                    // Now proceed with check-in if needed
+                    if (shouldAutoCheckIn) {
+                        await performCheckIn(imageData);
+                    } else {
+                        alert('Face Verification successfully saved!');
+                    }
                 } else {
                     alert('Error saving face data. Please try again.');
                 }
@@ -1171,10 +1185,55 @@
             <h2 class="text-2xl font-bold text-slate-800 mb-3">Shift Check-In Required</h2>
             <p class="text-slate-600 mb-8 text-lg">You must check in to start your shift before accessing the system.</p>
             <button onclick="handleForceCheckIn()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
-                Check In Now
+                {{ !empty(Auth::user()->face_descriptor) ? 'Check In Now' : 'Set up Face Verification & Check In' }}
             </button>
         </div>
     </div>
+
+    <!-- Face Failure Modal -->
+    <div id="face-failure-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[9999] hidden flex-col items-center justify-center transition-opacity duration-300">
+        <div id="face-failure-modal-content" class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 mx-4 transform scale-95 transition-all duration-300 relative text-center">
+            <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Verification Failed</h2>
+            <p id="face-failure-message" class="text-slate-500 mb-6 font-medium">Match: 0% (Required: 50%)</p>
+            <button onclick="closeFaceFailureModal()" class="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-lg transition-colors">
+                Try Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function openFaceFailureModal(percentage) {
+            const modal = document.getElementById('face-failure-modal');
+            const content = document.getElementById('face-failure-modal-content');
+            document.getElementById('face-failure-message').innerText = `Match: ${percentage}% (Required: 50%)`;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeFaceFailureModal() {
+            const modal = document.getElementById('face-failure-modal');
+            const content = document.getElementById('face-failure-modal-content');
+            
+            modal.classList.add('opacity-0');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+    </script>
 
 </body>
 </html>

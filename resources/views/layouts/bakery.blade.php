@@ -1,6 +1,6 @@
 @php
     $settings = \App\Models\BrandSettings::getSettings();
-    $favicon = $settings->logo ? asset('storage/' . $settings->logo) : asset('favicon.ico');
+    $favicon = $settings->logo ? asset('app-storage/' . $settings->logo) : asset('favicon.ico');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -15,5 +15,6 @@
 </head>
 <body class="font-sans antialiased text-stone-800 min-h-screen @yield('body-class')" style="background-color: {{ $settings->secondary_color }};">
     @yield('content')
+    @include('partials.translator', ['isFloating' => true])
 </body>
 </html>

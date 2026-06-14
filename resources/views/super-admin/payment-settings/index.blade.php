@@ -27,7 +27,7 @@
                 @if ($settings->qr_code_image)
                     <div class="mt-2" id="current-qr-wrap">
                         <p class="text-sm text-slate-600 mb-1">Current QR code:</p>
-                        <img src="{{ asset('storage/' . $settings->qr_code_image) }}" alt="QR Code" class="h-32 w-32 object-cover rounded-lg border border-slate-200" id="current-qr-img">
+                        <img src="{{ asset('app-storage/' . $settings->qr_code_image) }}" alt="QR Code" class="h-32 w-32 object-cover rounded-lg border border-slate-200" id="current-qr-img">
                     </div>
                 @endif
                 <div id="crop-preview-wrap" class="mt-2 hidden">
@@ -138,7 +138,7 @@
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css">
     <script>
-        let uploadedQrUrl = '{{ $settings->qr_code_image ? asset('storage/' . $settings->qr_code_image) : '' }}';
+        let uploadedQrUrl = '{{ $settings->qr_code_image ? asset('app-storage/' . $settings->qr_code_image) : '' }}';
         let cropper = null;
 
         function openCropModal(event) {

@@ -297,7 +297,7 @@
                     <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 sm:p-5 text-center">
                         <div class="w-36 h-36 sm:w-44 sm:h-44 mx-auto bg-white border-2 border-slate-200 rounded-2xl mb-3 sm:mb-4 overflow-auto flex items-center justify-center">
                             @if($paymentSettings->qr_code_image)
-                                <img src="{{ asset('storage/' . $paymentSettings->qr_code_image) }}" alt="QR Code" class="object-contain">
+                                <img src="{{ asset('app-storage/' . $paymentSettings->qr_code_image) }}" alt="QR Code" class="object-contain">
                             @else
                                 <svg class="size-10 sm:size-14 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h4v4H4V4zm8 0h4v4h-4V4zM4 12h4v4H4v-4zm8 8v-4h4v4h-4zm4-8h4v4h-4v-4zm0-8h4v4h-4V4zM8 8h8v8H8V8z" />

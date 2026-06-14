@@ -109,7 +109,7 @@ class OrderController extends Controller
                 'id'       => $m->id,
                 'type'     => 'menu_item',
                 'name'     => $m->name,
-                'image'    => $m->image ? asset('storage/' . $m->image) : null,
+                'image'    => $m->image ? asset('app-storage/' . $m->image) : null,
                 'price'    => (float) $m->price,
                 'category' => $m->category ?: 'Menu Item',
                 'barcode'  => $m->barcode,
@@ -121,7 +121,7 @@ class OrderController extends Controller
                 'id'       => $g->id,
                 'type'     => 'gift',
                 'name'     => $g->name,
-                'image'    => $g->image ? asset('storage/' . $g->image) : null,
+                'image'    => $g->image ? asset('app-storage/' . $g->image) : null,
                 'price'    => (float) ($g->cost ?? 0),
                 'category' => 'Gift',
                 'barcode'  => $g->barcode ?? null,
@@ -153,7 +153,9 @@ class OrderController extends Controller
             ->where('paid_by', $user->id)
             ->sum('total');
 
-        return view('cashier.pos', compact('attendance', 'itemsJson', 'posCategories', 'todayTotal'));
+        $tables = \App\Models\CafeTable::all();
+
+        return view('cashier.pos', compact('attendance', 'itemsJson', 'posCategories', 'todayTotal', 'tables'));
     }
 
     public function create(Request $request): JsonResponse
@@ -175,6 +177,73 @@ class OrderController extends Controller
 
         try {
             DB::beginTransaction();
+
+            // PRE-FLIGHT INVENTORY VALIDATION
+            $ingredientRequirements = [];
+            $giftRequirements = [];
+            foreach ($validated['items'] as $item) {
+                $type = $item['type'] ?? 'menu_item';
+                
+                if ($type === 'menu_item') {
+                    $menuItem = \App\Models\MenuItem::find($item['id']);
+                    if ($menuItem && $menuItem->ingredients) {
+                        foreach ($menuItem->ingredients as $ingredient) {
+                            $productId = $ingredient->id;
+                            $neededQty = $ingredient->pivot->quantity * $item['quantity'];
+                            
+                            if (!isset($ingredientRequirements[$productId])) {
+                                $ingredientRequirements[$productId] = [
+                                    'product' => $ingredient,
+                                    'required' => 0
+                                ];
+                            }
+                            $ingredientRequirements[$productId]['required'] += $neededQty;
+                        }
+                    }
+                } elseif ($type === 'product') {
+                    $product = \App\Models\Product::find($item['id']);
+                    if ($product) {
+                        if (!isset($ingredientRequirements[$product->id])) {
+                            $ingredientRequirements[$product->id] = [
+                                'product' => $product,
+                                'required' => 0
+                            ];
+                        }
+                        $ingredientRequirements[$product->id]['required'] += $item['quantity'];
+                    }
+                } elseif ($type === 'gift') {
+                    $gift = \App\Models\Gift::find($item['id']);
+                    if ($gift) {
+                        if (!isset($giftRequirements[$gift->id])) {
+                            $giftRequirements[$gift->id] = [
+                                'gift' => $gift,
+                                'required' => 0
+                            ];
+                        }
+                        $giftRequirements[$gift->id]['required'] += $item['quantity'];
+                    }
+                }
+            }
+
+            // Check if all required quantities are in stock
+            foreach ($ingredientRequirements as $req) {
+                $product = $req['product'];
+                if ($product->stock_quantity < $req['required']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Insufficient raw material stock for {$product->name}. Required: {$req['required']}, Available: {$product->stock_quantity}."
+                    ], 400);
+                }
+            }
+            foreach ($giftRequirements as $req) {
+                $gift = $req['gift'];
+                if ($gift->stock_quantity < $req['required']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Insufficient stock for gift: {$gift->name}. Required: {$req['required']}, Available: {$gift->stock_quantity}."
+                    ], 400);
+                }
+            }
 
             $status = $validated['payment_method'] === 'later' ? OrderStatus::Pending : OrderStatus::Paid;
             $isWalkIn = $validated['order_type'] === 'walk-in';
@@ -236,7 +305,7 @@ class OrderController extends Controller
                     $menuItem = \App\Models\MenuItem::find($item['id']);
                     if ($menuItem) {
                         foreach ($menuItem->ingredients as $ingredient) {
-                            $product = $ingredient->product;
+                            $product = $ingredient; // Fix: ingredient IS the product
                             if ($product) {
                                 $neededQuantity = $ingredient->pivot->quantity * $item['quantity'];
 
@@ -306,23 +375,7 @@ class OrderController extends Controller
                 }
             }
 
-            if ($totalCogs > 0) {
-                // Create operational expense for stock purchases
-                $expenseCategory = \App\Models\ExpenseCategory::firstOrCreate(
-                    ['name' => 'Order Stock Deduction'],
-                    ['description' => 'Automatic expenses from order stock deduction', 'color' => '#6366f1']
-                );
 
-                OperationalExpense::create([
-                    'expense_category_id' => $expenseCategory->id,
-                    'title' => "Order #{$order->id} Stock Deduction",
-                    'source' => 'auto_stock_purchase',
-                    'amount' => $totalCogs,
-                    'description' => "Order #{$order->id} - Stock deduction (COGS)",
-                    'expense_date' => now(),
-                    'status' => 'approved',
-                ]);
-            }
 
             DB::commit();
 
